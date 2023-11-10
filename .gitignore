@@ -1,0 +1,12 @@
+*.sublime-workspace
+.vs/
+.vscode/
+.idea/
+
+.DS_Store
+
+node_modules/
+build/
+.cache/
+
+lib/emsdk/

@@ -1,0 +1,16 @@
+{
+    "name": "insound-audio",
+    "version": "0.0.0",
+    "devDependencies": {
+        "@types/emscripten": "^1.39.8",
+        "tslib": "^2.6.0",
+        "typescript": "^5.0.2",
+        "vite": "^4.4.5"
+    },
+    "private": true,
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "type": "module"
+}

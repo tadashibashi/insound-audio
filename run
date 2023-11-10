@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""
+    Minimal build script for Insound Audio Engine.
+
+    It uses python3 for ease of cross-platform capability.
+    Please make sure that Python3, git, CMake, and Ninja are installed.
+
+    This script is invokable directly if you grant this file executable
+    permissions. Otherwise, `python run <command>` works just fine.
+
+    Please run `python run help` for info on specific commands, or read the
+    functions in this script.
+"""
+import os
+import signal
+import sys
+
+try:
+    import psutil
+    has_psutil = False
+except ImportError:
+    has_psutil = True
+
+BASEDIR: str = os.path.dirname(__file__)
+
+
+def _kill_proc_tree(pid: int, sig: int = signal.SIGTERM, timeout: int = None,
+                    on_terminate=None):
+    """
+        Kill a process and all of its children
+        Args:
+            pid (int):     the process id
+            sig (int):     the signal to call on the process
+            timeout (int): number of seconds to allow for process to finish
+
+        Returns:
+            (list[Process], list[Process]): A tuple with two list of processes
+                that were targeted that are:
+                    0: terminated
+                    1: stil alive
+    """
+    # don't kill own process
+    if pid == os.getpid():
+        return (list(), list())
+    parent = psutil.Process(pid)
+    processes = parent.children(recursive=True)
+    processes.append(parent)
+
+    for p in processes:
+        try:
+            p.send_signal(sig)
+        except psutil.NoSuchProcess:
+            pass
+    gone, alive = psutil.wait_procs(processes, timeout=timeout,
+                                    callback=on_terminate)
+    return (gone, alive)
+
+
+def kill(task_name: str):
+    """
+        Kill a process
+    """
+    if not has_psutil:
+        return
+    for proc in psutil.process_iter():
+        if name.lower() == proc.name().lower():
+            print(f"Ending pre-existing process {proc.pid}: {proc.name()}")
+            gone, alive = _kill_proc_tree(proc.pid, sig=signal.SIGTERM,
+                                          timeout=1)
+            if len(alive) > 0:
+                gone, alive = _kill_proc_tree(proc.pid, sig=signal.SIGKILL,
+                                              timeout=1)
+                if len(alive) > 0:
+                    print(f"Failed to kill process \"{name}\"")
+                else:
+                    print(f"Process {proc.pid} killed.\n")
+            else:
+                print(f"Process {proc.pid} terminated.\n")
+
+
+def setup():
+    """
+        Install Emscripten to lib/emsdk
+    """
+    EMSDKDIR: str = f"{BASEDIR}/lib/emsdk"
+
+    os.system(f"git clone https://github.com/emscripten-core/emsdk {EMSDKDIR}")
+    if os.name == "nt":
+        EMSDK = f"{EMSDKDIR}/emsdk.bat"
+    else:
+        EMSDK = f"{EMSDKDIR}/emsdk"
+
+    os.system(f"{EMSDK} install latest")
+    os.system(f"{EMSDK} activate latest")
+
+
+def config(build_type="Debug"):
+    """
+        Run CMake configuration
+
+        Requires: Cmake, Ninja
+        Will install Emscripten locally if it wasn't already.
+    """
+    TOOLCHAIN_FILE = (f"{BASEDIR}/lib/emsdk/upstream/emscripten/cmake/Modules/"
+                      "Platform/Emscripten.cmake")
+
+    # Install Emscripten if the toolchain file does not exist
+    if not os.path.exists(TOOLCHAIN_FILE):
+        setup()
+
+    # Run configuration
+    os.system("cmake -S . -B build -G Ninja "
+              f"-DCMAKE_TOOLCHAIN_FILE={TOOLCHAIN_FILE} "
+              f"-DCMAKE_BUILD_TYPE={build_type.title()} "
+              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON ")
+
+
+def build(build_type="Debug"):
+    """
+        Build the project
+    """
+    config(build_type)
+    os.system("cmake --build build")
+
+
+def help():
+    """
+        Display the help menu
+    """
+    print(
+        "\n"
+        "====== Insound Audio Engine build helper script ===================\n"
+        "\n"
+        "       Build script for project management. Please make sure that \n"
+        "       Python3, CMake and Ninja are installed on your system in \n"
+        "       order to use the build system.\n"
+        "\n"
+        "COMMANDS\n"
+        "\n"
+        "\n"
+        "  setup\n"
+        "\n"
+        "      install and setup Emscripten\n"
+        "\n"
+        "  config     <build_type>\n"
+        "\n"
+        "      configure cmake build\n"
+        "\n"
+        "      available build types: \n"
+        "      - Release\n"
+        "      - Debug (default)\n"
+        "      - RelWithDebInfo\n"
+        "      - MinSizeRel\n"
+        "\n"
+        "\n"
+        "  build      <build_type>\n"
+        "\n"
+        "      build the project\n"
+        "\n"
+    )
+
+
+def main(argc: int, argv: list[str]):
+    this = sys.modules[__name__]
+
+    # There should be a command
+    if argc < 2:
+        help()
+        exit()
+
+    # Get the command, and run it if it is available
+    try:
+        command = getattr(this, argv[1])
+    except AttributeError as e:
+        print(f"Could not find command \"{argv[1]}\"")
+        help()
+        exit()
+
+    if command is not None and callable(command):
+        # Pass args if any
+        if argc > 2:
+            command(*argv[2:])
+        else:
+            command()
+    else:
+        help()
+
+
+if __name__ == "__main__":
+    main(len(sys.argv), sys.argv)
