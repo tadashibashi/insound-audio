@@ -1,16 +1,5 @@
-import Module from "../../build/insound-audio.js";
+import { AudioEngine } from "./AudioEngine";
 
-const Audio = {} as InsoundAudioModule;
+const audio = new AudioEngine();
 
-try {
-    await Module(Audio);
-} catch(err) {
-    console.error(err);
-    throw err;
-}
-
-const engine = new Audio.AudioEngine();
-engine.init();
-
-
-engine.close();
+console.log(audio);
