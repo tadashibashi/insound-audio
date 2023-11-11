@@ -11,7 +11,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
-    "lib": ["DOM", "ES6"],
+    "lib": ["DOM", "ESNext"],
   },
   "include": ["src/ts/**/*.d.ts", "src/ts/**/*.ts"]
 }
