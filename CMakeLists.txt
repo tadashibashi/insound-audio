@@ -13,4 +13,7 @@ add_subdirectory(lib)
 file(GLOB_RECURSE ${PROJECT_NAME}_SRC src/cpp/*.cpp)
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRC})
 target_link_libraries(${PROJECT_NAME} PRIVATE fmod)
-target_link_options(${PROJECT_NAME} PRIVATE -sMODULARIZE -sEXPORT_ES6=1 -lembind)
+target_link_options(${PROJECT_NAME} PRIVATE
+    -sMODULARIZE -sEXPORT_ES6=1 -lembind -sNO_DYNAMIC_EXECUTION=1
+    -sASSERTIONS=1
+)
