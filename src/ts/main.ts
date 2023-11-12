@@ -1,5 +1,16 @@
-import { AudioEngine } from "./AudioEngine";
+import { AudioEngine, initAudio } from "./AudioEngine";
 
-const audio = new AudioEngine();
+async function main()
+{
+    await initAudio();
+    const audio = new AudioEngine();
 
-console.log(audio);
+    const callback = (time) => {
+        requestAnimationFrame(callback);
+        audio.update();
+    };
+
+    requestAnimationFrame(callback);
+}
+
+main();

@@ -33,6 +33,11 @@ export interface AudioEngine {
      * Pause the audio engine.
      */
     suspend(): void;
+
+    /**
+     * Update audio engine state, should be called at least 20 times per second
+     */
+    update(): void;
 }
 
 export interface InsoundAudioModule extends EmscriptenModule {
