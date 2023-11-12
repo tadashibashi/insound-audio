@@ -16,6 +16,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 target_link_options(${PROJECT_NAME} INTERFACE
     -sEXPORTED_RUNTIME_METHODS=cwrap,setValue,getValue
+    -sEXPORTED_FUNCTIONS=_main,_free,_malloc
     -sNO_DYNAMIC_EXECUTION=1
     -sALLOW_MEMORY_GROWTH=1
 )
