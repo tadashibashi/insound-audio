@@ -9,8 +9,7 @@
     },
     "private": true,
     "scripts": {
-        "dev": "vite",
-        "build": "vite build"
+        "dev": "vite"
     },
     "type": "module"
 }
