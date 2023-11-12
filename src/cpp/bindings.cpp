@@ -11,5 +11,6 @@ EMSCRIPTEN_BINDINGS() {
         .function("init", &T::init)
         .function("resume", &T::resume)
         .function("suspend", &T::suspend)
+        .function("update", &T::update)
         ;
 }

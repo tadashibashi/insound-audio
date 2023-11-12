@@ -33,6 +33,12 @@ namespace Insound {
         checkResult(sys->mixerSuspend());
     }
 
+    void AudioEngine::update()
+    {
+        assert(sys);
+        checkResult(sys->update());
+    }
+
     bool AudioEngine::init()
     {
         close();

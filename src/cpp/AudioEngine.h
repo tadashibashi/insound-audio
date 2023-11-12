@@ -17,6 +17,8 @@ namespace Insound {
         void resume();
         void suspend();
 
+        void update();
+
     private:
         FMOD::System *sys;
     };
