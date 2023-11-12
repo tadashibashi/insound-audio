@@ -16,10 +16,18 @@ import signal
 import sys
 
 try:
-    import psutil
-    has_psutil = False
+    from scripts import watch as scripts_watch
+    has_watcher = True
 except ImportError:
+    has_watcher = False
+
+try:
+    import psutil
     has_psutil = True
+except ImportError:
+    has_psutil = False
+
+import scripts
 
 BASEDIR: str = os.path.dirname(__file__)
 
@@ -115,7 +123,7 @@ def config(build_type="Debug"):
               "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON ")
 
 
-def build(build_type="Debug"):
+def build(build_type="Release"):
     """
         Build the project
     """
@@ -157,7 +165,20 @@ def help():
         "\n"
         "      build the project\n"
         "\n"
+        "\n"
+        "  watch      <build_type>\n"
+        "\n"
+        "      build the project on file updates\n"
+        "\n"
     )
+
+
+def watch(config="Release"):
+    if not has_watcher:
+        print("Watch is not supported. Must have `watchdog` installed.")
+        return
+    print("Watching for cpp file changes...")
+    scripts_watch(lambda: build(config))
 
 
 def main(argc: int, argv: list[str]):
