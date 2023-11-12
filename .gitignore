@@ -1,12 +1,19 @@
+# IDE
 *.sublime-workspace
 .vs/
 .vscode/
 .idea/
 
+# OS
 .DS_Store
 
-node_modules/
+# Build
 build/
-.cache/
 
+# Temporary
+.cache/
+__pycache__/
+
+# Tools / Libraries
 lib/emsdk/
+node_modules/
