@@ -67,7 +67,7 @@ class FSBank
 }
 
 FSBank.registry = new FinalizationRegistry<PointerWrapper>((heldValue) => {
-    if (heldValue || heldValue.ptr !== undefined)
+    if (heldValue && heldValue.ptr !== undefined)
     {
         EmHelper.free(Audio, heldValue.ptr);
     }
