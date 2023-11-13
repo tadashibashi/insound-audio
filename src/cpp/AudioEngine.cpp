@@ -1,4 +1,5 @@
 #include "AudioEngine.h"
+#include "MultiTrackAudio.h"
 #include "common.h"
 
 #include <fmod.hpp>
@@ -11,7 +12,7 @@
 namespace Insound {
 
 
-    AudioEngine::AudioEngine()
+    AudioEngine::AudioEngine(): track()
     {
 
     }
@@ -39,22 +40,32 @@ namespace Insound {
         checkResult(sys->update());
     }
 
-    void AudioEngine::loadBank(const char *data, size_t bytelength)
+    void AudioEngine::loadBank(size_t data, size_t bytelength)
     {
-        assert(sys);
-        track.loadFsb(data, bytelength);
+        assert(track);
+        track->loadFsb((const char *)data, bytelength);
     }
 
     void AudioEngine::unloadBank()
     {
-        assert(sys);
-        track.unloadFsb();
+        assert(track);
+        track->unloadFsb();
+    }
+
+    void AudioEngine::play()
+    {
+        assert(track);
+        track->play();
+    }
+
+    void AudioEngine::setPause(bool pause)
+    {
+        assert(track);
+        track->setPause(pause);
     }
 
     bool AudioEngine::init()
     {
-        close();
-
         FMOD::System *sys;
         auto result = FMOD::System_Create(&sys);
         if (result != FMOD_OK)
@@ -98,12 +109,31 @@ namespace Insound {
             return false;
         }
 
+
+        if (this->track)
+        {
+            this->track->unloadFsb();
+            delete this->track;
+        }
+
+        if (this->sys)
+        {
+            this->sys->release();
+        }
+
         this->sys = sys;
+        this->track = new MultiTrackAudio("main", sys);
         return true;
     }
 
     void AudioEngine::close()
     {
+        if (track)
+        {
+            delete track;
+            track = nullptr;
+        }
+
         if (sys)
         {
             sys->release();

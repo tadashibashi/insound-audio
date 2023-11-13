@@ -3,7 +3,7 @@ import Module from "../../build/insound-audio";
 import { EmHelper } from "./emscripten";
 
 const Audio = {} as InsoundAudioModule;
-let registry: FinalizationRegistry<Engine>;
+
 
 type pointer = number;
 const NULL: pointer = 0;
@@ -26,30 +26,68 @@ async function initAudio()
             };
             Module(Audio);
         });
-        console.log(Audio);
 
     } catch(err) {
         console.error(err);
         throw err;
     }
-
-    registry = new FinalizationRegistry((heldValue) => {
-        if (heldValue instanceof Audio.AudioEngine) {
-            heldValue.delete();
-        } else {
-            console.error("Failed to finalize AudioEngine object: Wrong " +
-                "type was passed to the finalization registry.");
-        }
-    });
 }
+
+interface PointerWrapper {
+    ptr: pointer;
+}
+
+export
+class FSBank
+{
+    static registry: FinalizationRegistry<PointerWrapper>;
+    track: PointerWrapper;
+
+    constructor() {
+        this.track = {ptr: NULL};
+
+        FSBank.registry.register(this, this.track, this);
+    }
+
+    load(buffer: ArrayBuffer)
+    {
+        const ptr = EmHelper.allocBuffer(Audio, buffer);
+        this.unload();
+        this.track.ptr = ptr;
+    }
+
+    unload()
+    {
+        if (this.track.ptr === NULL) return;
+
+        EmHelper.free(Audio, this.track.ptr);
+
+        this.track.ptr = NULL;
+    }
+}
+
+FSBank.registry = new FinalizationRegistry<PointerWrapper>((heldValue) => {
+    if (heldValue || heldValue.ptr !== undefined)
+    {
+        EmHelper.free(Audio, heldValue.ptr);
+    }
+    else
+    {
+        console.error("Failed to finalize MultiLayeredTrack: Wrong type was " +
+            "passed to the FinalizationRegistry.");
+    }
+});
 
 
 export
-class AudioEngine {
+class AudioEngine
+{
+    static registry: FinalizationRegistry<Engine>;
+
     engine: Engine;
 
-    // pointer to current bank memory
-    currentBank: number;
+    // container managing the current track data
+    track: FSBank;
 
     constructor()
     {
@@ -67,7 +105,9 @@ class AudioEngine {
             throw new Error("Failed to initialize AudioEngine");
         }
 
-        registry.register(this, this.engine, this);
+        this.track = new FSBank();
+
+        AudioEngine.registry.register(this, this.engine, this);
     }
 
     /**
@@ -76,34 +116,26 @@ class AudioEngine {
      * @param {ArrayBuffer} buffer - data buffer
      *
      */
-    loadBank(buffer: ArrayBuffer)
+    loadTrack(buffer: ArrayBuffer)
     {
-        this.unloadBank();
-
-        const ptr = EmHelper.allocBuffer(Audio, buffer);
+        this.track.load(buffer);
 
         try {
-            this.engine.loadBank(ptr, buffer.byteLength);
-            this.currentBank = ptr;
+            this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
         }
         catch (err)
         {
             console.error(err);
-            EmHelper.free(Audio, ptr);
+            this.track.unload();
         }
     }
 
     /**
-     * Unload the currently loaded bank data. Safe to call if already unloaded.
+     * Unload the currently loaded track data. Safe to call if already unloaded.
      */
-    unloadBank()
+    unloadTrack()
     {
-        // Check if already unloaded
-        if (this.currentBank === NULL) return;
-
-        // Free data
-        EmHelper.free(Audio, this.currentBank);
-        this.currentBank = NULL;
+        this.track.unload();
     }
 
     /**
@@ -129,6 +161,16 @@ class AudioEngine {
         this.engine.update();
     }
 
+    play()
+    {
+        this.engine.play();
+    }
+
+    setPause(pause: boolean)
+    {
+        this.engine.setPause(pause);
+    }
+
     /**
      * Call this manually when no longer using the AudioEngine to clean
      * up underlying AudioEngine object. A finalization registry is used on
@@ -137,7 +179,16 @@ class AudioEngine {
      */
     release()
     {
-        this.unloadBank();
+        this.unloadTrack();
         this.engine.delete();
     }
 }
+
+AudioEngine.registry = new FinalizationRegistry((heldValue) => {
+    if (heldValue instanceof Audio.AudioEngine) {
+        heldValue.delete();
+    } else {
+        console.error("Failed to finalize AudioEngine object: Wrong " +
+            "type was passed to the finalization registry.");
+    }
+});

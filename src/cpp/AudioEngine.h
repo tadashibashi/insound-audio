@@ -23,19 +23,30 @@ namespace Insound {
          * Load bank from memory pointer. This memory must be available for
          * the lifetime of its use and is not managed by the audio engine.
          *
-         * @param data       - data pointer (binary data)
+         * @param data       - data pointer (using number type to interop with js)
          * @param bytelength - byte size of the data
          */
-        void loadBank(const char *data, size_t bytelength);
+        void loadBank(size_t data, size_t bytelength);
         void unloadBank();
 
         [[nodiscard]]
-        bool isBankLoaded() const { return track.isLoaded(); }
+        bool isBankLoaded() const { return track && track->isLoaded(); }
+
+        /**
+         * Play current loaded bank, if any is loaded.
+         */
+        void play();
+
+        /**
+         * Set paused status
+         * @param pause - whether to pause
+         */
+        void setPause(bool pause);
 
         void update();
 
     private:
         FMOD::System *sys;
-        MultiTrackAudio track;
+        MultiTrackAudio *track;
     };
 }

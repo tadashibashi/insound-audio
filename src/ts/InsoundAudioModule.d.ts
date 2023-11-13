@@ -64,6 +64,17 @@ export interface AudioEngine {
      * @return whether bank data is loaded.
      */
     isBankLoaded(): boolean;
+
+    /**
+     * Play track if any loaded.
+     */
+    play(): void;
+
+    /**
+     * Set the paused status of track
+     * @param pause - whether to pause
+     */
+    setPause(pause: boolean): void;
 }
 
 export interface InsoundAudioModule extends EmscriptenModule {

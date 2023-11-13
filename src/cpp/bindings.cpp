@@ -15,5 +15,7 @@ EMSCRIPTEN_BINDINGS() {
         .function("loadBank", &T::loadBank)
         .function("unloadBank", &T::unloadBank)
         .function("isBankLoaded", &T::isBankLoaded)
+        .function("play", &T::play)
+        .function("setPause", &T::setPause)
         ;
 }

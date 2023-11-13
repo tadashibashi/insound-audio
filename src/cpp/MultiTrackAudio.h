@@ -17,10 +17,7 @@ namespace Insound {
         ~MultiTrackAudio();
 
         /**
-         * Load fsb file from a memory point. Does not copy the memory or own
-         * it. That memory should be stored until no longer needed by the
-         * MultiTrackAudio object.
-         *
+         * Load fsb file from memory. Copies memory, safe to delete afterward.
          * @param  data       memory pointer to the fsb
          * @param  bytelength byte size of the memory block
          *
@@ -32,6 +29,11 @@ namespace Insound {
 
         [[nodiscard]]
         bool isLoaded() const;
+
+        void play();
+
+
+        void setPause(bool pause);
     private:
         // Pimple idiom
         struct Impl;
