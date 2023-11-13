@@ -1,8 +1,12 @@
 import type { InsoundAudioModule, AudioEngine as Engine } from "./InsoundAudioModule";
 import Module from "../../build/insound-audio";
+import { EmHelper } from "./emscripten";
 
 const Audio = {} as InsoundAudioModule;
 let registry: FinalizationRegistry<Engine>;
+
+type pointer = number;
+const NULL: pointer = 0;
 
 export
 async function initAudio()
@@ -44,8 +48,12 @@ export
 class AudioEngine {
     engine: Engine;
 
+    // pointer to current bank memory
+    currentBank: number;
+
     constructor()
     {
+        // Ensure WebAssembly module was initialized
         if (Audio._free === undefined)
         {
             throw Error("initAudio must be successfully called before " +
@@ -60,6 +68,50 @@ class AudioEngine {
         }
 
         registry.register(this, this.engine, this);
+    }
+
+    /**
+     * Load fsbank data
+     *
+     * @param {ArrayBuffer} buffer - data buffer
+     *
+     */
+    loadBank(buffer: ArrayBuffer)
+    {
+        this.unloadBank();
+
+        const ptr = EmHelper.allocBuffer(Audio, buffer);
+
+        try {
+            this.engine.loadBank(ptr, buffer.byteLength);
+            this.currentBank = ptr;
+        }
+        catch (err)
+        {
+            console.error(err);
+            EmHelper.free(Audio, ptr);
+        }
+    }
+
+    /**
+     * Unload the currently loaded bank data. Safe to call if already unloaded.
+     */
+    unloadBank()
+    {
+        // Check if already unloaded
+        if (this.currentBank === NULL) return;
+
+        // Free data
+        EmHelper.free(Audio, this.currentBank);
+        this.currentBank = NULL;
+    }
+
+    /**
+     * Check if bank is loaded
+     */
+    isBankLoaded()
+    {
+        return this.engine.isBankLoaded();
     }
 
     suspend()
@@ -85,6 +137,7 @@ class AudioEngine {
      */
     release()
     {
+        this.unloadBank();
         this.engine.delete();
     }
 }

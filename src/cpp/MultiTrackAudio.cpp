@@ -1,5 +1,6 @@
 #include "MultiTrackAudio.h"
 #include "common.h"
+#include "fmod_common.h"
 
 #include <fmod.hpp>
 #include <cstdlib>
@@ -27,8 +28,10 @@ namespace Insound {
 
     void MultiTrackAudio::unloadFsb()
     {
-        if (!m->fsb) return;
+        // Check if already unloaded
+        if (!isLoaded()) return;
 
+        // Remove each sound from group
         int count;
         checkResult( m->fsb->getNumSubSounds(&count) );
 
@@ -39,8 +42,14 @@ namespace Insound {
             subsound->setSoundGroup(nullptr);
         }
 
+        // Release bank
         m->fsb->release();
         m->fsb = nullptr;
+    }
+
+    bool MultiTrackAudio::isLoaded() const
+    {
+        return static_cast<bool>(m->fsb);
     }
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength)
@@ -57,7 +66,7 @@ namespace Insound {
         checkResult( m->group->getSystemObject(&sys) );
 
         FMOD::Sound *snd;
-        checkResult( sys->createSound((const char *)data, FMOD_DEFAULT, &exinfo, &snd) );
+        checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT, &exinfo, &snd) );
 
         int count;
         checkResult( snd->getNumSubSounds(&count) );

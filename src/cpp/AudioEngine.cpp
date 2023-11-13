@@ -39,6 +39,18 @@ namespace Insound {
         checkResult(sys->update());
     }
 
+    void AudioEngine::loadBank(const char *data, size_t bytelength)
+    {
+        assert(sys);
+        track.loadFsb(data, bytelength);
+    }
+
+    void AudioEngine::unloadBank()
+    {
+        assert(sys);
+        track.unloadFsb();
+    }
+
     bool AudioEngine::init()
     {
         close();

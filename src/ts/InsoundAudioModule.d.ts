@@ -1,3 +1,5 @@
+export type pointer = number;
+
 export interface AudioEngine {
     /**
      * Initialize the Audio Engine. Must be called before any other function of
@@ -38,6 +40,30 @@ export interface AudioEngine {
      * Update audio engine state, should be called at least 20 times per second
      */
     update(): void;
+
+    /**
+     * Load bank. Data should be available for the lifetime of the
+     * bank's usage, and should be managed externally, as this class does not
+     * take ownership of it.
+     *
+     * @param  dataPtr    const pointer to data
+     * @param  bytelength size of data
+     *
+     */
+    loadBank(dataPtr: pointer, bytelength: number): void;
+
+    /**
+     * Unload bank from storage. Data should be freed externally as this class
+     * does not take ownership of it.
+     */
+    unloadBank(): void;
+
+    /**
+     * Check if bank is currently loaded
+     *
+     * @return whether bank data is loaded.
+     */
+    isBankLoaded(): boolean;
 }
 
 export interface InsoundAudioModule extends EmscriptenModule {

@@ -3,7 +3,7 @@ project(insound-audio)
 
 # Ensure Emscripten-only compilations
 if (NOT EMSCRIPTEN)
-    message (FATAL_ERROR "Sorry, Insound Audio Engine only supports Emscripten builds")
+    message (FATAL_ERROR "Insound Audio Engine only supports Emscripten")
 endif()
 
 set (CMAKE_CXX_STANDARD 20)

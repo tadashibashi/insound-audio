@@ -29,6 +29,9 @@ namespace Insound {
         void loadFsb(const char *data, size_t bytelength);
 
         void unloadFsb();
+
+        [[nodiscard]]
+        bool isLoaded() const;
     private:
         // Pimple idiom
         struct Impl;

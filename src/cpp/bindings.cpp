@@ -12,5 +12,8 @@ EMSCRIPTEN_BINDINGS() {
         .function("resume", &T::resume)
         .function("suspend", &T::suspend)
         .function("update", &T::update)
+        .function("loadBank", &T::loadBank)
+        .function("unloadBank", &T::unloadBank)
+        .function("isBankLoaded", &T::isBankLoaded)
         ;
 }
