@@ -1,7 +1,6 @@
 /**
- * Contains helpers for dealing with Emscripten module.
+ * Contains helpers for working with Emscripten module heap memory.
  */
-
 export namespace EmHelper
 {
     type pointer = number;
@@ -12,6 +11,9 @@ export namespace EmHelper
      * Allocate space for and copy buffer into the Emscripten Module's heap
      * memory. Return a pointer to that memory, which must be freed by the user
      * when no longer necessary.
+     *
+     * @param em  - module to perform allocation on
+     * @param buf - buffer to allocate memory for
      */
     export
     function allocBuffer(em: EmscriptenModule, buf: ArrayBuffer): pointer
@@ -37,7 +39,9 @@ export namespace EmHelper
 
     /**
      * Cleanup function for allocBuffer
-     * @type {[type]}
+     *
+     * @param em   - module to perform free on
+     * @param ptr  - the memory pointer to free
      */
     export
     function free(em: EmscriptenModule, ptr: pointer): void
@@ -52,12 +56,16 @@ export namespace EmHelper
      *
      * Please make sure to call `free` on the returned pointer when no longer
      * needing. Failing to do so will cause a memory leak.
+     *
+     * @param em  - module to perform the allocation on
+     * @param url - url endpoint to retrieve resource from
      */
     export
-    async function allocFile(em: EmscriptenModule, url: string): Promise<pointer>
+    async function allocFile(em: EmscriptenModule, url: string,
+        opts?: RequestInit): Promise<pointer>
     {
         try {
-            const buf = await fetch(url)
+            const buf = await fetch(url, opts)
                 .then(res => res.arrayBuffer());
 
             return allocBuffer(em, buf);
