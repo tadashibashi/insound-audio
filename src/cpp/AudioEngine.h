@@ -39,6 +39,23 @@ namespace Insound {
 
         void stop();
 
+        void setMainVolume(double vol);
+
+        [[nodiscard]]
+        double getMainVolume() const;
+
+        /**
+         * Set the volume of a channel currently playing
+         *
+         * @param ch  channel number
+         * @param vol volume level (0 - off, 1 - 100%)
+         *
+         */
+        void setChannelVolume(int ch, double vol);
+
+        [[nodiscard]]
+        double getChannelVolume(int ch) const;
+
         [[nodiscard]]
         double getPosition() const;
 
@@ -60,6 +77,9 @@ namespace Insound {
 
         [[nodiscard]]
         bool getPause() const;
+
+        [[nodiscard]]
+        int trackCount() const;
 
         void update();
 

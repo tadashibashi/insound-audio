@@ -22,5 +22,10 @@ EMSCRIPTEN_BINDINGS() {
         .function("getPosition", &T::getPosition)
         .function("getLength", &T::getLength)
         .function("getPause", &T::getPause)
+        .function("setMainVolume", &T::setMainVolume)
+        .function("getMainVolume", &T::getMainVolume)
+        .function("setChannelVolume", &T::setChannelVolume)
+        .function("getChannelVolume", &T::getChannelVolume)
+        .function("trackCount", &T::trackCount)
         ;
 }

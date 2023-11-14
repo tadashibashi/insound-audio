@@ -95,6 +95,35 @@ namespace Insound {
         track->seek(seconds);
     }
 
+    void AudioEngine::setMainVolume(double vol)
+    {
+        assert(track);
+        track->setMainVolume(vol);
+    }
+
+    double AudioEngine::getMainVolume() const
+    {
+        assert(track);
+        return track->getMainVolume();
+    }
+
+    void AudioEngine::setChannelVolume(int ch, double vol)
+    {
+        assert(track);
+        return track->setChannelVolume(ch, vol);
+    }
+
+    double AudioEngine::getChannelVolume(int ch) const
+    {
+        assert(track);
+        return track->getChannelVolume(ch);
+    }
+
+    int AudioEngine::trackCount() const
+    {
+        assert(track);
+        return track->trackCount();
+    }
 
     bool AudioEngine::init()
     {

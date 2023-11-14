@@ -208,6 +208,11 @@ class AudioEngine
         return this.engine.getLength();
     }
 
+    get trackCount(): number
+    {
+        return this.engine.trackCount();
+    }
+
     /**
      * Call this manually when no longer using the AudioEngine to clean
      * up underlying AudioEngine object. A finalization registry is used on

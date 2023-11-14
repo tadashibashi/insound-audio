@@ -48,6 +48,20 @@ namespace Insound {
 
         [[nodiscard]]
         bool getPause() const;
+
+
+        [[nodiscard]]
+        double getMainVolume() const;
+
+        void setMainVolume(double vol);
+
+        [[nodiscard]]
+        double getChannelVolume(int ch) const;
+
+        void setChannelVolume(int ch, double vol);
+
+        [[nodiscard]]
+        int trackCount() const;
     private:
         // Pimple idiom
         struct Impl;

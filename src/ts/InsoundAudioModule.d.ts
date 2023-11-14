@@ -109,6 +109,48 @@ export interface AudioEngine {
      * @return track length in seconds.
      */
     getLength(): number;
+
+    /**
+     * Set the main volume
+     * @param volume - level where 0 is off and 1 is 100%
+     */
+    setMainVolume(volume: number): void;
+
+    /**
+     * Get the main volume level
+     *
+     * @return level of the main volume, where 0 is off and 1 is 100%
+     *
+     */
+    getMainVolume(): number;
+
+    /**
+     * Set a specific channel's volume. For now, it gets reset every time
+     * play is called, so it should be called during every call to start if
+     * playback should begin at a differeing level.
+     *
+     * @param ch       - target channel to set
+     * @param volume   - volume level to set, where 0 is off and 1 is
+     *                   100%
+     */
+    setChannelVolume(ch: number, volume: number): void;
+
+    /**
+     * Get a channel's current volume. If channel is currently unavailable such
+     * as when the track is not loaded or not playing, or if it's an invalid
+     * index, -1 will be returned.
+     *
+     * @param  ch   - target channel to get the volume of
+     * @return      volume level of target channel where 0 is off and 1 is 100%
+     *
+     */
+    getChannelVolume(ch: number): number;
+
+
+    /**
+     * Get the number of tracks loaded in the currently loaded fsb.
+     */
+    trackCount(): number;
 }
 
 export interface InsoundAudioModule extends EmscriptenModule {

@@ -3,6 +3,7 @@
 #include "fmod_common.h"
 
 #include <fmod.hpp>
+#include <cassert>
 #include <cstdlib>
 #include <vector>
 
@@ -165,5 +166,47 @@ namespace Insound {
 
         unloadFsb();
         m->fsb = snd;
+    }
+
+    void MultiTrackAudio::setMainVolume(double vol)
+    {
+        checkResult( m->group->setVolume(vol) );
+    }
+
+    double MultiTrackAudio::getMainVolume() const
+    {
+        float vol;
+        checkResult( m->group->getVolume(&vol) );
+        return static_cast<double>(vol);
+    }
+
+    void MultiTrackAudio::setChannelVolume(int ch, double vol)
+    {
+        FMOD::Channel *chan;
+        auto result = m->group->getChannel(ch, &chan);
+        if (result != FMOD_OK) return;
+
+        checkResult( chan->setVolume(vol) );
+    }
+
+    double MultiTrackAudio::getChannelVolume(int ch) const
+    {
+        FMOD::Channel *chan;
+        auto result = m->group->getChannel(ch, &chan);
+        if (result != FMOD_OK) return -1;
+
+        float volume;
+        checkResult( chan->getVolume(&volume) );
+
+        return static_cast<double>(volume);
+    }
+
+    int MultiTrackAudio::trackCount() const
+    {
+        assert(m->fsb);
+
+        int count;
+        checkResult( m->fsb->getNumSubSounds(&count) );
+        return count;
     }
 }
