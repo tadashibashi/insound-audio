@@ -64,6 +64,11 @@ namespace Insound {
         track->setPause(pause);
     }
 
+    bool AudioEngine::getPause() const
+    {
+        return track->getPause();
+    }
+
     double AudioEngine::getPosition() const
     {
         assert(track);

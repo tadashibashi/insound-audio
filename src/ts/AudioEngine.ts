@@ -193,6 +193,11 @@ class AudioEngine
         this.engine.seek(seconds);
     }
 
+    get paused()
+    {
+        return this.engine.getPause();
+    }
+
     get position(): number
     {
         return this.engine.getPosition();

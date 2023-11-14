@@ -45,6 +45,9 @@ namespace Insound {
 
 
         void setPause(bool pause);
+
+        [[nodiscard]]
+        bool getPause() const;
     private:
         // Pimple idiom
         struct Impl;

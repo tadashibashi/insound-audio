@@ -84,6 +84,14 @@ export interface AudioEngine {
     setPause(pause: boolean): void;
 
     /**
+     * Get paused status of track
+     *
+     * @return whether track is paused.
+     *
+     */
+    getPause(): boolean;
+
+    /**
      * Seek to a position in the track
      *
      * @param seconds - number of seconds in the track to seek to

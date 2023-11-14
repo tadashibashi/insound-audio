@@ -58,6 +58,9 @@ namespace Insound {
          */
         void setPause(bool pause);
 
+        [[nodiscard]]
+        bool getPause() const;
+
         void update();
 
     private:

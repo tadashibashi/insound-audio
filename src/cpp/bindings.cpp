@@ -21,5 +21,6 @@ EMSCRIPTEN_BINDINGS() {
         .function("seek", &T::seek)
         .function("getPosition", &T::getPosition)
         .function("getLength", &T::getLength)
+        .function("getPause", &T::getPause)
         ;
 }

@@ -66,12 +66,15 @@ namespace Insound {
 
     void MultiTrackAudio::setPause(bool pause)
     {
-        FMOD::System *sys;
-        checkResult( m->group->getSystemObject(&sys) );
-        FMOD::ChannelGroup *chan;
-        checkResult( sys->getMasterChannelGroup(&chan) );
+        checkResult( m->group->setPaused(pause) );
+    }
 
-        checkResult( chan->setPaused(pause) );
+    bool MultiTrackAudio::getPause() const
+    {
+        bool paused;
+        checkResult( m->group->getPaused(&paused) );
+
+        return paused;
     }
 
     void MultiTrackAudio::seek(double seconds)
