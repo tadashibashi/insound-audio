@@ -7,8 +7,11 @@
 #include <cstdlib>
 #include <vector>
 
-namespace Insound {
-    struct MultiTrackAudio::Impl {
+namespace Insound
+{
+
+    struct MultiTrackAudio::Impl
+    {
     public:
         Impl(std::string_view name, FMOD::System *sys) : group(), fsb()
         {
@@ -29,16 +32,19 @@ namespace Insound {
 
     };
 
+
     MultiTrackAudio::MultiTrackAudio(std::string_view name, FMOD::System *sys)
         : m(new Impl(name, sys))
     {
 
     }
 
+
     MultiTrackAudio::~MultiTrackAudio()
     {
         delete m;
     }
+
 
     void MultiTrackAudio::play()
     {
@@ -56,8 +62,11 @@ namespace Insound {
             checkResult( m->fsb->getSubSound(i, &sound) );
 
             FMOD::Channel *chan;
-
             checkResult( sys->playSound(sound, m->group, true, &chan) );
+
+            // prevent pops when changing channel volume
+            checkResult( chan->setVolumeRamp(true) );
+
             chans.emplace_back(chan);
         }
 
@@ -65,10 +74,12 @@ namespace Insound {
             checkResult(chans[i]->setPaused(false));
     }
 
+
     void MultiTrackAudio::setPause(bool pause)
     {
         checkResult( m->group->setPaused(pause) );
     }
+
 
     bool MultiTrackAudio::getPause() const
     {
@@ -77,6 +88,7 @@ namespace Insound {
 
         return paused;
     }
+
 
     void MultiTrackAudio::seek(double seconds)
     {
@@ -92,6 +104,7 @@ namespace Insound {
         }
     }
 
+
     double MultiTrackAudio::getPosition() const
     {
         int chanCount;
@@ -106,6 +119,7 @@ namespace Insound {
 
         return (double)position * .001;
     }
+
 
     double MultiTrackAudio::getLength() const
     {
@@ -128,10 +142,12 @@ namespace Insound {
         return (double)maxLength * .001;
     }
 
+
     void MultiTrackAudio::stop()
     {
         m->group->stop();
     }
+
 
     void MultiTrackAudio::unloadFsb()
     {
@@ -143,10 +159,12 @@ namespace Insound {
         m->fsb = nullptr;
     }
 
+
     bool MultiTrackAudio::isLoaded() const
     {
         return static_cast<bool>(m->fsb);
     }
+
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength)
     {
@@ -163,15 +181,16 @@ namespace Insound {
         checkResult( sys->createSound(data,
             FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
             FMOD_CREATECOMPRESSEDSAMPLE, &exinfo, &snd) );
-
         unloadFsb();
         m->fsb = snd;
     }
+
 
     void MultiTrackAudio::setMainVolume(double vol)
     {
         checkResult( m->group->setVolume(vol) );
     }
+
 
     double MultiTrackAudio::getMainVolume() const
     {
@@ -179,6 +198,7 @@ namespace Insound {
         checkResult( m->group->getVolume(&vol) );
         return static_cast<double>(vol);
     }
+
 
     void MultiTrackAudio::setChannelVolume(int ch, double vol)
     {
@@ -188,6 +208,7 @@ namespace Insound {
 
         checkResult( chan->setVolume(vol) );
     }
+
 
     double MultiTrackAudio::getChannelVolume(int ch) const
     {
@@ -200,6 +221,7 @@ namespace Insound {
 
         return static_cast<double>(volume);
     }
+
 
     int MultiTrackAudio::trackCount() const
     {
