@@ -64,6 +64,33 @@ namespace Insound {
         track->setPause(pause);
     }
 
+    double AudioEngine::getPosition() const
+    {
+        assert(track);
+        return track->getPosition();
+    }
+
+    double AudioEngine::getLength() const
+    {
+        assert(track);
+        return track->getLength();
+    }
+
+
+    void AudioEngine::stop()
+    {
+        assert(track);
+        track->stop();
+    }
+
+
+    void AudioEngine::seek(double seconds)
+    {
+        assert(track);
+        track->seek(seconds);
+    }
+
+
     bool AudioEngine::init()
     {
         FMOD::System *sys;

@@ -33,6 +33,17 @@ namespace Insound {
         void play();
 
 
+        void seek(double seconds);
+
+        [[nodiscard]]
+        double getPosition() const;
+
+        [[nodiscard]]
+        double getLength() const;
+
+        void stop();
+
+
         void setPause(bool pause);
     private:
         // Pimple idiom

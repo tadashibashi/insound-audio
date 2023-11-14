@@ -37,6 +37,9 @@ interface PointerWrapper {
     ptr: pointer;
 }
 
+/**
+ * Wrapper for WebAssembly memory pointer (in our use for an FSBank)
+ */
 export
 class FSBank
 {
@@ -135,13 +138,14 @@ class AudioEngine
      */
     unloadTrack()
     {
+        this.engine.unloadBank();
         this.track.unload();
     }
 
     /**
      * Check if bank is loaded
      */
-    isBankLoaded()
+    isTrackLoaded()
     {
         return this.engine.isBankLoaded();
     }
@@ -166,9 +170,37 @@ class AudioEngine
         this.engine.play();
     }
 
+    stop()
+    {
+        this.engine.stop();
+    }
+
     setPause(pause: boolean)
     {
         this.engine.setPause(pause);
+    }
+
+    seek(seconds: number)
+    {
+        // Wrap seconds about the track length
+        const length = this.length;
+
+        while (seconds < 0)
+            seconds += length;
+        while (seconds > length)
+            seconds -= length;
+
+        this.engine.seek(seconds);
+    }
+
+    get position(): number
+    {
+        return this.engine.getPosition();
+    }
+
+    get length(): number
+    {
+        return this.engine.getLength();
     }
 
     /**

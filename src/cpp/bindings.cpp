@@ -17,5 +17,9 @@ EMSCRIPTEN_BINDINGS() {
         .function("isBankLoaded", &T::isBankLoaded)
         .function("play", &T::play)
         .function("setPause", &T::setPause)
+        .function("stop", &T::stop)
+        .function("seek", &T::seek)
+        .function("getPosition", &T::getPosition)
+        .function("getLength", &T::getLength)
         ;
 }

@@ -11,9 +11,24 @@ async function main()
     audio.loadTrack(trackBuffer);
 
     window.addEventListener("keypress", ev => {
-        if (ev.code === "KeyP") {
+        switch(ev.code)
+        {
+        case "KeyP":
             console.log("Start track!");
             audio.play();
+            break;
+
+        case "KeyZ":
+            console.log("Seek Left");
+            audio.seek(audio.position-.75);
+            console.log("CurrentPosition:", audio.position);
+            break;
+
+        case "KeyX":
+            console.log("Seek Right");
+            audio.seek(audio.position+.75);
+            console.log("CurrentPosition:", audio.position);
+            break;
         }
     });
 

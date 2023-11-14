@@ -74,6 +74,61 @@ namespace Insound {
         checkResult( chan->setPaused(pause) );
     }
 
+    void MultiTrackAudio::seek(double seconds)
+    {
+        int chanCount;
+        checkResult( m->group->getNumChannels(&chanCount) );
+
+        for (int i = 0; i < chanCount; ++i)
+        {
+            FMOD::Channel *chan;
+            checkResult( m->group->getChannel(i, &chan) );
+
+            checkResult( chan->setPosition(seconds * 1000, FMOD_TIMEUNIT_MS) );
+        }
+    }
+
+    double MultiTrackAudio::getPosition() const
+    {
+        int chanCount;
+        checkResult( m->group->getNumChannels(&chanCount) );
+        if (chanCount == 0) return -1.0;
+
+        FMOD::Channel *chan;
+        checkResult( m->group->getChannel(0, &chan) );
+
+        unsigned int position;
+        checkResult( chan->getPosition(&position, FMOD_TIMEUNIT_MS) );
+
+        return (double)position * .001;
+    }
+
+    double MultiTrackAudio::getLength() const
+    {
+        int numSounds;
+        checkResult( m->fsb->getNumSubSounds(&numSounds) );
+
+        unsigned int maxLength = 0;
+        for (int i = 0; i < numSounds; ++i)
+        {
+            FMOD::Sound *sound;
+            checkResult( m->fsb->getSubSound(i, &sound));
+
+            unsigned int length;
+            checkResult( sound->getLength(&length, FMOD_TIMEUNIT_MS) );
+
+            if (length > maxLength)
+                maxLength = length;
+        }
+
+        return (double)maxLength * .001;
+    }
+
+    void MultiTrackAudio::stop()
+    {
+        m->group->stop();
+    }
+
     void MultiTrackAudio::unloadFsb()
     {
         // Check if already unloaded

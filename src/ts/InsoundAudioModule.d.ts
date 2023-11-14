@@ -71,10 +71,36 @@ export interface AudioEngine {
     play(): void;
 
     /**
+     * Stop track
+     */
+    stop(): void;
+
+    /**
      * Set the paused status of track
+     *
      * @param pause - whether to pause
+     *
      */
     setPause(pause: boolean): void;
+
+    /**
+     * Seek to a position in the track
+     *
+     * @param seconds - number of seconds in the track to seek to
+     *
+     */
+    seek(seconds: number): void;
+
+    /**
+     * Get the track's current position in seconds or -1 if track is not loaded
+     */
+    getPosition(): number;
+
+    /**
+     * Get the currently loaded track's length in seconds
+     * @return track length in seconds.
+     */
+    getLength(): number;
 }
 
 export interface InsoundAudioModule extends EmscriptenModule {

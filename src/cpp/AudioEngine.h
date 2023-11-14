@@ -37,6 +37,21 @@ namespace Insound {
          */
         void play();
 
+        void stop();
+
+        [[nodiscard]]
+        double getPosition() const;
+
+        [[nodiscard]]
+        double getLength() const;
+
+        /**
+         * Seek to a postiion in the audio
+         *
+         * @param seconds - time in seconds
+         */
+        void seek(double seconds);
+
         /**
          * Set paused status
          * @param pause - whether to pause
