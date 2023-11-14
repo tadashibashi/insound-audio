@@ -208,6 +208,26 @@ class AudioEngine
         return this.engine.getLength();
     }
 
+    getMainVolume()
+    {
+        return this.engine.getMainVolume();
+    }
+
+    setMainVolume(volume: number)
+    {
+        this.engine.setMainVolume(volume);
+    }
+
+    getChannelVolume(ch: number): number
+    {
+        return this.engine.getChannelVolume(ch);
+    }
+
+    setChannelVolume(ch: number, volume: number): void
+    {
+        this.engine.setChannelVolume(ch, volume);
+    }
+
     get trackCount(): number
     {
         return this.engine.trackCount();

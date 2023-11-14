@@ -5,6 +5,7 @@
 #include <fmod.hpp>
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 namespace Insound
@@ -204,7 +205,11 @@ namespace Insound
     {
         FMOD::Channel *chan;
         auto result = m->group->getChannel(ch, &chan);
-        if (result != FMOD_OK) return;
+        if (result != FMOD_OK)
+        {
+            std::cerr << "Failed to get channel " << ch << '\n';
+            return;
+        }
 
         checkResult( chan->setVolume(vol) );
     }
