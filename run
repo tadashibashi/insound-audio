@@ -117,7 +117,7 @@ def config(build_type="Debug"):
         setup()
 
     # Run configuration
-    os.system("cmake -S . -B build -G Ninja "
+    os.system(f"cmake -S . -B {BASEDIR}/build -G Ninja "
               f"-DCMAKE_TOOLCHAIN_FILE={TOOLCHAIN_FILE} "
               f"-DCMAKE_BUILD_TYPE={build_type.title()} "
               "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON ")
@@ -128,7 +128,7 @@ def build(build_type="Release"):
         Build the project
     """
     config(build_type)
-    os.system("cmake --build build")
+    os.system(f"cmake --build {BASEDIR}/build")
 
 
 def help():
