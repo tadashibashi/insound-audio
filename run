@@ -17,10 +17,12 @@ import sys
 
 try:
     import watchdog
-    from scripts import watch as scripts_watch
     has_watcher = True
 except ImportError:
     has_watcher = False
+
+if has_watcher:
+    from scripts import watch as scripts_watch
 
 try:
     import psutil
