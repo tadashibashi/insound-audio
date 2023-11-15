@@ -30,8 +30,6 @@ try:
 except ImportError:
     has_psutil = False
 
-import scripts
-
 BASEDIR: str = os.path.dirname(__file__)
 
 
