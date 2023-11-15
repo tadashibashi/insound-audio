@@ -16,6 +16,7 @@ import signal
 import sys
 
 try:
+    import watchdog
     from scripts import watch as scripts_watch
     has_watcher = True
 except ImportError:
