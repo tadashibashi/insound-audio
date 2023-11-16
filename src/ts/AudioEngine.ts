@@ -1,9 +1,6 @@
-import type { InsoundAudioModule, AudioEngine as Engine } from "./InsoundAudioModule";
-import Module from "../../build/insound-audio";
 import { EmHelper } from "./emscripten";
 
 const Audio = {} as InsoundAudioModule;
-
 
 type pointer = number;
 const NULL: pointer = 0;
@@ -24,7 +21,8 @@ async function initAudio()
                 clearTimeout(timeout);
                 resolve();
             };
-            Module(Audio);
+
+            AudioModule(Audio);
         });
 
     } catch(err) {

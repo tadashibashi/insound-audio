@@ -1,6 +1,6 @@
-export type pointer = number;
+declare type pointer = number;
 
-export interface AudioEngine {
+declare interface InsoundAudioEngine {
     /**
      * Initialize the Audio Engine. Must be called before any other function of
      * the audio engine is called.
@@ -153,8 +153,10 @@ export interface AudioEngine {
     trackCount(): number;
 }
 
-export interface InsoundAudioModule extends EmscriptenModule {
+declare interface InsoundAudioModule extends EmscriptenModule {
     AudioEngine: {
-        new (): AudioEngine;
+        new (): InsoundAudioEngine;
     }
 }
+
+declare const AudioModule: (module: any) => Promise<void>;
