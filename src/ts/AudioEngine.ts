@@ -218,6 +218,7 @@ class AudioEngine
     setMainVolume(volume: number)
     {
         this.engine.setMainVolume(volume);
+        return this;
     }
 
     getChannelVolume(ch: number): number
@@ -225,14 +226,26 @@ class AudioEngine
         return this.engine.getChannelVolume(ch);
     }
 
-    setChannelVolume(ch: number, volume: number): void
+    setChannelVolume(ch: number, volume: number)
     {
         this.engine.setChannelVolume(ch, volume);
+        return this;
     }
 
     get trackCount(): number
     {
         return this.engine.trackCount();
+    }
+
+    get looping(): boolean
+    {
+        return this.engine.isLooping();
+    }
+
+    setLooping(looping: boolean)
+    {
+        this.engine.setLooping(looping);
+        return this;
     }
 
     /**

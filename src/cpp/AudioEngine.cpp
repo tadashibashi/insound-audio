@@ -125,6 +125,18 @@ namespace Insound {
         return track->trackCount();
     }
 
+    bool AudioEngine::isLooping() const
+    {
+        assert(track);
+        return track->isLooping();
+    }
+
+    void AudioEngine::setLooping(bool looping)
+    {
+        assert(track);
+        track->setLooping(looping);
+    }
+
     bool AudioEngine::init()
     {
         FMOD::System *sys;

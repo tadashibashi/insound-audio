@@ -79,6 +79,11 @@ namespace Insound {
         bool getPause() const;
 
         [[nodiscard]]
+        bool isLooping() const;
+
+        void setLooping(bool looping);
+
+        [[nodiscard]]
         int trackCount() const;
 
         void update();

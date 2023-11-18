@@ -151,6 +151,18 @@ declare interface InsoundAudioEngine {
      * Get the number of tracks loaded in the currently loaded fsb.
      */
     trackCount(): number;
+
+    /**
+     * Get whether track is set to loop. True by default, when loaded.
+     */
+    isLooping(): boolean;
+
+    /**
+     * Set track looping behavior
+     *
+     * @param looping - whether track should loop.
+     */
+    setLooping(looping: boolean): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

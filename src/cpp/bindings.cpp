@@ -27,5 +27,7 @@ EMSCRIPTEN_BINDINGS() {
         .function("setChannelVolume", &T::setChannelVolume)
         .function("getChannelVolume", &T::getChannelVolume)
         .function("trackCount", &T::trackCount)
+        .function("isLooping", &T::isLooping)
+        .function("setLooping", &T::setLooping)
         ;
 }

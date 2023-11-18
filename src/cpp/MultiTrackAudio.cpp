@@ -236,4 +236,38 @@ namespace Insound
         checkResult( m->fsb->getNumSubSounds(&count) );
         return count;
     }
+
+    bool MultiTrackAudio::isLooping() const
+    {
+        assert(m->fsb);
+
+        // only need to check first channel, since all should be uniform
+        FMOD::Channel *chan;
+        auto result = m->group->getChannel(0, &chan);
+        assert(result == FMOD_OK);
+
+        FMOD_MODE mode;
+        checkResult( chan->getMode(&mode) );
+
+        return mode & (FMOD_LOOP_NORMAL | FMOD_LOOP_BIDI);
+    }
+
+    void MultiTrackAudio::setLooping(bool looping)
+    {
+        assert(m->fsb);
+
+        int chans;
+        checkResult( m->group->getNumChannels(&chans) );
+
+        for (int i = 0; i < chans; ++i)
+        {
+            FMOD::Channel *chan;
+            checkResult( m->group->getChannel(i, &chan) );
+            FMOD_MODE mode;
+            checkResult( chan->getMode(&mode) );
+
+            mode &= ~FMOD_LOOP_OFF; // unset loop off bit
+            checkResult( chan->setMode(mode | FMOD_LOOP_NORMAL) );
+        }
+    }
 }

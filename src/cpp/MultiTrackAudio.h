@@ -51,6 +51,16 @@ namespace Insound {
 
 
         [[nodiscard]]
+        bool isLooping() const;
+
+        /**
+         * Set whether the track should loop
+         * @param looping - whether track should loop
+         */
+        void setLooping(bool looping);
+
+
+        [[nodiscard]]
         double getMainVolume() const;
 
         void setMainVolume(double vol);
