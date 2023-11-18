@@ -166,7 +166,7 @@ namespace Insound {
             return false;
         }
 
-        result = sys->setDSPBufferSize(2048, 4);
+        result = sys->setDSPBufferSize(2048, 2);
         if (result != FMOD_OK)
         {
             sys->release();
