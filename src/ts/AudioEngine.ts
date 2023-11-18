@@ -89,6 +89,7 @@ class AudioEngine
 
     // container managing the current track data
     track: FSBank;
+    updateHandler: (() => void) | null;
 
     constructor()
     {
@@ -107,8 +108,13 @@ class AudioEngine
         }
 
         this.track = new FSBank();
+        this.updateHandler = null;
 
         AudioEngine.registry.register(this, this.engine, this);
+    }
+
+    onUpdate(callback: () => void) {
+        this.updateHandler = callback;
     }
 
     /**
