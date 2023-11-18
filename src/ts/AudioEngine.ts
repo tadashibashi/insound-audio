@@ -83,9 +83,9 @@ FSBank.registry = new FinalizationRegistry<PointerWrapper>((heldValue) => {
 export
 class AudioEngine
 {
-    static registry: FinalizationRegistry<Engine>;
+    static registry: FinalizationRegistry<InsoundAudioEngine>;
 
-    engine: Engine;
+    engine: InsoundAudioEngine;
 
     // container managing the current track data
     track: FSBank;
@@ -123,6 +123,8 @@ class AudioEngine
 
         try {
             this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
+            this.engine.play();
+            this.engine.setPause(true);
         }
         catch (err)
         {
@@ -165,12 +167,14 @@ class AudioEngine
 
     play()
     {
-        this.engine.play();
+        this.engine.seek(0);
+        this.engine.setPause(false);
     }
 
     stop()
     {
-        this.engine.stop();
+        this.engine.seek(0);
+        this.engine.setPause(true);
     }
 
     setPause(pause: boolean)
