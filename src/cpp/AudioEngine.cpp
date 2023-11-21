@@ -9,9 +9,8 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace Insound {
-
-
+namespace Insound
+{
     AudioEngine::AudioEngine(): track()
     {
 
@@ -58,10 +57,10 @@ namespace Insound {
         track->play();
     }
 
-    void AudioEngine::setPause(bool pause)
+    void AudioEngine::setPause(bool pause, float seconds)
     {
         assert(track);
-        track->setPause(pause);
+        track->setPause(pause, seconds);
     }
 
     bool AudioEngine::getPause() const
@@ -135,6 +134,12 @@ namespace Insound {
     {
         assert(track);
         track->setLooping(looping);
+    }
+
+    void AudioEngine::fade(float from, float to, float seconds)
+    {
+        assert(track);
+        track->fade(from, to, seconds);
     }
 
     bool AudioEngine::init()

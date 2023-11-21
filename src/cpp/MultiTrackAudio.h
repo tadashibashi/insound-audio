@@ -43,8 +43,7 @@ namespace Insound {
 
         void stop();
 
-
-        void setPause(bool pause);
+        void setPause(bool pause, float seconds);
 
         [[nodiscard]]
         bool getPause() const;
@@ -52,6 +51,10 @@ namespace Insound {
 
         [[nodiscard]]
         bool isLooping() const;
+
+        // Fade main volume to a certain level
+        // Returns the resultant dsp clock time at the end of the ramp.
+        int fade(float from, float to, float seconds);
 
         /**
          * Set whether the track should loop
@@ -72,6 +75,9 @@ namespace Insound {
 
         [[nodiscard]]
         int trackCount() const;
+
+        [[nodiscard]]
+        int samplerate() const;
     private:
         // Pimple idiom
         struct Impl;

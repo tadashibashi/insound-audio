@@ -14,7 +14,7 @@ namespace Insound
     struct MultiTrackAudio::Impl
     {
     public:
-        Impl(std::string_view name, FMOD::System *sys) : group(), fsb()
+        Impl(std::string_view name, FMOD::System *sys) : group(), fsb(), paused(false)
         {
             FMOD::ChannelGroup *group;
             checkResult(sys->createChannelGroup(name.data(), &group));
@@ -28,8 +28,32 @@ namespace Insound
             group->release();
         }
 
+        FMOD::System *systemObject() const
+        {
+            FMOD::System *system;
+            checkResult( group->getSystemObject(&system) );
+            return system;
+        }
+
+        [[nodiscard]]
+        int samplerate() const
+        {
+            int samplerate;
+            checkResult( systemObject()->getSoftwareFormat(&samplerate,
+                nullptr, nullptr) );
+            return samplerate;
+        }
+
+        FMOD::ChannelGroup *parentGroup() const
+        {
+            FMOD::ChannelGroup *parent;
+            checkResult( systemObject()->getMasterChannelGroup(&parent) );
+            return parent;
+        }
+
         FMOD::ChannelGroup *group;
         FMOD::Sound *fsb;
+        bool paused;
 
     };
 
@@ -45,7 +69,6 @@ namespace Insound
     {
         delete m;
     }
-
 
     void MultiTrackAudio::play()
     {
@@ -73,21 +96,110 @@ namespace Insound
 
         for (int i = 0; i < numSounds; ++i)
             checkResult(chans[i]->setPaused(false));
+
+        m->paused = false;
     }
 
 
-    void MultiTrackAudio::setPause(bool pause)
+    int MultiTrackAudio::fade(float from, float to, float seconds)
     {
-        checkResult( m->group->setPaused(pause) );
+        // Get parent clock
+        unsigned long long parentclock;
+        auto parent = m->parentGroup();
+        checkResult( parent->getDSPClock(nullptr, &parentclock) );
+
+        // Get the current fade level
+        unsigned int numPoints;
+        std::vector<unsigned long long> clocks;
+        std::vector<float> volumes;
+
+        checkResult( parent->getFadePoints(&numPoints, nullptr, nullptr) );
+
+        if (numPoints)
+        {
+            clocks.assign(numPoints, 0);
+            volumes.assign(numPoints, 0);
+        }
+
+        checkResult( parent->getFadePoints(&numPoints, clocks.data(), volumes.data()) );
+
+        std::cout << numPoints << '\n';
+
+        int numPointsInt = (int)numPoints;
+        for (int i = 0; i < numPointsInt-1; ++i)
+        {
+            if (clocks[i] <= parentclock && clocks[i+1] >= parentclock)
+            {
+                float percentage = ((float)parentclock - clocks[i]) / (clocks[i+1] - clocks[i]);
+                from = (volumes[i+1] - volumes[i]) * percentage;
+                break;
+            }
+        }
+
+        // Remove pre-existing fade points from now to track-length from now.
+        auto length = getLength() * m->samplerate();
+        checkResult( parent->removeFadePoints(
+            0, parentclock + length) );
+
+        if (seconds == 0)
+        {
+            auto currentPosition = getPosition();
+            if (currentPosition == 0)
+            {
+                checkResult( parent->addFadePoint(0, to) );
+                return parentclock;
+            }
+            else
+            {
+                checkResult( parent->setFadePointRamp(parentclock, to));
+                return parentclock + 64;
+            }
+        }
+        else
+        {
+            // Fade from
+            checkResult( parent->addFadePoint(
+                parentclock, from) );
+
+            // Fade to target volume
+            const int rampEnd = parentclock + m->samplerate() * seconds;
+            checkResult( parent->addFadePoint(rampEnd, to) );
+
+            return rampEnd;
+        }
+
+    }
+
+
+    void MultiTrackAudio::setPause(bool pause, float seconds)
+    {
+        if (!isLoaded() || getPause() == pause) return;
+
+        if (pause)
+        {
+            // fade to zero quickly, and delay pause
+            auto rampEnd = fade(1, 0, seconds);
+
+            checkResult( m->group->setDelay(0, rampEnd, false) );
+            m->paused = pause;
+        }
+        else
+        {
+            // fade-in
+            auto rampEnd = fade(0, 1, seconds);
+
+            unsigned long long parentclock;
+            checkResult( m->group->getDSPClock(nullptr, &parentclock) );
+
+            checkResult( m->group->setDelay(parentclock, 0, false) );
+            m->paused = pause;
+        }
     }
 
 
     bool MultiTrackAudio::getPause() const
     {
-        bool paused;
-        checkResult( m->group->getPaused(&paused) );
-
-        return paused;
+        return m->paused;
     }
 
 

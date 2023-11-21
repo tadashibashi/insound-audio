@@ -81,7 +81,7 @@ declare interface InsoundAudioEngine {
      * @param pause - whether to pause
      *
      */
-    setPause(pause: boolean): void;
+    setPause(pause: boolean, seconds: number): void;
 
     /**
      * Get paused status of track
@@ -163,6 +163,11 @@ declare interface InsoundAudioEngine {
      * @param looping - whether track should loop.
      */
     setLooping(looping: boolean): void;
+
+    /**
+     * Fade from one volume to another in a number of seconds
+     */
+    fade(from: number, to: number, seconds: number): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

@@ -113,7 +113,12 @@ class AudioEngine
         AudioEngine.registry.register(this, this.engine, this);
     }
 
-    onUpdate(callback: () => void) {
+    /**
+     * Set the on update callback, gets called 60fps+ when updating sound engine.
+     *
+     * @param callback - callback to set.
+     */
+    onUpdate(callback: () => void): void {
         this.updateHandler = callback;
     }
 
@@ -130,7 +135,7 @@ class AudioEngine
         try {
             this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
             this.engine.play();
-            this.engine.setPause(true);
+            this.engine.setPause(true, 0);
         }
         catch (err)
         {
@@ -174,18 +179,18 @@ class AudioEngine
     play()
     {
         this.engine.seek(0);
-        this.engine.setPause(false);
+        this.engine.setPause(false, 0);
     }
 
     stop()
     {
         this.engine.seek(0);
-        this.engine.setPause(true);
+        this.engine.setPause(true, .1);
     }
 
-    setPause(pause: boolean)
+    setPause(pause: boolean, seconds: number=.1)
     {
-        this.engine.setPause(pause);
+        this.engine.setPause(pause, seconds);
     }
 
     seek(seconds: number)
@@ -251,6 +256,12 @@ class AudioEngine
     setLooping(looping: boolean)
     {
         this.engine.setLooping(looping);
+        return this;
+    }
+
+    fade(from: number, to: number, seconds: number): AudioEngine
+    {
+        this.engine.fade(from, to, seconds);
         return this;
     }
 

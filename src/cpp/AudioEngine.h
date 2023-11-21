@@ -3,12 +3,15 @@
 #include "MultiTrackAudio.h"
 
 // Forward declaration
-namespace FMOD {
+namespace FMOD
+{
     class System;
 }
 
-namespace Insound {
-    class AudioEngine {
+namespace Insound
+{
+    class AudioEngine
+    {
     public:
         AudioEngine();
         ~AudioEngine();
@@ -73,7 +76,7 @@ namespace Insound {
          * Set paused status
          * @param pause - whether to pause
          */
-        void setPause(bool pause);
+        void setPause(bool pause, float seconds);
 
         [[nodiscard]]
         bool getPause() const;
@@ -85,6 +88,8 @@ namespace Insound {
 
         [[nodiscard]]
         int trackCount() const;
+
+        void fade(float from, float to, float seconds);
 
         void update();
 

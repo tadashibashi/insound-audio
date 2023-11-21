@@ -29,5 +29,6 @@ EMSCRIPTEN_BINDINGS() {
         .function("trackCount", &T::trackCount)
         .function("isLooping", &T::isLooping)
         .function("setLooping", &T::setLooping)
+        .function("fade", &T::fade)
         ;
 }
