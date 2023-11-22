@@ -54,7 +54,7 @@ namespace Insound {
 
         // Fade main volume to a certain level
         // Returns the resultant dsp clock time at the end of the ramp.
-        int fade(float from, float to, float seconds);
+        int fadeTo(float to, float seconds);
 
         /**
          * Set whether the track should loop

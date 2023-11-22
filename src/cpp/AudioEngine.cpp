@@ -136,10 +136,10 @@ namespace Insound
         track->setLooping(looping);
     }
 
-    void AudioEngine::fade(float from, float to, float seconds)
+    void AudioEngine::fadeTo(float to, float seconds)
     {
         assert(track);
-        track->fade(from, to, seconds);
+        track->fadeTo(to, seconds);
     }
 
     bool AudioEngine::init()

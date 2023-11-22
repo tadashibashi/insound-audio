@@ -167,7 +167,7 @@ declare interface InsoundAudioEngine {
     /**
      * Fade from one volume to another in a number of seconds
      */
-    fade(from: number, to: number, seconds: number): void;
+    fadeTo(to: number, seconds: number): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

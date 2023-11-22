@@ -259,9 +259,9 @@ class AudioEngine
         return this;
     }
 
-    fade(from: number, to: number, seconds: number): AudioEngine
+    fadeTo(to: number, seconds: number): AudioEngine
     {
-        this.engine.fade(from, to, seconds);
+        this.engine.fadeTo(to, seconds);
         return this;
     }
 

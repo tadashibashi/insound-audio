@@ -14,7 +14,7 @@ namespace Insound
     struct MultiTrackAudio::Impl
     {
     public:
-        Impl(std::string_view name, FMOD::System *sys) : group(), fsb(), paused(false)
+        Impl(std::string_view name, FMOD::System *sys) : group(), fsb(), paused(false), lastFadePoint(1.f)
         {
             FMOD::ChannelGroup *group;
             checkResult(sys->createChannelGroup(name.data(), &group));
@@ -54,6 +54,7 @@ namespace Insound
         FMOD::ChannelGroup *group;
         FMOD::Sound *fsb;
         bool paused;
+        float lastFadePoint;
 
     };
 
@@ -101,7 +102,7 @@ namespace Insound
     }
 
 
-    int MultiTrackAudio::fade(float from, float to, float seconds)
+    int MultiTrackAudio::fadeTo(float to, float seconds)
     {
         // Get parent clock
         unsigned long long parentclock;
@@ -110,31 +111,34 @@ namespace Insound
 
         // Get the current fade level
         unsigned int numPoints;
-        std::vector<unsigned long long> clocks;
-        std::vector<float> volumes;
-
         checkResult( parent->getFadePoints(&numPoints, nullptr, nullptr) );
 
+        float from;
         if (numPoints)
         {
-            clocks.assign(numPoints, 0);
-            volumes.assign(numPoints, 0);
-        }
+            std::vector<unsigned long long> clocks(numPoints, 0);
+            std::vector<float> volumes(numPoints, 0);
 
-        checkResult( parent->getFadePoints(&numPoints, clocks.data(), volumes.data()) );
+            checkResult( parent->getFadePoints(&numPoints, clocks.data(),
+                volumes.data()) );
 
-        std::cout << numPoints << '\n';
-
-        int numPointsInt = (int)numPoints;
-        for (int i = 0; i < numPointsInt-1; ++i)
-        {
-            if (clocks[i] <= parentclock && clocks[i+1] >= parentclock)
+            int numPointsInt = (int)numPoints;
+            for (int i = 0; i < numPointsInt-1; ++i)
             {
-                float percentage = ((float)parentclock - clocks[i]) / (clocks[i+1] - clocks[i]);
-                from = (volumes[i+1] - volumes[i]) * percentage;
-                break;
+                if (clocks[i] <= parentclock && clocks[i+1] >= parentclock)
+                {
+                    float percentage = ((float)parentclock - clocks[i]) / (clocks[i+1] - clocks[i]);
+                    from = (volumes[i+1] - volumes[i]) * percentage;
+                    break;
+                }
             }
         }
+        else
+        {
+            from = m->lastFadePoint;
+        }
+
+        m->lastFadePoint = to;
 
         // Remove pre-existing fade points from now to track-length from now.
         auto length = getLength() * m->samplerate();
@@ -178,7 +182,7 @@ namespace Insound
         if (pause)
         {
             // fade to zero quickly, and delay pause
-            auto rampEnd = fade(1, 0, seconds);
+            auto rampEnd = fadeTo(0, seconds);
 
             checkResult( m->group->setDelay(0, rampEnd, false) );
             m->paused = pause;
@@ -186,7 +190,7 @@ namespace Insound
         else
         {
             // fade-in
-            auto rampEnd = fade(0, 1, seconds);
+            auto rampEnd = fadeTo(1, seconds);
 
             unsigned long long parentclock;
             checkResult( m->group->getDSPClock(nullptr, &parentclock) );
@@ -295,7 +299,9 @@ namespace Insound
             FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
             FMOD_CREATECOMPRESSEDSAMPLE, &exinfo, &snd) );
         unloadFsb();
+
         m->fsb = snd;
+        m->lastFadePoint = 1.f;
     }
 
 

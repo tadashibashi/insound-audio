@@ -89,7 +89,7 @@ namespace Insound
         [[nodiscard]]
         int trackCount() const;
 
-        void fade(float from, float to, float seconds);
+        void fadeTo(float to, float seconds);
 
         void update();
 
