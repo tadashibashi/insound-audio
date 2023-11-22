@@ -49,11 +49,14 @@ namespace Insound
         [[nodiscard]]
         float volume() const;
 
+        [[nodiscard]]
+        bool isGroup() const { return m_isGroup; }
+
         FMOD::ChannelControl *raw() const { return chan; }
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;
         int samplerate;
-        bool isGroup;
+        bool m_isGroup;
     };
 }

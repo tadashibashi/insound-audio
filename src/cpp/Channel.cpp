@@ -11,7 +11,8 @@
 namespace Insound
 {
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
-        FMOD::System *system) : chan(), lastFadePoint(1.f), isGroup(false), samplerate()
+        FMOD::System *system) :
+            chan(), lastFadePoint(1.f), m_isGroup(false), samplerate()
     {
         FMOD::Channel *tempChan;
         checkResult( system->playSound(sound, group, true, &tempChan) );
@@ -25,7 +26,7 @@ namespace Insound
 
 
     Channel::Channel(FMOD::ChannelGroup *chan) :
-        chan(chan), lastFadePoint(1.f), isGroup(true), samplerate()
+        chan(chan), lastFadePoint(1.f), m_isGroup(true), samplerate()
     {
         FMOD::System *system;
         checkResult( chan->getSystemObject(&system) );
@@ -129,7 +130,7 @@ namespace Insound
 
     float Channel::position() const
     {
-        if (isGroup)
+        if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::position when "
                 "underlying type is an FMOD::ChannelGroup");
         unsigned int position;
