@@ -35,13 +35,6 @@ namespace Insound
         [[nodiscard]]
         bool isBankLoaded() const { return track && track->isLoaded(); }
 
-        /**
-         * Play current loaded bank, if any is loaded.
-         */
-        void play();
-
-        void stop();
-
         void setMainVolume(double vol);
 
         [[nodiscard]]

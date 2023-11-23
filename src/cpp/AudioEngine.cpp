@@ -51,12 +51,6 @@ namespace Insound
         track->unloadFsb();
     }
 
-    void AudioEngine::play()
-    {
-        assert(track);
-        track->play();
-    }
-
     void AudioEngine::setPause(bool pause, float seconds)
     {
         assert(track);
@@ -79,14 +73,6 @@ namespace Insound
         assert(track);
         return track->getLength();
     }
-
-
-    void AudioEngine::stop()
-    {
-        assert(track);
-        track->stop();
-    }
-
 
     void AudioEngine::seek(double seconds)
     {
@@ -186,7 +172,6 @@ namespace Insound
             std::cerr << FMOD_ErrorString(result) << '\n';
             return false;
         }
-
 
         if (this->track)
         {

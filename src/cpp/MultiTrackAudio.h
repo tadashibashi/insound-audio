@@ -30,9 +30,6 @@ namespace Insound {
         [[nodiscard]]
         bool isLoaded() const;
 
-        void play();
-
-
         void seek(double seconds);
 
         [[nodiscard]]
@@ -40,8 +37,6 @@ namespace Insound {
 
         [[nodiscard]]
         double getLength() const;
-
-        void stop();
 
         void setPause(bool pause, float seconds);
 
@@ -53,8 +48,7 @@ namespace Insound {
         bool isLooping() const;
 
         // Fade main volume to a certain level
-        // Returns the resultant dsp clock time at the end of the ramp.
-        int fadeTo(float to, float seconds);
+        void fadeTo(float to, float seconds);
 
         /**
          * Set whether the track should loop

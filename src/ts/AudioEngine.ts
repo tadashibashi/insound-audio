@@ -134,8 +134,6 @@ class AudioEngine
 
         try {
             this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
-            this.engine.play();
-            this.engine.setPause(true, 0);
         }
         catch (err)
         {

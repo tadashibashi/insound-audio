@@ -12,38 +12,68 @@ namespace Insound
 {
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
         FMOD::System *system) :
-            chan(), lastFadePoint(1.f), m_isGroup(false), samplerate()
+            chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
+            m_isPaused()
     {
-        FMOD::Channel *tempChan;
-        checkResult( system->playSound(sound, group, true, &tempChan) );
-
-        this->chan = tempChan;
-
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
+
+        FMOD::Channel *tempChan;
+        checkResult( system->playSound(sound, group, false, &tempChan) );
+
+        this->samplerate = rate;
+        this->chan = static_cast<FMOD::ChannelControl *>(tempChan);
+    }
+
+
+    Channel::Channel(std::string_view name, FMOD::System *system) :
+        chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
+        m_isPaused()
+    {
+        int rate;
+        checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
+
+        FMOD::ChannelGroup *group;
+        checkResult( system->createChannelGroup(name.data(), &group) );
+
+        this->chan = static_cast<FMOD::ChannelControl *>(group);
         this->samplerate = rate;
     }
 
 
-    Channel::Channel(FMOD::ChannelGroup *chan) :
-        chan(chan), lastFadePoint(1.f), m_isGroup(true), samplerate()
+    Channel::Channel(Channel &&other) : chan(other.chan),
+        lastFadePoint(other.lastFadePoint), m_isGroup(other.m_isGroup),
+        samplerate(other.samplerate), m_isPaused(other.m_isPaused)
     {
-        FMOD::System *system;
-        checkResult( chan->getSystemObject(&system) );
+        other.chan = nullptr;
+    }
 
-        int rate;
-        checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
-        this->samplerate = rate;
+    Channel &Channel::operator=(Channel &&other)
+    {
+        return {other};
     }
 
 
     Channel::~Channel()
     {
-        const auto result = this->chan->stop();
-        if (result != FMOD_OK)
+        if (chan) // check for chan, since it may have been moved
         {
-            std::cerr << "Channel failed to stop: " <<
-                FMOD_ErrorString(result) << '\n';
+            auto result = this->chan->stop();
+            if (result != FMOD_OK)
+            {
+                std::cerr << "Channel failed to stop: " <<
+                    FMOD_ErrorString(result) << '\n';
+            }
+
+            if (m_isGroup)
+            {
+                result = static_cast<FMOD::ChannelGroup *>(chan)->release();
+                if (result != FMOD_OK)
+                {
+                    std::cerr << "Channel failed to release: " <<
+                        FMOD_ErrorString(result) << '\n';
+                }
+            }
         }
     }
 
@@ -108,13 +138,54 @@ namespace Insound
         return fade(fadeLevel(), vol, seconds);
     }
 
+
+    Channel &Channel::paused(bool value, float seconds)
+    {
+        if (this->paused() == value) return *this;
+
+        // Get current parent clock to time pause below
+        unsigned long long clock;
+        checkResult( chan->getDSPClock(nullptr, &clock) );
+
+        if (value) // pause
+        {
+            // fade-out in `seconds`
+            fadeTo(0, seconds);
+
+            // pause at ramp end
+            auto rampEnd = clock + samplerate * seconds;
+            checkResult( chan->setDelay(0, rampEnd, false) );
+        }
+        else       // unpause
+        {
+            // fade-in in `seconds`
+            fadeTo(1, seconds);
+
+            // unpause right now
+            checkResult( chan->setDelay(clock, 0, false) );
+        }
+
+        m_isPaused = value;
+        return *this;
+    }
+
+
     Channel &Channel::looping(bool set)
     {
         FMOD_MODE mode;
         checkResult( chan->getMode(&mode) );
 
-        mode &= ~FMOD_LOOP_OFF;
-        checkResult( chan->setMode(mode | FMOD_LOOP_NORMAL) );
+        if (set)
+        {
+            mode &= ~FMOD_LOOP_OFF;
+            checkResult( chan->setMode(mode | FMOD_LOOP_NORMAL) );
+        }
+        else
+        {
+            mode |= FMOD_LOOP_OFF;
+            mode &= ~FMOD_LOOP_NORMAL;
+        }
+
         return *this;
     }
 
@@ -140,11 +211,22 @@ namespace Insound
     }
 
 
+    Channel &Channel::position(float seconds)
+    {
+        if (m_isGroup)
+            throw std::runtime_error("Cannot call Channel::position when "
+                "underlying type is an FMOD::ChannelGroup");
+
+        unsigned int pos = seconds * 1000;
+        checkResult( static_cast<FMOD::Channel *>(chan)->setPosition(pos,
+            FMOD_TIMEUNIT_MS) );
+
+        return *this;
+    }
+
     bool Channel::paused() const
     {
-        bool p;
-        checkResult( chan->getPaused(&p) );
-        return p;
+        return m_isPaused;
     }
 
 

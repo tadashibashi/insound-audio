@@ -9,6 +9,8 @@ namespace FMOD
     class ChannelGroup;
 }
 
+#include <string_view>
+
 namespace Insound
 {
     /**
@@ -18,14 +20,28 @@ namespace Insound
     {
     public:
         Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system);
-        explicit Channel(FMOD::ChannelGroup *chan);
+        Channel(std::string_view name, FMOD::System *system);
+
+        Channel(Channel &other) = delete;
+        Channel &operator=(Channel &other) = delete;
+
+        Channel(Channel &&other);
+        Channel &operator=(Channel &&other);
+
 
         ~Channel();
 
         Channel &fade(float from, float to, float seconds);
         Channel &fadeTo(float vol, float seconds);
         Channel &looping(bool set);
-        Channel &paused(bool set);
+
+        /**
+         * Set paused status
+         * @param  set     - set value of pause
+         * @param  seconds - number of seconds to fade in/out
+         * @return reference to this channel for chaining.
+         */
+        Channel &paused(bool value, float seconds = 0);
         // Only available if underlying context is an FMOD::Channel. Throws if
         // this is not the case.
         Channel &position(float seconds);
@@ -58,5 +74,6 @@ namespace Insound
         float lastFadePoint;
         int samplerate;
         bool m_isGroup;
+        bool m_isPaused;
     };
 }

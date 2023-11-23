@@ -66,16 +66,6 @@ declare interface InsoundAudioEngine {
     isBankLoaded(): boolean;
 
     /**
-     * Play track if any loaded.
-     */
-    play(): void;
-
-    /**
-     * Stop track
-     */
-    stop(): void;
-
-    /**
      * Set the paused status of track
      *
      * @param pause - whether to pause
