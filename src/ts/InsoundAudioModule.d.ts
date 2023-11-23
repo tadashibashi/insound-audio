@@ -1,16 +1,19 @@
 declare type pointer = number;
 
 declare interface InsoundAudioEngine {
+    // ===== System Controls / Lifetime =======================================
+
     /**
      * Initialize the Audio Engine. Must be called before any other function of
      * the audio engine is called.
      *
-     * @returns whether initialization was successful.
+     * @return whether initialization was successful.
      */
     init(): boolean;
 
     /**
-     * Close the Audio Engine.
+     * Close the Audio Engine without deleting the underlying object. May call
+     * `init` again to reinitialize after a successful call to `close`.
      *
      * @throws FMODError if there was an error.
      */
@@ -41,6 +44,9 @@ declare interface InsoundAudioEngine {
      */
     update(): void;
 
+
+    // ===== Bank Loading =====================================================
+
     /**
      * Load bank. Data should be available for the lifetime of the
      * bank's usage, and should be managed externally, as this class does not
@@ -65,11 +71,14 @@ declare interface InsoundAudioEngine {
      */
     isBankLoaded(): boolean;
 
+
+    // ===== Channel Controls =================================================
+
     /**
      * Set the paused status of track
      *
-     * @param pause - whether to pause
-     *
+     * @param pause   - whether to pause
+     * @param seconds - number of seconds to fade in-out of pause state
      */
     setPause(pause: boolean, seconds: number): void;
 
@@ -77,7 +86,6 @@ declare interface InsoundAudioEngine {
      * Get paused status of track
      *
      * @return whether track is paused.
-     *
      */
     getPause(): boolean;
 
@@ -138,8 +146,22 @@ declare interface InsoundAudioEngine {
     getChannelVolume(ch: number): number;
 
     /**
+     * Fade main bus from current fade volume to another in number of `seconds`
+     *
+     * Note that fade level is different from volume level - they are scaled
+     * against each other. Use `getFadeLevel` to get the current fade level.
+     */
+    fadeTo(to: number, seconds: number): void;
+
+    /**
+     * Get the fade level of the main bus
+     */
+    getFadeLevel(final: boolean): number;
+
+    /**
      * Fade channel to a level - this value is different from the chennel
-     * volume, by which it is scaled against.
+     * volume, by which it is scaled against. Use `getChannelFadeLevel` to
+     * get the fade level of a channel.
      *
      * @param ch      - channel index (0-indexed)
      * @param level   - volume level to fade to (0 = off, 1 = 100%)
@@ -159,11 +181,6 @@ declare interface InsoundAudioEngine {
     getChannelFadeLevel(ch: number, final: boolean): number;
 
     /**
-     * Get the fade level of the main bus
-     */
-    getFadeLevel(final: boolean): number;
-
-    /**
      * Get the number of tracks loaded in the currently loaded fsb.
      */
     trackCount(): number;
@@ -179,11 +196,6 @@ declare interface InsoundAudioEngine {
      * @param looping - whether track should loop.
      */
     setLooping(looping: boolean): void;
-
-    /**
-     * Fade from one volume to another in a number of seconds
-     */
-    fadeTo(to: number, seconds: number): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {
