@@ -143,6 +143,21 @@ class AudioEngine
     }
 
     /**
+     * Set a mix preset on the current track
+     *
+     * @param volumes - list of volumes to set each channel with
+     * @param seconds - transition time in seconds
+     */
+    setMixPreset(volumes: number[], seconds: number)
+    {
+        if (this.engine.trackCount() !== volumes.length)
+            throw Error(`setMixPreset error: volumes array length [${volumes.length}] does not match track count [${this.engine.trackCount()}]`);
+
+        for (let i = 0; i < volumes.length; ++i)
+            this.engine.fadeChannelTo(i, volumes[i], seconds);
+    }
+
+    /**
      * Unload the currently loaded track data. Safe to call if already unloaded.
      */
     unloadTrack()
