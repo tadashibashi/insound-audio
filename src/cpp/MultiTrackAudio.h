@@ -50,6 +50,14 @@ namespace Insound {
         // Fade main volume to a certain level
         void fadeTo(float to, float seconds);
 
+        void fadeChannelTo(int ch, float to, float seconds);
+
+        [[nodiscard]]
+        float getFadeLevel(bool final=true) const;
+        
+        [[nodiscard]]
+        float getChannelFadeLevel(int ch, bool final=true) const;
+
         /**
          * Set whether the track should loop
          * @param looping - whether track should loop

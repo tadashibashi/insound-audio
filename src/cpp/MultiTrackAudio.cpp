@@ -49,6 +49,20 @@ namespace Insound
         m->main.fadeTo(to, seconds);
     }
 
+    void MultiTrackAudio::fadeChannelTo(int ch, float to, float seconds)
+    {
+        m->chans.at(ch).fadeTo(to, seconds);
+    }
+
+    float MultiTrackAudio::getChannelFadeLevel(int ch, bool final) const
+    {
+        return m->chans.at(ch).fadeLevel(final);
+    }
+
+    float MultiTrackAudio::getFadeLevel(bool final) const
+    {
+        return m->main.fadeLevel(final);
+    }
 
     void MultiTrackAudio::setPause(bool pause, float seconds)
     {

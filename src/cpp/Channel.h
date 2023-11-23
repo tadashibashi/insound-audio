@@ -49,7 +49,7 @@ namespace Insound
 
 
         [[nodiscard]]
-        float fadeLevel() const;
+        float fadeLevel(bool final=true) const;
 
         [[nodiscard]]
         bool looping() const;

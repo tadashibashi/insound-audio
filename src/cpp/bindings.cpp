@@ -28,5 +28,8 @@ EMSCRIPTEN_BINDINGS() {
         .function("isLooping", &T::isLooping)
         .function("setLooping", &T::setLooping)
         .function("fadeTo", &T::fadeTo)
+        .function("fadeChannelTo", &T::fadeChannelTo)
+        .function("getChannelFadeLevel", &T::getChannelFadeLevel)
+        .function("getFadeLevel", &T::getFadeLevel)
         ;
 }

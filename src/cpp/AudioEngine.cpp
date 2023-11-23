@@ -104,6 +104,21 @@ namespace Insound
         return track->getChannelVolume(ch);
     }
 
+    void AudioEngine::fadeChannelTo(int ch, float level, float seconds)
+    {
+        track->fadeChannelTo(ch, level, seconds);
+    }
+
+    float AudioEngine::getChannelFadeLevel(int ch, bool final) const
+    {
+        return track->getChannelFadeLevel(ch, final);
+    }
+
+    float AudioEngine::getFadeLevel(bool final) const
+    {
+        return track->getFadeLevel(final);
+    }
+
     int AudioEngine::trackCount() const
     {
         assert(track);

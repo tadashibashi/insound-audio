@@ -131,11 +131,37 @@ declare interface InsoundAudioEngine {
      * index, -1 will be returned.
      *
      * @param  ch   - target channel to get the volume of
+     *
      * @return      volume level of target channel where 0 is off and 1 is 100%
      *
      */
     getChannelVolume(ch: number): number;
 
+    /**
+     * Fade channel to a level - this value is different from the chennel
+     * volume, by which it is scaled against.
+     *
+     * @param ch      - channel index (0-indexed)
+     * @param level   - volume level to fade to (0 = off, 1 = 100%)
+     * @param seconds - time in seconds to fade (fade slope is linear)
+     */
+    fadeChannelTo(ch: number, level: number, seconds: number): void;
+
+    /**
+     * Get the current fade level of a specific channel
+     *
+     * @param   ch    - channel index (0-indexed)
+     * @param   final - whether to get current fade level (true), or target
+     *                  fade level (false)
+     *
+     * @return  fade level of the channel.
+     */
+    getChannelFadeLevel(ch: number, final: boolean): number;
+
+    /**
+     * Get the fade level of the main bus
+     */
+    getFadeLevel(final: boolean): number;
 
     /**
      * Get the number of tracks loaded in the currently loaded fsb.

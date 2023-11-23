@@ -85,8 +85,10 @@ namespace Insound
     }
 
 
-    float Channel::fadeLevel() const
+    float Channel::fadeLevel(bool final) const
     {
+        if (!final) return lastFadePoint;
+
         unsigned long long clock;
         checkResult(chan->getDSPClock(nullptr, &clock));
 

@@ -241,6 +241,16 @@ class AudioEngine
         return this;
     }
 
+    fadeChannelTo(ch: number, volume: number, seconds: number)
+    {
+        this.engine.fadeChannelTo(ch, volume, seconds);
+    }
+
+    getChannelFadeLevel(ch: number, final: boolean = true)
+    {
+        this.engine.getChannelFadeLevel(ch, final);
+    }
+
     get trackCount(): number
     {
         return this.engine.trackCount();
@@ -261,6 +271,11 @@ class AudioEngine
     {
         this.engine.fadeTo(to, seconds);
         return this;
+    }
+
+    getFadeLevel(final: boolean = true): number
+    {
+        return this.engine.getFadeLevel(final);
     }
 
     /**

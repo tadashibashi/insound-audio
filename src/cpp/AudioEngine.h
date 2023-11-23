@@ -52,6 +52,24 @@ namespace Insound
         [[nodiscard]]
         double getChannelVolume(int ch) const;
 
+
+        void fadeChannelTo(int ch, float level, float seconds);
+
+        /**
+         *
+         * @param ch    - channel index (0-indexed)
+         * @param final - whether to use current value (true), or
+         *                target value (false)
+         *
+         * @return volume level of fade (different from channel volume)
+         */
+        [[nodiscard]]
+        float getChannelFadeLevel(int ch, bool final=true) const;
+
+
+        [[nodiscard]]
+        float getFadeLevel(bool final=true) const;
+
         [[nodiscard]]
         double getPosition() const;
 
