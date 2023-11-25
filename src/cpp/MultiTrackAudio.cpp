@@ -1,5 +1,6 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
+#include "SyncPointManager.h"
 #include "common.h"
 #include "fmod_common.h"
 
@@ -28,6 +29,7 @@ namespace Insound
         FMOD::Sound *fsb;
         std::vector<Channel> chans;
         Channel main;
+        SyncPointManager points;
     };
 
 
@@ -137,6 +139,7 @@ namespace Insound
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength)
     {
+        // Set relevant info to load the fsb
         auto exinfo{FMOD_CREATESOUNDEXINFO()};
 
         std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
@@ -146,27 +149,52 @@ namespace Insound
         FMOD::System *sys;
         checkResult( m->main.raw()->getSystemObject(&sys) );
 
+        // Load the bank
         FMOD::Sound *snd;
         checkResult( sys->createSound(data,
             FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
             FMOD_CREATECOMPRESSEDSAMPLE, &exinfo, &snd) );
 
-
         int numSubSounds;
         checkResult( snd->getNumSubSounds(&numSubSounds) );
+
+        if (numSubSounds == 0)
+            throw std::runtime_error("No subsounds in the fsbank file.");
+
+        // Populate sync point container with first subsound
+        FMOD::Sound *firstSound;
+        checkResult( snd->getSubSound(0, &firstSound) );
+
+        SyncPointManager syncPoints(firstSound);
+
+        // find loop start / end points if they exist
+        auto loopstart = syncPoints.getOffsetSamples("LoopStart");
+        auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+        bool hasLoopPoints = (loopstart && loopend);
 
         std::vector<Channel> chans;
         for (int i = 0; i < numSubSounds; ++i)
         {
             FMOD::Sound *subsound;
             checkResult( snd->getSubSound(i, &subsound) );
-            auto &ch = chans.emplace_back(subsound,
-                (FMOD::ChannelGroup *)m->main.raw(), sys);
+
+            // set loop points if the bank has any
+            if (hasLoopPoints)
+            {
+                checkResult(subsound->setLoopPoints(loopstart.value(),
+                    FMOD_TIMEUNIT_PCM, loopend.value(), FMOD_TIMEUNIT_PCM));
+            }
+
+            // create the channel wrapper object from the subsound
+            chans.emplace_back(subsound,
+                (FMOD::ChannelGroup *)m->main.raw(), sys, i);
         }
 
+        // success, commit changes
         unloadFsb();
         m->chans.swap(chans);
         m->fsb = snd;
+        m->points = std::move(syncPoints);
         setPause(true, 0);
     }
 
