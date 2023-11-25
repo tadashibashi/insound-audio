@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <optional>
 #include <map>
 #include <string>
 #include <string_view>
@@ -52,9 +52,15 @@ namespace Insound
         [[nodiscard]]
         unsigned int getOffsetSamples(size_t i) const;
         [[nodiscard]]
+        std::optional<unsigned int> getOffsetSamples(std::string_view label) const;
+        [[nodiscard]]
         unsigned int getOffsetMS(size_t i) const;
         [[nodiscard]]
+        std::optional<unsigned int> getOffsetMS(std::string_view label) const;
+        [[nodiscard]]
         double getOffsetSeconds(size_t i) const;
+        [[nodiscard]]
+        std::optional<double> getOffsetSeconds(std::string_view label) const;
     private:
         // Sync point data
         std::vector<SyncPoint> m_points;

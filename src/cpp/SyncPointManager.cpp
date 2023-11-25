@@ -6,7 +6,7 @@
 namespace Insound
 {
     SyncPointManager::SyncPointManager() : m_sound(), m_points() { }
-    
+
     SyncPointManager::SyncPointManager(FMOD::Sound *sound)
         : m_sound(), m_points()
     {
@@ -54,6 +54,21 @@ namespace Insound
         return offset;
     }
 
+    std::optional<unsigned int>
+    SyncPointManager::getOffsetSamples(std::string_view label) const
+    {
+        size_t index = 0;
+        for (auto &point : m_points)
+        {
+            if (point.label() == label)
+                return getOffsetSamples(index);
+
+            ++index;
+        }
+
+        return {};
+    }
+
     unsigned int SyncPointManager::getOffsetMS(size_t i) const
     {
         unsigned int offset;
@@ -62,9 +77,39 @@ namespace Insound
         return offset;
     }
 
+    std::optional<unsigned int>
+    SyncPointManager::getOffsetMS(std::string_view label) const
+    {
+        size_t index = 0;
+        for (auto &point : m_points)
+        {
+            if (point.label() == label)
+                return getOffsetMS(index);
+
+            ++index;
+        }
+
+        return {};
+    }
+
     double SyncPointManager::getOffsetSeconds(size_t i) const
     {
         return (double)getOffsetMS(i) * .001;
+    }
+
+    std::optional<double>
+    SyncPointManager::getOffsetSeconds(std::string_view label) const
+    {
+        size_t index = 0;
+        for (auto &point : m_points)
+        {
+            if (point.label() == label)
+                return getOffsetSeconds(index);
+
+            ++index;
+        }
+
+        return {};
     }
 
     size_t SyncPointManager::size() const
