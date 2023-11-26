@@ -12,7 +12,8 @@ add_subdirectory(lib)
 
 file(GLOB_RECURSE ${PROJECT_NAME}_SRC src/cpp/*.cpp)
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_SRC})
-target_link_libraries(${PROJECT_NAME} PRIVATE fmod)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmod sol2::sol2)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/lib/lua)
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_link_options(${PROJECT_NAME} PRIVATE
