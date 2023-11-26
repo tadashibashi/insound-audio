@@ -16,6 +16,7 @@ which is served from [insound-cpp](https://github.com/tadashibashi/insound-cpp).
 | [![WASM](https://skillicons.dev/icons?i=wasm)]()     | Emscripten | Compiler, Embind FFI |
 | [![CMake](https://skillicons.dev/icons?i=cmake)]()   | CMake      | C++ Build            |
 | [![Vite](https://skillicons.dev/icons?i=vite)]()     | Vite       | Dev Server           |
+| [![Lua](https://skillicons.dev/icons?i=lua)]()       | Lua        | User Scripting       |
 | [![Python](https://skillicons.dev/icons?i=python)]() | Python     | Build Script         |
 
 <br/>
