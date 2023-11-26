@@ -3,21 +3,46 @@
 
 ---Environment for the sandbox
 env = {
+    coroutine = coroutine,
     math = math,
-    require = require,
+    string = string,
+    utf8 = utf8,
+    table = table,
+    _VERSION = _VERSION,
+    collectgarbage = collectgarbage,
+    error = error,
+    getmetatable = getmetatable,
+    ipairs = ipairs,
+    next = next,
+    pairs = pairs,
+    pcall = pcall,
     print = print,
+    rawequal = rawequal,
+    rawget = rawget,
+    rawset = rawset,
+    select = select,
+    setmetatable = setmetatable,
+    tonumber = tonumber,
+    tostring = tostring,
+    type = type,
+    warn = warn,
+    xpcall = xpcall,
 }
 
----Loads a script and its sandbox environment
+---Load a script and its sandbox environment
 ---@param untrusted_code string
-local function load_script(untrusted_code)
+function load_script(untrusted_code)
     local untrusted_func, message = load(untrusted_code, nil, 't', env)
 
+    if not untrusted_func then
+        error(message)
+    end
 
+    local res, err = pcall(untrusted_func)
 
-    if not untrusted_func then return false, message end
-
-    local res = pcall(untrusted_func)
+    if not res then
+        error(err)
+    end
 
     if env.on_init ~= nil then
         env.on_init()
@@ -27,14 +52,14 @@ local function load_script(untrusted_code)
 end
 
 ---Callback that fires when the sound bank has been loaded
-local function on_load()
+function on_load()
     if env.on_load ~= nil then
         env.on_load()
     end
 end
 
 ---Callback that fires when the sound bank has been unloaded
-local function on_unload()
+function on_unload()
     if env.on_unload ~= nil then
         env.on_unload()
     end
@@ -43,7 +68,7 @@ end
 ---Callback that fires on each update tick. Occurs ~60+ Hz
 ---`seconds` is the current time position of the track.
 ---@param seconds number
-local function on_update(seconds)
+function on_update(seconds)
     if env.on_update ~= nil then
         env.on_update(seconds)
     end
@@ -54,7 +79,7 @@ end
 ---
 ---@param label string
 ---@param seconds number
-local function on_syncpoint(label, seconds)
+function on_syncpoint(label, seconds)
     if env.on_syncpoint ~= nil then
         env.on_syncpoint(label, seconds)
     end
@@ -62,7 +87,7 @@ end
 
 ---Callback that fires when a track has reached its maximum time
 ---Calls function `on_track_end` only if user provided it in their script
-local function on_track_end()
+function on_track_end()
     if env.on_track_end ~= nil then
         env.on_track_end()
     end

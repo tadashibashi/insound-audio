@@ -20,11 +20,11 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
         -sEXPORT_NAME="AudioModule"
         -sASSERTIONS=1 -sNO_DISABLE_EXCEPTION_CATCHING=1 -O0
-        -sFILESYSTEM=0
+        -sFILESYSTEM=0 -fexceptions
         -sWASM_BIGINT=1 -sENVIRONMENT=web -sALLOW_MEMORY_GROWTH=1
     )
     target_compile_options(${PROJECT_NAME} PRIVATE
-        -O0
+        -O0 -fexceptions
     )
 else()
     target_link_options(${PROJECT_NAME} PRIVATE
@@ -38,3 +38,15 @@ else()
         -flto -Os
     )
 endif()
+
+# Make scripts embeddable
+function(make_includable INPUT_FILE OUTPUT_FILE)
+    file(READ ${INPUT_FILE} CONTENT)
+    set(DELIMETER "__c++_include__")
+    set(CONTENT "R\"${DELIMETER}(\n${CONTENT})${DELIMETER}\"")
+
+    file(WRITE ${OUTPUT_FILE} "${CONTENT}")
+endfunction()
+
+make_includable(${CMAKE_SOURCE_DIR}/src/lua/driver.lua
+    ${CMAKE_SOURCE_DIR}/src/cpp/embed/driver.lua.h)
