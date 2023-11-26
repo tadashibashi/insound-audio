@@ -31,5 +31,7 @@ EMSCRIPTEN_BINDINGS() {
         .function("fadeChannelTo", &T::fadeChannelTo)
         .function("getChannelFadeLevel", &T::getChannelFadeLevel)
         .function("getFadeLevel", &T::getFadeLevel)
+        .function("setSyncPointCallback", &T::setSyncPointCallback)
+        .function("setEndCallback", &T::setEndCallback)
         ;
 }

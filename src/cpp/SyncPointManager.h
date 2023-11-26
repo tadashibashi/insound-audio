@@ -20,7 +20,7 @@ namespace Insound
         SyncPoint(std::string_view label, FMOD_SYNCPOINT *point) :
             m_label(label), m_point(point) { }
 
-        std::string_view label() const { return m_label.data(); }
+        const std::string &label() const { return m_label; }
         FMOD_SYNCPOINT *point() const { return m_point; }
     private:
         std::string m_label;
@@ -34,7 +34,7 @@ namespace Insound
         explicit SyncPointManager(FMOD::Sound *sound);
 
         [[nodiscard]]
-        std::string_view getLabel(size_t i) const;
+        const std::string &getLabel(size_t i) const;
 
         void load(FMOD::Sound *sound);
 

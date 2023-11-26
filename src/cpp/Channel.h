@@ -1,6 +1,6 @@
 #pragma once
 
-// Forward declaration
+// Forward declarations
 namespace FMOD
 {
     class Sound;
@@ -9,7 +9,9 @@ namespace FMOD
     class ChannelGroup;
 }
 
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace Insound
 {
@@ -19,8 +21,8 @@ namespace Insound
     class Channel
     {
     public:
-        Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system);
-        Channel(std::string_view name, FMOD::System *system);
+        Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system, int index = -1);
+        Channel(std::string_view name, FMOD::System *system, int index = -1);
 
         Channel(Channel &other) = delete;
         Channel &operator=(Channel &other) = delete;
@@ -69,11 +71,17 @@ namespace Insound
         bool isGroup() const { return m_isGroup; }
 
         FMOD::ChannelControl *raw() const { return chan; }
+
+        int index() const { return m_index; }
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;
         int samplerate;
         bool m_isGroup;
         bool m_isPaused;
+
+        // channel number in a track set
+        int m_index;
+
     };
 }

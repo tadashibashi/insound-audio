@@ -196,6 +196,26 @@ declare interface InsoundAudioEngine {
      * @param looping - whether track should loop.
      */
     setLooping(looping: boolean): void;
+
+    /**
+     * Set the callback that fires when a syncpoint has been reached
+     * @param callback - the callback to set with the following parameters:
+     *
+     * label         - syncpoint name / label text
+     *
+     * offsetSeconds - offset position of sync point in number of seconds
+     *
+     * Callback return value is discarded.
+     */
+    setSyncPointCallback(
+        callback: (label: string, offsetSeconds: number) => void): void;
+
+    /**
+     * Set the callback that fires when track has reached the end
+     * @param callback - the callback to set
+     *
+     */
+    setEndCallback(callback: () => void): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

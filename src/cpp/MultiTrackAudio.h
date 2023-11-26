@@ -23,7 +23,7 @@ namespace Insound {
          *
          * @throw FMODError on error
          */
-        void loadFsb(const char *data, size_t bytelength);
+        void loadFsb(const char *data, size_t bytelength, bool looping=true);
 
         void unloadFsb();
 
@@ -54,7 +54,7 @@ namespace Insound {
 
         [[nodiscard]]
         float getFadeLevel(bool final=true) const;
-        
+
         [[nodiscard]]
         float getChannelFadeLevel(int ch, bool final=true) const;
 
@@ -80,6 +80,23 @@ namespace Insound {
 
         [[nodiscard]]
         int samplerate() const;
+
+        void setSyncPointCallback(
+            std::function<void(const std::string &, double)> callback);
+
+        const std::function<void(const std::string &, double)> &
+        getSyncPointCallback() const;
+
+        void setEndCallback(std::function<void()> callback);
+
+        const std::function<void()> &getEndCallback() const;
+
+        [[nodiscard]]
+        size_t getNumSyncPoints() const;
+        [[nodiscard]]
+        const std::string &getSyncPointLabel(size_t i) const;
+        [[nodiscard]]
+        double getSyncPointOffsetSeconds(size_t i) const;
     private:
         // Pimple idiom
         struct Impl;

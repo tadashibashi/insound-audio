@@ -218,4 +218,28 @@ namespace Insound
             sys = nullptr;
         }
     }
+
+    void AudioEngine::setSyncPointCallback(emscripten::val callback)
+    {
+        auto callbackType = callback.typeOf().as<std::string>();
+        if (callbackType != "function")
+            throw std::runtime_error("Callback must be a function, got " +
+                callbackType + " instead");
+        if (!track)
+            throw std::runtime_error("AudioEngine cannot set syncpoint "
+                "callback because track was not loaded.");
+        track->setSyncPointCallback(callback);
+    }
+
+    void AudioEngine::setEndCallback(emscripten::val callback)
+    {
+        auto callbackType = callback.typeOf().as<std::string>();
+        if (callbackType != "function")
+            throw std::runtime_error("Callback must be a function, got" +
+                callbackType + " instead");
+        if (!track)
+            throw std::runtime_error("AudioEngine cannot set end callback"
+                "because track was not loaded.");
+        track->setEndCallback(callback);
+    }
 }

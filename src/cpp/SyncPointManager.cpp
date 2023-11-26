@@ -41,7 +41,7 @@ namespace Insound
         m_points.clear();
     }
 
-    std::string_view SyncPointManager::getLabel(size_t i) const
+    const std::string &SyncPointManager::getLabel(size_t i) const
     {
         return m_points.at(i).label();
     }

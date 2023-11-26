@@ -2,12 +2,14 @@
 #include "Channel.h"
 #include "SyncPointManager.h"
 #include "common.h"
-#include "fmod_common.h"
 
 #include <fmod.hpp>
+#include <fmod_common.h>
+
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <functional>
 #include <vector>
 
 namespace Insound
@@ -16,7 +18,8 @@ namespace Insound
     struct MultiTrackAudio::Impl
     {
     public:
-        Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(), main("main", sys)
+        Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(),
+            main("main", sys), points(), syncpointCallback(), endCallback()
         {
         }
 
@@ -30,6 +33,8 @@ namespace Insound
         std::vector<Channel> chans;
         Channel main;
         SyncPointManager points;
+        std::function<void(const std::string &, double)> syncpointCallback;
+        std::function<void()> endCallback;
     };
 
 
@@ -136,8 +141,71 @@ namespace Insound
         return static_cast<bool>(m->fsb);
     }
 
+    static FMOD_RESULT F_CALLBACK channelCallback(
+        FMOD_CHANNELCONTROL *chanCtrl,
+        FMOD_CHANNELCONTROL_TYPE chanType,
+        FMOD_CHANNELCONTROL_CALLBACK_TYPE callbackType,
+        void *commanddata1,
+        void *commanddata2)
+    {
+        // Get `MultiTrackAudio` object
+        auto chan = (FMOD::ChannelControl *)chanCtrl;
+        MultiTrackAudio *track;
 
-    void MultiTrackAudio::loadFsb(const char *data, size_t bytelength)
+        auto result = chan->getUserData((void **)&track);
+        if (result != FMOD_OK)
+            return result;
+
+        // Determine action based on callback type
+        switch (callbackType)
+        {
+        case FMOD_CHANNELCONTROL_CALLBACK_SYNCPOINT:
+            {
+                auto pointIndex = (int)commanddata1;
+                auto callback = track->getSyncPointCallback();
+
+                // Invoke callback, if any was set
+                if (callback)
+                    callback(
+                        track->getSyncPointLabel(pointIndex).data(),
+                        track->getSyncPointOffsetSeconds(pointIndex)
+                    );
+
+                break;
+            }
+
+        case FMOD_CHANNELCONTROL_CALLBACK_END:
+            {
+                auto callback = track->getEndCallback();
+                if (callback)
+                    callback();
+                break;
+            }
+
+        default: break;
+        }
+
+        return FMOD_OK;
+    }
+
+    size_t MultiTrackAudio::getNumSyncPoints() const
+    {
+        return m->points.size();
+    }
+
+    const std::string &MultiTrackAudio::getSyncPointLabel(size_t i) const
+    {
+        return m->points.getLabel(i);
+    }
+
+    double MultiTrackAudio::getSyncPointOffsetSeconds(size_t i) const
+    {
+        return m->points.getOffsetSeconds(i);
+    }
+
+
+    void MultiTrackAudio::loadFsb(const char *data, size_t bytelength,
+        bool looping)
     {
         // Set relevant info to load the fsb
         auto exinfo{FMOD_CREATESOUNDEXINFO()};
@@ -152,8 +220,11 @@ namespace Insound
         // Load the bank
         FMOD::Sound *snd;
         checkResult( sys->createSound(data,
-            FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
-            FMOD_CREATECOMPRESSEDSAMPLE, &exinfo, &snd) );
+            FMOD_OPENMEMORY_POINT |
+                (looping ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF) |
+                FMOD_CREATECOMPRESSEDSAMPLE,
+            &exinfo, &snd)
+        );
 
         int numSubSounds;
         checkResult( snd->getNumSubSounds(&numSubSounds) );
@@ -170,7 +241,6 @@ namespace Insound
         // find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
         auto loopend = syncPoints.getOffsetSamples("LoopEnd");
-        bool hasLoopPoints = (loopstart && loopend);
 
         std::vector<Channel> chans;
         for (int i = 0; i < numSubSounds; ++i)
@@ -179,15 +249,50 @@ namespace Insound
             checkResult( snd->getSubSound(i, &subsound) );
 
             // set loop points if the bank has any
-            if (hasLoopPoints)
+            if (loopstart && loopend)
             {
-                checkResult(subsound->setLoopPoints(loopstart.value(),
-                    FMOD_TIMEUNIT_PCM, loopend.value(), FMOD_TIMEUNIT_PCM));
+                checkResult(
+                    subsound->setLoopPoints(
+                        loopstart.value(), FMOD_TIMEUNIT_PCM,
+                        loopend.value(), FMOD_TIMEUNIT_PCM)
+                );
             }
+            else
+            {
+                if (loopstart)
+                {
+                    unsigned int length;
+                    checkResult(subsound->getLength(&length,
+                        FMOD_TIMEUNIT_PCM) );
+                    checkResult(subsound->setLoopPoints(loopstart.value(),
+                        FMOD_TIMEUNIT_PCM, length, FMOD_TIMEUNIT_PCM));
+                }
+                else if (loopend)
+                {
+                    checkResult(subsound->setLoopPoints(
+                        0, FMOD_TIMEUNIT_PCM,
+                        loopend.value(), FMOD_TIMEUNIT_PCM)
+                    );
+                }
+                else
+                {
+                    // no looping if no loop points were found
+                    checkResult(subsound->setMode(FMOD_LOOP_OFF));
+                }
+            }
+
+
 
             // create the channel wrapper object from the subsound
             chans.emplace_back(subsound,
                 (FMOD::ChannelGroup *)m->main.raw(), sys, i);
+        }
+
+        // set callback
+        if (!chans.empty())
+        {
+            checkResult( chans[0].raw()->setUserData(this));
+            checkResult( chans[0].raw()->setCallback(channelCallback) );
         }
 
         // success, commit changes
@@ -245,5 +350,29 @@ namespace Insound
         {
             chan.looping(looping);
         }
+    }
+
+    void MultiTrackAudio::setSyncPointCallback(
+        std::function<void(const std::string &, double)> callback)
+    {
+        m->syncpointCallback = std::move(callback);
+    }
+
+    const std::function<void(const std::string &, double)> &
+    MultiTrackAudio::getSyncPointCallback() const
+    {
+        return m->syncpointCallback;
+    }
+
+    void MultiTrackAudio::setEndCallback(
+        std::function<void()> callback)
+    {
+        m->endCallback = std::move(callback);
+    }
+
+    const std::function<void()> &
+    MultiTrackAudio::getEndCallback() const
+    {
+        return m->endCallback;
     }
 }

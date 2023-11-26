@@ -11,9 +11,9 @@
 namespace Insound
 {
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
-        FMOD::System *system) :
+        FMOD::System *system, int index) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
-            m_isPaused()
+            m_isPaused(), m_index(index)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
@@ -26,9 +26,9 @@ namespace Insound
     }
 
 
-    Channel::Channel(std::string_view name, FMOD::System *system) :
+    Channel::Channel(std::string_view name, FMOD::System *system, int index) :
         chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused()
+        m_isPaused(), m_index(index)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );

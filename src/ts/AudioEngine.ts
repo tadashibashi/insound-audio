@@ -293,6 +293,17 @@ class AudioEngine
         return this.engine.getFadeLevel(final);
     }
 
+    setSyncPointCallback(
+        callback: (label: string, seconds: number) => void): void
+    {
+        this.engine.setSyncPointCallback(callback);
+    }
+
+    setEndCallback(callback: () => void): void
+    {
+        this.engine.setEndCallback(callback);
+    }
+
     /**
      * Call this manually when no longer using the AudioEngine to clean
      * up underlying AudioEngine object. A finalization registry is used on

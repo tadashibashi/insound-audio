@@ -1,6 +1,7 @@
 #pragma once
-
 #include "MultiTrackAudio.h"
+
+#include <emscripten/val.h>
 
 // Forward declaration
 namespace FMOD
@@ -103,6 +104,9 @@ namespace Insound
         void fadeTo(float to, float seconds);
 
         void update();
+
+        void setSyncPointCallback(emscripten::val callback);
+        void setEndCallback(emscripten::val callback);
 
     private:
         FMOD::System *sys;
