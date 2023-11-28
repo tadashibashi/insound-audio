@@ -3,10 +3,11 @@
 // Forward declarations
 namespace FMOD
 {
-    class Sound;
-    class System;
     class ChannelControl;
     class ChannelGroup;
+    class Channel;
+    class Sound;
+    class System;
 }
 
 #include <string>
@@ -23,6 +24,8 @@ namespace Insound
     public:
         Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system, int index = -1);
         Channel(std::string_view name, FMOD::System *system, int index = -1);
+        // Create from channel group
+        explicit Channel(FMOD::ChannelGroup *group);
 
         Channel(Channel &other) = delete;
         Channel &operator=(Channel &other) = delete;
@@ -44,10 +47,22 @@ namespace Insound
          * @return reference to this channel for chaining.
          */
         Channel &paused(bool value, float seconds = 0);
+
+        Channel &volume(float val);
+
+        /**
+         * Set the output channel group - only available if this is an
+         * FMOD::Channel
+         *
+         * @param  group Channel object to set
+         * @return reference to this object for chaining.
+         */
+        Channel &ch_group(Channel &group);
+
         // Only available if underlying context is an FMOD::Channel. Throws if
         // this is not the case.
-        Channel &position(float seconds);
-        Channel &volume(float val);
+        Channel &ch_position(float seconds);
+
 
 
         [[nodiscard]]
@@ -55,11 +70,6 @@ namespace Insound
 
         [[nodiscard]]
         bool looping() const;
-
-        // Only available if underlying context is an FMOD::Channel. Thorws if
-        // this is not the case.
-        [[nodiscard]]
-        float position() const;
 
         [[nodiscard]]
         bool paused() const;
@@ -73,6 +83,16 @@ namespace Insound
         FMOD::ChannelControl *raw() const { return chan; }
 
         int index() const { return m_index; }
+
+        /**
+         * Get the ChannelGroup object this outputs to
+         * @return Gets the associated group object
+         */
+        Channel *group() const;
+        // Only available if underlying context is an FMOD::Channel. Thorws if
+        // this is not the case.
+        [[nodiscard]]
+        float ch_position() const;
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;

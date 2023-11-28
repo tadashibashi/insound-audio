@@ -21,6 +21,8 @@ namespace Insound
         FMOD::Channel *tempChan;
         checkResult( system->playSound(sound, group, false, &tempChan) );
 
+        checkResult( tempChan->setUserData(this) );
+
         this->samplerate = rate;
         this->chan = static_cast<FMOD::ChannelControl *>(tempChan);
     }
@@ -36,8 +38,26 @@ namespace Insound
         FMOD::ChannelGroup *group;
         checkResult( system->createChannelGroup(name.data(), &group) );
 
+        checkResult( group->setUserData(this) );
+
         this->chan = static_cast<FMOD::ChannelControl *>(group);
         this->samplerate = rate;
+    }
+
+    Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
+        lastFadePoint(1.f), m_isGroup(true), samplerate(),
+        m_isPaused(), m_index(-1)
+    {
+        FMOD::System *system;
+        checkResult( group->getSystemObject(&system) );
+
+        int rate;
+        checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
+
+        checkResult( group->setUserData(this) );
+
+        this->samplerate = rate;
+        this->chan = group;
     }
 
 
@@ -201,7 +221,7 @@ namespace Insound
     }
 
 
-    float Channel::position() const
+    float Channel::ch_position() const
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::position when "
@@ -213,7 +233,7 @@ namespace Insound
     }
 
 
-    Channel &Channel::position(float seconds)
+    Channel &Channel::ch_position(float seconds)
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::position when "
@@ -222,6 +242,48 @@ namespace Insound
         unsigned int pos = seconds * 1000;
         checkResult( static_cast<FMOD::Channel *>(chan)->setPosition(pos,
             FMOD_TIMEUNIT_MS) );
+
+        return *this;
+    }
+
+    Channel *Channel::group() const
+    {
+        FMOD::ChannelGroup *group;
+
+        if (m_isGroup)
+        {
+            checkResult(
+                static_cast<FMOD::ChannelGroup *>(chan)->getParentGroup(&group));
+        }
+        else
+        {
+            checkResult(
+                static_cast<FMOD::Channel *>(chan)->getChannelGroup(&group) );
+        }
+
+        Channel *ch = nullptr;
+        checkResult( group->getUserData((void **)&ch) );
+
+        return ch;
+    }
+
+    Channel &Channel::ch_group(Channel &group)
+    {
+        if (!group.isGroup())
+            throw std::runtime_error("Cannot call Channel::ch_group when "
+                "passed channel does not have underlying FMOD::ChannelGroup.");
+
+        if (this->isGroup())
+        {
+            throw std::runtime_error("Cannot call Channel::ch_group when "
+                "underlying object is not an FMOD::Channel");
+        }
+
+        checkResult(
+            static_cast<FMOD::Channel *>(chan)->setChannelGroup(
+                static_cast<FMOD::ChannelGroup *>(group.raw())
+            )
+        );
 
         return *this;
     }
@@ -238,4 +300,5 @@ namespace Insound
         checkResult(chan->getVolume(&volume));
         return volume;
     }
+
 }
