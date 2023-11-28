@@ -1,5 +1,6 @@
 #include "AudioEngine.h"
 #include "MultiTrackAudio.h"
+#include "Parameter.h"
 #include "common.h"
 
 #include <fmod.hpp>
@@ -11,7 +12,7 @@
 
 namespace Insound
 {
-    AudioEngine::AudioEngine(): track()
+    AudioEngine::AudioEngine(): track(), sys(), master()
     {
 
     }
@@ -188,6 +189,15 @@ namespace Insound
             return false;
         }
 
+        FMOD::ChannelGroup *master;
+        result = sys->getMasterChannelGroup(&master);
+        if (result != FMOD_OK)
+        {
+            sys->release();
+            std::cerr << FMOD_ErrorString(result) << '\n';
+            return false;
+        }
+
         if (this->track)
         {
             this->track->unloadFsb();
@@ -201,6 +211,7 @@ namespace Insound
 
         this->sys = sys;
         this->track = new MultiTrackAudio("main", sys);
+        this->master.emplace(Channel(master));
         return true;
     }
 
@@ -241,5 +252,84 @@ namespace Insound
             throw std::runtime_error("AudioEngine cannot set end callback"
                 "because track was not loaded.");
         track->setEndCallback(callback);
+    }
+
+
+    float AudioEngine::param_getInitValueByIndex(size_t index) const
+    {
+        return track->params().getInitValue(index);
+    }
+
+    float AudioEngine::param_getInitValue(const std::string &name) const
+    {
+        return track->params().getInitValue(name);
+    }
+
+    float AudioEngine::param_getByIndex(size_t index) const
+    {
+        return track->params().get(index);
+    }
+
+    float AudioEngine::param_get(const std::string &name) const
+    {
+        return track->params().get(name);
+    }
+
+    const std::string &AudioEngine::param_getName(size_t index) const
+    {
+        const auto &params = track->params();
+        return params[index].getName();
+    }
+
+
+    size_t AudioEngine::param_count() const
+    {
+        return track->params().size();
+    }
+
+
+    size_t AudioEngine::param_labelCount(size_t paramIndex) const
+    {
+        return track->params().getLabels(paramIndex).size();
+    }
+
+
+    const std::string &AudioEngine::param_getLabelName(size_t paramIndex,
+        size_t labelIndex) const
+    {
+        return track->params().getLabels(paramIndex)[labelIndex].name;
+    }
+
+    float AudioEngine::param_getLabelValue(size_t paramIndex,
+        size_t labelIndex) const
+    {
+        return track->params().getLabels(paramIndex)[labelIndex].value;
+    }
+
+    void AudioEngine::param_setByIndex(size_t index, float value)
+    {
+        track->params().set(index, value);
+    }
+
+    void AudioEngine::param_setFromLabelByIndex(size_t index,
+        const std::string &labelVal)
+    {
+        track->params().set(index, labelVal.data());
+    }
+    void AudioEngine::param_set(const std::string &name, float value)
+    {
+        track->params().set(name, value);
+    }
+
+    void AudioEngine::param_setFromLabel(const std::string &name,
+        const std::string &labelVal)
+    {
+        track->params().set(name, labelVal);
+    }
+
+    void AudioEngine::param_addLabel(const std::string &paramName,
+        const std::string &label, float value)
+    {
+        track->params().getLabels(paramName).add(label, value);
     }
 }

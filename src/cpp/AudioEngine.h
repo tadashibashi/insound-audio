@@ -1,4 +1,5 @@
 #pragma once
+#include "Channel.h"
 #include "MultiTrackAudio.h"
 
 #include <emscripten/val.h>
@@ -11,6 +12,8 @@ namespace FMOD
 
 namespace Insound
 {
+    class Channel;
+
     class AudioEngine
     {
     public:
