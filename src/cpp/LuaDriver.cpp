@@ -11,13 +11,12 @@ namespace Insound
 {
     struct LuaDriver::Impl
     {
-        Impl() : error(NoErrors), script(), lua(), processEvent()
+        Impl() : error(NoErrors), script(), lua()
         {}
 
-        const char *error;
+        std::string error;
         std::string script;
         sol::state lua;
-        sol::protected_function processEvent;
     };
 
     LuaDriver::LuaDriver() : m(new Impl){ }
@@ -45,6 +44,7 @@ namespace Insound
 
             // Event type enum
             lua["Event"] = lua.create_table_with(
+                "Init", Event::Init,
                 "Update", Event::Update,
                 "SyncPoint", Event::SyncPoint,
                 "Load", Event::Load,
@@ -89,7 +89,6 @@ namespace Insound
 
             m->script = userScript;
             std::swap(m->lua, lua);
-            std::swap(m->processEvent, processEvent);
 
             m->error = NoErrors;
             return true;
@@ -127,9 +126,22 @@ namespace Insound
         return m->error;
     }
 
+    bool LuaDriver::doInit()
+    {
+        auto result = m->lua["process_event"](Event::Init);
+        if (!result.valid())
+        {
+            sol::error err = result;
+            m->error = err.what();
+            return false;
+        }
+
+        return true;
+    }
+
     bool LuaDriver::doUpdate()
     {
-        auto result = m->processEvent(Event::Update);
+        auto result = m->lua["process_event"](Event::Update);
         if (!result.valid())
         {
             sol::error err = result;
@@ -142,7 +154,7 @@ namespace Insound
 
     bool LuaDriver::doSyncPoint(const std::string &label, double seconds)
     {
-        auto result = m->processEvent(Event::SyncPoint, label, seconds);
+        auto result = m->lua["process_event"](Event::SyncPoint, label, seconds);
         if (!result.valid())
         {
             sol::error err = result;
@@ -155,7 +167,7 @@ namespace Insound
 
     bool LuaDriver::doLoad(const MultiTrackAudio &track)
     {
-        auto result = m->processEvent(Event::Load/*, track - need to bind this type to lua*/);
+        auto result = m->lua["process_event"](Event::Load/*, track - need to bind this type to lua*/);
         if (!result.valid())
         {
             sol::error err = result;
@@ -168,7 +180,7 @@ namespace Insound
 
     bool LuaDriver::doUnload()
     {
-        auto result = m->processEvent(Event::Unload);
+        auto result = m->lua["process_event"](Event::Unload);
         if (!result.valid())
         {
             sol::error err = result;
@@ -181,7 +193,7 @@ namespace Insound
 
     bool LuaDriver::doTrackEnd()
     {
-        auto result = m->processEvent(Event::TrackEnd);
+        auto result = m->lua["process_event"](Event::TrackEnd);
         if (!result.valid())
         {
             sol::error err = result;

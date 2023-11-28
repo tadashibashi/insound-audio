@@ -56,6 +56,7 @@ namespace Insound
         [[nodiscard]]
         std::string_view getError() const;
 
+        bool doInit();
         bool doUpdate();
         bool doSyncPoint(const std::string &label, double seconds);
         bool doLoad(const MultiTrackAudio &track);
@@ -64,6 +65,7 @@ namespace Insound
 
     private:
         enum class Event {
+            Init,
             Update,
             SyncPoint,
             Load,
