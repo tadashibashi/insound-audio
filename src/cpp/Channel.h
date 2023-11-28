@@ -63,8 +63,6 @@ namespace Insound
         // this is not the case.
         Channel &ch_position(float seconds);
 
-
-
         [[nodiscard]]
         float fadeLevel(bool final=true) const;
 
@@ -80,14 +78,17 @@ namespace Insound
         [[nodiscard]]
         bool isGroup() const { return m_isGroup; }
 
+        [[nodiscard]]
         FMOD::ChannelControl *raw() const { return chan; }
 
+        [[nodiscard]]
         int index() const { return m_index; }
 
         /**
          * Get the ChannelGroup object this outputs to
          * @return Gets the associated group object
          */
+        [[nodiscard]]
         Channel *group() const;
         // Only available if underlying context is an FMOD::Channel. Thorws if
         // this is not the case.
