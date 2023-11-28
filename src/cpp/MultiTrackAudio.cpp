@@ -1,5 +1,6 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
+#include "Parameter.h"
 #include "SyncPointManager.h"
 #include "common.h"
 
@@ -14,12 +15,12 @@
 
 namespace Insound
 {
-
     struct MultiTrackAudio::Impl
     {
     public:
         Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(),
-            main("main", sys), points(), syncpointCallback(), endCallback()
+            main("main", sys), points(), syncpointCallback(), endCallback(),
+            params()
         {
         }
 
@@ -35,6 +36,8 @@ namespace Insound
         SyncPointManager points;
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
+
+        ParameterMgr params;
     };
 
 
@@ -88,7 +91,7 @@ namespace Insound
     void MultiTrackAudio::seek(double seconds)
     {
         for (auto &chan : m->chans)
-            chan.position(seconds);
+            chan.ch_position(seconds);
     }
 
 
@@ -97,7 +100,7 @@ namespace Insound
         if (m->chans.empty()) return 0;
 
         // get first channel, assuming each is synced
-        return m->chans.at(0).position();
+        return m->chans.at(0).ch_position();
     }
 
 
@@ -133,6 +136,7 @@ namespace Insound
         // Release bank
         m->fsb->release();
         m->fsb = nullptr;
+        m->params.clear();
     }
 
 
@@ -374,5 +378,15 @@ namespace Insound
     MultiTrackAudio::getEndCallback() const
     {
         return m->endCallback;
+    }
+
+    ParameterMgr &MultiTrackAudio::params()
+    {
+        return m->params;
+    }
+
+    const ParameterMgr &MultiTrackAudio::params() const
+    {
+        return m->params;
     }
 }

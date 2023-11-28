@@ -7,6 +7,8 @@ namespace FMOD {
 }
 
 namespace Insound {
+    class ParameterMgr;
+
     /**
      * Container of loaded audio tracks to be played in sync.
      *
@@ -97,6 +99,9 @@ namespace Insound {
         const std::string &getSyncPointLabel(size_t i) const;
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t i) const;
+
+        ParameterMgr &params();
+        const ParameterMgr &params() const;
     private:
         // Pimple idiom
         struct Impl;

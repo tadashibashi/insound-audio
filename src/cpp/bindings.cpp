@@ -33,5 +33,19 @@ EMSCRIPTEN_BINDINGS() {
         .function("getFadeLevel", &T::getFadeLevel)
         .function("setSyncPointCallback", &T::setSyncPointCallback)
         .function("setEndCallback", &T::setEndCallback)
+
+        .function("param_getInitValueByIndex", &T::param_getInitValueByIndex)
+        .function("param_getInitValue", &T::param_getInitValue)
+        .function("param_getByIndex", &T::param_getByIndex)
+        .function("param_getName", &T::param_getName)
+        .function("param_count", &T::param_count)
+        .function("param_labelCount", &T::param_labelCount)
+        .function("param_getLabelName", &T::param_getLabelName)
+        .function("param_getLabelValue", &T::param_getLabelValue)
+        .function("param_setByIndex", &T::param_setByIndex)
+        .function("param_setFromLabelByIndex", &T::param_setByIndex)
+        .function("param_set", &T::param_set)
+        .function("param_setFromLabel", &T::param_setFromLabel)
+        .function("param_addLabel", &T::param_addLabel)
         ;
 }
