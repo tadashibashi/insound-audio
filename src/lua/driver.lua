@@ -49,11 +49,14 @@ function load_script(untrusted_code)
         error(err)
     end
 
+    return res
+end
+
+--Callback that fires immediately after script load
+local function on_init()
     if env.on_init ~= nil then
         env.on_init()
     end
-
-    return res
 end
 
 ---Callback that fires when the sound bank has been loaded
@@ -99,6 +102,7 @@ local function on_trackend()
 end
 
 local event_table = {
+    [Event.Init] = on_init,
     [Event.Update] = on_update,
     [Event.SyncPoint] = on_syncpoint,
     [Event.Load] = on_load,
