@@ -1,6 +1,6 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
-#include "Parameter.h"
+#include "ParamDesc.h"
 #include "SyncPointManager.h"
 #include "common.h"
 
@@ -37,7 +37,7 @@ namespace Insound
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
 
-        ParameterMgr params;
+        ParamDescMgr params;
     };
 
 
@@ -380,12 +380,12 @@ namespace Insound
         return m->endCallback;
     }
 
-    ParameterMgr &MultiTrackAudio::params()
+    ParamDescMgr &MultiTrackAudio::params()
     {
         return m->params;
     }
 
-    const ParameterMgr &MultiTrackAudio::params() const
+    const ParamDescMgr &MultiTrackAudio::params() const
     {
         return m->params;
     }

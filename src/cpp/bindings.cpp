@@ -1,12 +1,34 @@
 #include "AudioEngine.h"
+#include "ParamDesc.h"
 #include <emscripten/bind.h>
 
 using namespace emscripten;
+using namespace Insound;
 
-EMSCRIPTEN_BINDINGS() {
-    using T = Insound::AudioEngine;
+EMSCRIPTEN_BINDINGS(Params)
+{
+    value_object<StringsParam>("StringsParam")
+        .field("values", &StringsParam::values)
+        ;
 
-    class_<Insound::AudioEngine>("AudioEngine")
+    value_object<NumberParam>("NumberParam")
+        .field("min", &NumberParam::min)
+        .field("max", &NumberParam::max)
+        .field("step", &NumberParam::step)
+        .field("value", &NumberParam::value)
+        ;
+
+    enum_<ParamDesc::Type>("ParamType")
+        .value("Float", ParamDesc::Type::Float)
+        .value("Integer", ParamDesc::Type::Integer)
+        .value("Strings", ParamDesc::Type::Strings)
+        ;
+}
+
+EMSCRIPTEN_BINDINGS(AudioEngine) {
+    using T = AudioEngine;
+
+    class_<AudioEngine>("AudioEngine")
         .constructor()
         .function("init", &T::init)
         .function("resume", &T::resume)
@@ -34,18 +56,10 @@ EMSCRIPTEN_BINDINGS() {
         .function("setSyncPointCallback", &T::setSyncPointCallback)
         .function("setEndCallback", &T::setEndCallback)
 
-        .function("param_getInitValueByIndex", &T::param_getInitValueByIndex)
-        .function("param_getInitValue", &T::param_getInitValue)
-        .function("param_getByIndex", &T::param_getByIndex)
-        .function("param_getName", &T::param_getName)
         .function("param_count", &T::param_count)
-        .function("param_labelCount", &T::param_labelCount)
-        .function("param_getLabelName", &T::param_getLabelName)
-        .function("param_getLabelValue", &T::param_getLabelValue)
-        .function("param_setByIndex", &T::param_setByIndex)
-        .function("param_setFromLabelByIndex", &T::param_setByIndex)
-        .function("param_set", &T::param_set)
-        .function("param_setFromLabel", &T::param_setFromLabel)
-        .function("param_addLabel", &T::param_addLabel)
+        .function("param_getName", &T::param_getName)
+        .function("param_getType", &T::param_getType)
+        .function("param_getAsNumber", &T::param_getAsNumber)
+        .function("param_getAsStrings", &T::param_getAsStrings)
         ;
 }

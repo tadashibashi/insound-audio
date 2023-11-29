@@ -1,6 +1,5 @@
 #include "AudioEngine.h"
 #include "MultiTrackAudio.h"
-#include "Parameter.h"
 #include "common.h"
 
 #include <fmod.hpp>
@@ -254,82 +253,28 @@ namespace Insound
         track->setEndCallback(callback);
     }
 
-
-    float AudioEngine::param_getInitValueByIndex(size_t index) const
-    {
-        return track->params().getInitValue(index);
-    }
-
-    float AudioEngine::param_getInitValue(const std::string &name) const
-    {
-        return track->params().getInitValue(name);
-    }
-
-    float AudioEngine::param_getByIndex(size_t index) const
-    {
-        return track->params().get(index);
-    }
-
-    float AudioEngine::param_get(const std::string &name) const
-    {
-        return track->params().get(name);
-    }
-
     const std::string &AudioEngine::param_getName(size_t index) const
     {
-        const auto &params = track->params();
-        return params[index].getName();
+        return track->params()[index].getName();
     }
 
+    ParamDesc::Type AudioEngine::param_getType(size_t index) const
+    {
+        return track->params()[index].getType();
+    }
+
+    const StringsParam &AudioEngine::param_getAsStrings(size_t index) const
+    {
+        return track->params()[index].getStrings();
+    }
+
+    const NumberParam &AudioEngine::param_getAsNumber(size_t index) const
+    {
+        return track->params()[index].getNumber();
+    }
 
     size_t AudioEngine::param_count() const
     {
         return track->params().size();
-    }
-
-
-    size_t AudioEngine::param_labelCount(size_t paramIndex) const
-    {
-        return track->params().getLabels(paramIndex).size();
-    }
-
-
-    const std::string &AudioEngine::param_getLabelName(size_t paramIndex,
-        size_t labelIndex) const
-    {
-        return track->params().getLabels(paramIndex)[labelIndex].name;
-    }
-
-    float AudioEngine::param_getLabelValue(size_t paramIndex,
-        size_t labelIndex) const
-    {
-        return track->params().getLabels(paramIndex)[labelIndex].value;
-    }
-
-    void AudioEngine::param_setByIndex(size_t index, float value)
-    {
-        track->params().set(index, value);
-    }
-
-    void AudioEngine::param_setFromLabelByIndex(size_t index,
-        const std::string &labelVal)
-    {
-        track->params().set(index, labelVal.data());
-    }
-    void AudioEngine::param_set(const std::string &name, float value)
-    {
-        track->params().set(name, value);
-    }
-
-    void AudioEngine::param_setFromLabel(const std::string &name,
-        const std::string &labelVal)
-    {
-        track->params().set(name, labelVal);
-    }
-
-    void AudioEngine::param_addLabel(const std::string &paramName,
-        const std::string &label, float value)
-    {
-        track->params().getLabels(paramName).add(label, value);
     }
 }

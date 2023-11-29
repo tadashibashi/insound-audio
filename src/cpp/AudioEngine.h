@@ -1,6 +1,7 @@
 #pragma once
 #include "Channel.h"
 #include "MultiTrackAudio.h"
+#include "ParamDesc.h"
 
 #include <emscripten/val.h>
 
@@ -112,35 +113,17 @@ namespace Insound
         void setEndCallback(emscripten::val callback);
 
         [[nodiscard]]
-        float param_getInitValueByIndex(size_t index) const;
-        [[nodiscard]]
-        float param_getInitValue(const std::string &name) const;
-        [[nodiscard]]
-        float param_getByIndex(size_t index) const;
-        [[nodiscard]]
-        float param_get(const std::string &name) const;
-
+        ParamDesc::Type param_getType(size_t index) const;
         [[nodiscard]]
         const std::string &param_getName(size_t index) const;
-
+        [[nodiscard]]
+        const StringsParam &param_getAsStrings(size_t index) const;
+        [[nodiscard]]
+        const NumberParam &param_getAsNumber(size_t index) const;
         [[nodiscard]]
         size_t param_count() const;
 
-        [[nodiscard]]
-        size_t param_labelCount(size_t paramIndex) const;
 
-        [[nodiscard]]
-        const std::string &param_getLabelName(size_t paramIndex,
-            size_t labelIndex) const;
-        [[nodiscard]]
-        float param_getLabelValue(size_t paramIndex, size_t labelIndex) const;
-
-        void param_setByIndex(size_t index, float value);
-        void param_setFromLabelByIndex(size_t index, const std::string &labelVal);
-        void param_set(const std::string &name, float value);
-        void param_setFromLabel(const std::string &name, const std::string &labelVal);
-        void param_addLabel(const std::string &paramName,
-            const std::string &label, float value);
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;

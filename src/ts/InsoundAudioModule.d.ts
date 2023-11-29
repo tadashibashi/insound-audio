@@ -1,5 +1,22 @@
 declare type pointer = number;
 
+declare interface ParamType {
+    Float: number,
+    Integer: number,
+    Strings: number,
+}
+
+declare interface StringsParam {
+    values: string[],
+}
+
+declare interface NumberParam {
+    min: number,
+    max: number,
+    step: number,
+    value: number;
+}
+
 declare interface InsoundAudioEngine {
     // ===== System Controls / Lifetime =======================================
 
@@ -216,12 +233,20 @@ declare interface InsoundAudioEngine {
      *
      */
     setEndCallback(callback: () => void): void;
+
+    param_count(): number;
+    param_getName(index: number): string;
+    param_getType(index: number): ParamType;
+    param_getAsNumber(index: number): NumberParam;
+    param_getAsStrings(index: number): StringsParam;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {
     AudioEngine: {
         new (): InsoundAudioEngine;
     }
+
+    ParamType: ParamType;
 }
 
 declare const AudioModule: (module: any) => Promise<void>;

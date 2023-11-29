@@ -20,7 +20,17 @@ int main()
     );
 
     if (!result)
+    {
         std::cerr << driver.getError() << '\n';
+        return -1;
+    }
+
+    result = driver.doInit();
+    if (!result)
+    {
+        std::cerr << "Init error: " << driver.getError() << '\n';
+        return -1;
+    }
 
     return 0;
 }
