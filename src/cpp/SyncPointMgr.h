@@ -27,11 +27,11 @@ namespace Insound
         FMOD_SYNCPOINT *m_point;
     };
 
-    class SyncPointManager
+    class SyncPointMgr
     {
     public:
-        SyncPointManager();
-        explicit SyncPointManager(FMOD::Sound *sound);
+        SyncPointMgr();
+        explicit SyncPointMgr(FMOD::Sound *sound);
 
         [[nodiscard]]
         const std::string &getLabel(size_t i) const;

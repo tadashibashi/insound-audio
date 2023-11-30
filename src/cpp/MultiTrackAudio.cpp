@@ -1,7 +1,7 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
 #include "params/ParamDescMgr.h"
-#include "SyncPointManager.h"
+#include "SyncPointMgr.h"
 #include "common.h"
 
 #include <fmod.hpp>
@@ -33,7 +33,7 @@ namespace Insound
         FMOD::Sound *fsb;
         std::vector<Channel> chans;
         Channel main;
-        SyncPointManager points;
+        SyncPointMgr points;
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
@@ -239,7 +239,7 @@ namespace Insound
         FMOD::Sound *firstSound;
         checkResult( snd->getSubSound(0, &firstSound) );
 
-        SyncPointManager syncPoints(firstSound);
+        SyncPointMgr syncPoints(firstSound);
 
         // find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
