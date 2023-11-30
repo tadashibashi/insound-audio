@@ -8,9 +8,9 @@ namespace Insound
     class StringsParam
     {
     public:
-        StringsParam() : values() { }
-        StringsParam(std::vector<std::string> values)
-            : values(std::move(values)) { }
+        StringsParam() : values(), m_default() { }
+        StringsParam(std::vector<std::string> values, size_t defaultValue = 0)
+            : values(std::move(values)), m_default(defaultValue) { }
 
         [[nodiscard]]
         auto begin() { return values.begin(); }
@@ -47,7 +47,10 @@ namespace Insound
 
         std::string &emplace_back(std::string_view value)
         { return values.emplace_back(value); }
+
+        size_t defaultValue() const { return m_default; }
     public:
         std::vector<std::string> values;
+        size_t m_default;
     };
 }

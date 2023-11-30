@@ -18,6 +18,9 @@ namespace Insound
         std::string error;
         std::string script;
         sol::state lua;
+
+        std::function<void(int, float)> paramCallback;
+        std::function<void(int, float)> paramSetFromLuaToJS;
     };
 
     LuaDriver::LuaDriver() : m(new Impl){ }
@@ -50,7 +53,8 @@ namespace Insound
                 "SyncPoint", Event::SyncPoint,
                 "Load", Event::Load,
                 "Unload", Event::Unload,
-                "TrackEnd", Event::TrackEnd
+                "TrackEnd", Event::TrackEnd,
+                "ParamSet", Event::ParamSet
             );
 
             auto result = lua.script(DriverScript);
@@ -60,6 +64,11 @@ namespace Insound
                 m->error = err.what();
                 return false;
             }
+
+            auto env = lua["env"];
+            auto ins = env["ins"] = lua.create_table();
+
+            ins["param_set"] = m->paramSetFromLuaToJS;
 
             auto loadScript = lua.get<sol::protected_function>("load_script");
             if (!loadScript.valid())
@@ -203,5 +212,56 @@ namespace Insound
         }
 
         return true;
+    }
+
+    bool LuaDriver::doParam(const ParamDesc &param, float value)
+    {
+        sol::protected_function_result result;
+
+        auto process_event = m->lua.get<sol::protected_function>(
+            "process_event");
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+            return false;
+        }
+
+        if (param.getType() == ParamDesc::Type::Strings)
+        {
+            auto &strings = param.getStrings();
+            result = process_event(Event::ParamSet, param.getName(),
+                strings.at((int)value));
+        }
+        else
+        {
+            result = process_event(Event::ParamSet, param.getName(),
+                value);
+        }
+
+        if (!result.valid())
+        {
+            sol::error err = result;
+            m->error = err.what();
+            return false;
+        }
+
+        return true;
+    }
+
+    void LuaDriver::setParamCallback(emscripten::val callback)
+    {
+        if (callback.typeOf().as<std::string>() != "function")
+            throw std::runtime_error("Callback must be a function");
+
+        m->paramCallback = [&callback](int index, float value) -> void {
+            callback(index, value);
+        };
+    }
+
+    const std::function<void(int, float)> &
+    LuaDriver::getParamCallback() const
+    {
+        return m->paramCallback;
     }
 }

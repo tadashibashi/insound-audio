@@ -36,7 +36,6 @@ namespace Insound
         SyncPointManager points;
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
-
         ParamDescMgr params;
     };
 

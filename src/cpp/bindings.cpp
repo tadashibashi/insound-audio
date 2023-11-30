@@ -1,5 +1,5 @@
 #include "AudioEngine.h"
-#include "ParamDesc.h"
+#include "params/ParamDesc.h"
 #include <emscripten/bind.h>
 
 using namespace emscripten;
@@ -9,13 +9,14 @@ EMSCRIPTEN_BINDINGS(Params)
 {
     value_object<StringsParam>("StringsParam")
         .field("values", &StringsParam::values)
+        .field("defaultValue", &StringsParam::m_default)
         ;
 
     value_object<NumberParam>("NumberParam")
-        .field("min", &NumberParam::min)
-        .field("max", &NumberParam::max)
-        .field("step", &NumberParam::step)
-        .field("value", &NumberParam::value)
+        .field("min", &NumberParam::m_min)
+        .field("max", &NumberParam::m_max)
+        .field("step", &NumberParam::m_step)
+        .field("defaultValue", &NumberParam::m_default)
         ;
 
     enum_<ParamDesc::Type>("ParamType")
@@ -61,5 +62,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("param_getType", &T::param_getType)
         .function("param_getAsNumber", &T::param_getAsNumber)
         .function("param_getAsStrings", &T::param_getAsStrings)
+        .function("param_send", &T::param_send)
+        .function("param_onsend", &T::setParamReceiver)
         ;
 }

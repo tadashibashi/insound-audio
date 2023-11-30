@@ -51,9 +51,10 @@ namespace Insound
          * @param name    - parameter name
          * @param strings - list of strings declaring enumerated value names
          */
-        void addStrings(const std::string &name, const std::vector<std::string> &strings)
+        void addStrings(const std::string &name, const std::vector<std::string> &strings,
+            size_t defaultValue=0)
         {
-            m_params.emplace_back(name, strings);
+            m_params.emplace_back(name, strings, defaultValue);
         }
 
         /**

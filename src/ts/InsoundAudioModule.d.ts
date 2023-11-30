@@ -1,13 +1,14 @@
 declare type pointer = number;
 
-declare interface ParamType {
-    Float: number,
-    Integer: number,
-    Strings: number,
+declare enum ParamType {
+    Integer,
+    Float,
+    Strings,
 }
 
 declare interface StringsParam {
-    values: string[],
+    values: string[];
+    defaultValue: number;
 }
 
 declare interface NumberParam {
@@ -15,6 +16,7 @@ declare interface NumberParam {
     max: number,
     step: number,
     value: number;
+    defaultValue: number;
 }
 
 declare interface InsoundAudioEngine {
@@ -239,6 +241,8 @@ declare interface InsoundAudioEngine {
     param_getType(index: number): ParamType;
     param_getAsNumber(index: number): NumberParam;
     param_getAsStrings(index: number): StringsParam;
+    param_send(index: number, value: number): void;
+    param_onsend(callback: (index: number, value: number)=>void): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

@@ -1,5 +1,6 @@
 #pragma once
 #include "Channel.h"
+#include "LuaDriver.h"
 #include "MultiTrackAudio.h"
 #include "params/ParamDescMgr.h"
 
@@ -123,10 +124,17 @@ namespace Insound
         [[nodiscard]]
         size_t param_count() const;
 
+        // To be called from JavaScript when a parameter has been set.
+        // Notifies Lua Driver for scriptable callbacks.
+        void param_send(size_t index, float value);
+
+        // Set JavaScript callback to listen for when a param is set from Lua
+        void setParamReceiver(emscripten::val callback);
 
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
         std::optional<Channel> master;
+        LuaDriver lua;
     };
 }

@@ -277,4 +277,15 @@ namespace Insound
     {
         return track->params().size();
     }
+
+    void AudioEngine::param_send(size_t index, float value)
+    {
+        auto &param = track->params()[index];
+        lua.doParam(param, value);
+    }
+
+    void AudioEngine::setParamReceiver(emscripten::val callback)
+    {
+        lua.setParamCallback(callback);
+    }
 }

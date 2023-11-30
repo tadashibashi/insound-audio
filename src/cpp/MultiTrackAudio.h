@@ -85,14 +85,28 @@ namespace Insound {
 
         void setSyncPointCallback(
             std::function<void(const std::string &, double)> callback);
-
+        [[nodiscard]]
         const std::function<void(const std::string &, double)> &
         getSyncPointCallback() const;
 
+        /**
+         * This callback fires when the current track has reached its end point
+         *
+         * @param callback - callback to set
+         */
         void setEndCallback(std::function<void()> callback);
+        [[nodiscard]]
 
+        /**
+         * Get the callback that fires when current track has ended.
+         * May or may not contain a target.
+         */
         const std::function<void()> &getEndCallback() const;
 
+        /**
+         * Get the number of sync points in the current track.
+         * Only checks the first track.
+         */
         [[nodiscard]]
         size_t getNumSyncPoints() const;
         [[nodiscard]]
