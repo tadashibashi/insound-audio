@@ -1,5 +1,6 @@
 #include "LuaDriver.h"
 #include "lua.hpp"
+#include "params/ParamDesc.h"
 
 static auto DriverScript =
 #include "embed/driver.lua.h"

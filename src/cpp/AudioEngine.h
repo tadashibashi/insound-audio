@@ -1,7 +1,7 @@
 #pragma once
 #include "Channel.h"
 #include "MultiTrackAudio.h"
-#include "ParamDesc.h"
+#include "params/ParamDescMgr.h"
 
 #include <emscripten/val.h>
 

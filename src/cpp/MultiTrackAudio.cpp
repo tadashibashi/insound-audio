@@ -1,6 +1,6 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
-#include "ParamDesc.h"
+#include "params/ParamDescMgr.h"
 #include "SyncPointManager.h"
 #include "common.h"
 
