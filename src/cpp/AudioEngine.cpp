@@ -286,6 +286,6 @@ namespace Insound
 
     void AudioEngine::setParamReceiver(emscripten::val callback)
     {
-        lua.setParamCallback(callback);
+        lua.paramSetCallback(callback);
     }
 }

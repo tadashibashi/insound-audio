@@ -75,10 +75,12 @@ namespace Insound
 
         // Received from JavaScript frontend Parameter API
         // This must be set before loading script via `load`.
-        void setParamCallback(emscripten::val callback);
+        void paramSetCallback(emscripten::val callback);
+        
         [[nodiscard]]
-        const std::function<void(int, float)> & getParamCallback() const;
-
+        const std::function<void(int, float)> & paramSetCallback() const;
+        void paramGetCallback(emscripten::val callback);
+        const std::function<float(const std::string &, float)> &paramGetCallback() const;
     private:
         enum class Event {
             Init,

@@ -31,12 +31,13 @@ local function create_env()
 end
 
 ---Environment for the sandbox
-local env = {}
+env = {}
 
 ---Load a script and its sandbox environment
 ---@param untrusted_code string
-function load_script(untrusted_code)
+function load_script(untrusted_code, initEnv)
     env = create_env()
+    initEnv()
     local untrusted_func, message = load(untrusted_code, nil, 't', env)
 
     if not untrusted_func then
