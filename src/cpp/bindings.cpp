@@ -30,7 +30,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
     using T = AudioEngine;
 
     class_<AudioEngine>("AudioEngine")
-        .constructor()
+        .constructor<emscripten::val, emscripten::val>()
         .function("init", &T::init)
         .function("resume", &T::resume)
         .function("suspend", &T::suspend)
@@ -63,6 +63,5 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("param_getAsNumber", &T::param_getAsNumber)
         .function("param_getAsStrings", &T::param_getAsStrings)
         .function("param_send", &T::param_send)
-        .function("param_onsend", &T::setParamReceiver)
         ;
 }

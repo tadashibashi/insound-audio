@@ -242,12 +242,14 @@ declare interface InsoundAudioEngine {
     param_getAsNumber(index: number): NumberParam;
     param_getAsStrings(index: number): StringsParam;
     param_send(index: number, value: number): void;
-    param_onsend(callback: (index: number, value: number)=>void): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {
     AudioEngine: {
-        new (): InsoundAudioEngine;
+        new (
+            paramSet: (index: number, value: number) => void,
+            paramGet: (nameOrIndex: string | number) => number
+        ): InsoundAudioEngine;
     }
 
     ParamType: ParamType;

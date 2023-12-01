@@ -1,8 +1,10 @@
 ---User can provide a lua script that will be driven inside of a sandbox
 ---environment as defined in this file.
 
-local function create_env()
-    return {
+---Environment for the sandbox
+env = {}
+function reset_env()
+    env = {
         coroutine = coroutine,
         math = math,
         string = string,
@@ -30,14 +32,9 @@ local function create_env()
     }
 end
 
----Environment for the sandbox
-env = {}
-
 ---Load a script and its sandbox environment
 ---@param untrusted_code string
-function load_script(untrusted_code, initEnv)
-    env = create_env()
-    initEnv()
+function load_script(untrusted_code)
     local untrusted_func, message = load(untrusted_code, nil, 't', env)
 
     if not untrusted_func then
@@ -102,6 +99,12 @@ local function on_trackend()
     end
 end
 
+local function on_paramset(name, value)
+    if env.on_paramset ~= nil then
+        env.on_paramset(name, value)
+    end
+end
+
 local event_table = {
     [Event.Init] = on_init,
     [Event.Update] = on_update,
@@ -109,6 +112,7 @@ local event_table = {
     [Event.Load] = on_load,
     [Event.Unload] = on_unload,
     [Event.TrackEnd] = on_trackend,
+    [Event.ParamSet] = on_paramset,
 }
 
 function process_event(ev_type, ...)

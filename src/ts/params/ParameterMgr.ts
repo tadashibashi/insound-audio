@@ -20,14 +20,14 @@ export class ParameterMgr
         this.handleParamReceive = this.handleParamReceive.bind(this);
     }
 
-    private handleParamSet(index: number, value: number)
+    handleParamSet(index: number, value: number)
     {
         if (!this.audio) return;
 
         this.audio.engine.param_send(index, value);
     }
 
-    private handleParamReceive(index: number, value: number)
+    handleParamReceive(index: number, value: number)
     {
         this.params[index].value = value;
     }
@@ -71,7 +71,6 @@ export class ParameterMgr
         this.params = params;
         this.paramMap = paramMap;
         this.audio = audio;
-        audio.engine.param_onsend(this.handleParamReceive);
     }
 
     clear(): void

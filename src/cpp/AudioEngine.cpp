@@ -2,18 +2,46 @@
 #include "MultiTrackAudio.h"
 #include "common.h"
 
+#include "lua.hpp"
+
 #include <fmod.hpp>
 #include <fmod_errors.h>
 
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
+#include <variant>
 
 namespace Insound
 {
-    AudioEngine::AudioEngine(): track(), sys(), master()
-    {
+    AudioEngine::AudioEngine(
+        emscripten::val setParam,
+        emscripten::val getParam
 
+        ): track(), sys(), master(), lua()
+    {
+        auto env_callback = [getParam, setParam](sol::table &env) {
+            std::cout << "HELLO!!\n";
+            auto ins = env["ins"].get_or_create<sol::table>();
+                auto param = ins["param"].get_or_create<sol::table>();
+                {
+                    param.set_function("set", [setParam](int index, float value) {
+                        setParam(index, value);
+                    });
+                    param.set_function("get", [getParam](std::variant<int, std::string> index) {
+                        return getParam(index).as<float>();
+                    });
+                }
+
+                auto marker = ins["marker"].get_or_create<sol::table>();
+                {
+
+                }
+        };
+
+        // Prepare the lua driver envrionment callback -
+        // This is what will be made available in each lua scripting context.
+        lua.emplace(env_callback);
     }
 
     AudioEngine::~AudioEngine()
@@ -43,6 +71,29 @@ namespace Insound
     {
         assert(track);
         track->loadFsb((const char *)data, bytelength);
+
+        // TODO: load script string from JS from MongoDB
+        auto result = lua->load(R"Lua(
+            local volume = 0
+
+            function on_init()
+                print("Initializing Lua Script.")
+                print("Running sandbox with " .. _VERSION)
+            end
+
+            function on_load()
+                print("Loaded file")
+            end
+
+            function on_paramset(name, val)
+                print("Param was set \"" .. name.."\": ".. val)
+            end
+        )Lua");
+        if (!result)
+            std::cerr << lua->getError() << '\n';
+
+        lua->doInit();
+        lua->doLoad(*track);
     }
 
     void AudioEngine::unloadBank()
@@ -281,11 +332,6 @@ namespace Insound
     void AudioEngine::param_send(size_t index, float value)
     {
         auto &param = track->params()[index];
-        lua.doParam(param, value);
-    }
-
-    void AudioEngine::setParamReceiver(emscripten::val callback)
-    {
-        lua.paramSetCallback(callback);
+        lua->doParam(param, value);
     }
 }

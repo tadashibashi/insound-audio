@@ -13,6 +13,9 @@
  *
  */
 #pragma once
+
+#include <sol/forward.hpp>
+
 #include <emscripten/val.h>
 #include <functional>
 #include <string>
@@ -26,7 +29,7 @@ namespace Insound
     class LuaDriver
     {
     public:
-        LuaDriver();
+        explicit LuaDriver(const std::function<void(sol::table &)> &populateEnv);
         ~LuaDriver();
 
         /**
@@ -72,15 +75,6 @@ namespace Insound
         // To be called by the AudioEngine from JavaScript to let our Lua
         // API know that a parameter has been set.
         bool doParam(const ParamDesc &param, float value);
-
-        // Received from JavaScript frontend Parameter API
-        // This must be set before loading script via `load`.
-        void paramSetCallback(emscripten::val callback);
-        
-        [[nodiscard]]
-        const std::function<void(int, float)> & paramSetCallback() const;
-        void paramGetCallback(emscripten::val callback);
-        const std::function<float(const std::string &, float)> &paramGetCallback() const;
     private:
         enum class Event {
             Init,

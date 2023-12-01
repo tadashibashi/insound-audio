@@ -1,4 +1,5 @@
 import { EmHelper } from "./emscripten";
+import { ParameterMgr } from "./params/ParameterMgr";
 
 const Audio = {} as InsoundAudioModule;
 
@@ -90,6 +91,7 @@ class AudioEngine
     // container managing the current track data
     track: FSBank;
     updateHandler: (() => void) | null;
+    params: ParameterMgr;
 
     constructor()
     {
@@ -100,7 +102,15 @@ class AudioEngine
                 "using instantiating AudioEngine");
         }
 
-        this.engine = new Audio.AudioEngine();
+        this.params = new ParameterMgr;
+
+        this.engine = new Audio.AudioEngine(
+            this.params.handleParamReceive,
+            (nameOrIndex: string | number) => {
+                return this.params.get(nameOrIndex).value;
+            }
+        );
+
         if (!this.engine.init())
         {
             this.engine.delete();
@@ -134,6 +144,7 @@ class AudioEngine
 
         try {
             this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
+            this.params.load(this);
         }
         catch (err)
         {

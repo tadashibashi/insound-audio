@@ -19,7 +19,9 @@ namespace Insound
     class AudioEngine
     {
     public:
-        AudioEngine();
+        AudioEngine(
+            emscripten::val setParam,
+            emscripten::val getParam);
         ~AudioEngine();
 
     public:
@@ -128,13 +130,10 @@ namespace Insound
         // Notifies Lua Driver for scriptable callbacks.
         void param_send(size_t index, float value);
 
-        // Set JavaScript callback to listen for when a param is set from Lua
-        void setParamReceiver(emscripten::val callback);
-
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
         std::optional<Channel> master;
-        LuaDriver lua;
+        std::optional<LuaDriver> lua;
     };
 }
