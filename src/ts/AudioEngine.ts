@@ -1,3 +1,4 @@
+import { text } from "stream/consumers";
 import { EmHelper } from "./emscripten";
 import { ParameterMgr } from "./params/ParameterMgr";
 
@@ -139,12 +140,13 @@ class AudioEngine
      * @param {ArrayBuffer} buffer - data buffer
      *
      */
-    loadTrack(buffer: ArrayBuffer)
+    loadTrack(buffer: ArrayBuffer, script: string)
     {
         this.track.load(buffer);
 
         try {
             this.engine.loadBank(this.track.data.ptr, buffer.byteLength);
+            this.engine.loadScript(text);
             this.params.load(this);
         }
         catch (err)
@@ -152,11 +154,6 @@ class AudioEngine
             console.error(err);
             this.track.unload();
         }
-    }
-
-    loadScript(text: string)
-    {
-        return this.engine.loadScript(text);
     }
 
     /**
