@@ -43,6 +43,7 @@ namespace Insound
                 return false;
             }
 
+            // Create the lua state, providing std lib
             sol::state lua;
             lua.open_libraries(
                 sol::lib::base,
@@ -53,7 +54,7 @@ namespace Insound
                 sol::lib::utf8
             );
 
-            // Event type enum
+            // Event type enum used by `process_event` reducer
             lua["Event"] = lua.create_table_with(
                 "Init", Event::Init,
                 "Update", Event::Update,
@@ -64,6 +65,7 @@ namespace Insound
                 "ParamSet", Event::ParamSet
             );
 
+            // Load the driver code
             auto result = lua.script(DriverScript);
             if (!result.valid())
             {
@@ -72,6 +74,7 @@ namespace Insound
                 return false;
             }
 
+            // Populate the environment with basic lua libs and functions
             auto reset_env = lua["reset_env"].get<sol::function>();
             if (!reset_env.valid())
             {
@@ -81,7 +84,7 @@ namespace Insound
             }
             reset_env();
 
-
+            // Get the env object to populate with custom engine functions
             auto env = lua["env"].get_or_create<sol::table>();
             if (!env.valid())
             {
@@ -89,15 +92,10 @@ namespace Insound
                 return false;
             }
 
-            if (m->populateEnv)
-            {
-                m->populateEnv(env);
-            }
-            else
-            {
-                std::cout << "no callback!\n";
-            }
+            // Populate the environment with custom engine functionality
+            if (m->populateEnv) m->populateEnv(env);
 
+            // Get the load_script function to create sandbox with user script
             auto loadScript = lua.get<sol::protected_function>("load_script");
             if (!loadScript.valid())
             {
@@ -106,10 +104,10 @@ namespace Insound
                 return false;
             }
 
-
+            // Just check that this function exists which is used as a reducer
+            // to run events.
             auto processEvent =
                 lua.get<sol::protected_function>("process_event");
-
             if (!processEvent.valid())
             {
                 m->error = "failed to get `process_event` function from the "
@@ -117,10 +115,8 @@ namespace Insound
                 return false;
             }
 
-
-
+            // Finally load the script into the sandbox
             result = loadScript(userScript);
-
             if (!result.valid())
             {
                 sol::error err = result;
@@ -128,10 +124,11 @@ namespace Insound
                 return false;
             }
 
+            // Done, commit changes
             m->script = userScript;
             std::swap(m->lua, lua);
-
             m->error = NoErrors;
+
             return true;
         }
         catch (const std::exception &e)
@@ -162,7 +159,7 @@ namespace Insound
         return !m->script.empty();
     }
 
-    std::string_view LuaDriver::getError() const
+    const std::string &LuaDriver::getError() const
     {
         return m->error;
     }

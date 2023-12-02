@@ -63,7 +63,7 @@ namespace Insound
          * @return last error message.
          */
         [[nodiscard]]
-        std::string_view getError() const;
+        const std::string &getError() const;
 
         bool doInit();
         bool doUpdate();
