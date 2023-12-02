@@ -40,6 +40,8 @@ namespace Insound
         void loadBank(size_t data, size_t bytelength);
         void unloadBank();
 
+        const std::string &loadScript(const std::string &text);
+
         [[nodiscard]]
         bool isBankLoaded() const { return track && track->isLoaded(); }
 

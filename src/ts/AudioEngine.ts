@@ -34,6 +34,7 @@ async function initAudio()
 
 interface PointerWrapper {
     ptr: pointer;
+    size: number;
 }
 
 /**
@@ -43,28 +44,28 @@ export
 class FSBank
 {
     static registry: FinalizationRegistry<PointerWrapper>;
-    track: PointerWrapper;
+    data: PointerWrapper;
 
     constructor() {
-        this.track = {ptr: NULL};
+        this.data = {ptr: NULL, size: 0};
 
-        FSBank.registry.register(this, this.track, this);
+        FSBank.registry.register(this, this.data, this);
     }
 
     load(buffer: ArrayBuffer)
     {
         const ptr = EmHelper.allocBuffer(Audio, buffer);
         this.unload();
-        this.track.ptr = ptr;
+        this.data = { ptr: ptr, size: buffer.byteLength};
     }
 
     unload()
     {
-        if (this.track.ptr === NULL) return;
+        if (this.data.ptr === NULL) return;
 
-        EmHelper.free(Audio, this.track.ptr);
+        EmHelper.free(Audio, this.data.ptr);
 
-        this.track.ptr = NULL;
+        this.data.ptr = NULL;
     }
 }
 
@@ -143,7 +144,7 @@ class AudioEngine
         this.track.load(buffer);
 
         try {
-            this.engine.loadBank(this.track.track.ptr, buffer.byteLength);
+            this.engine.loadBank(this.track.data.ptr, buffer.byteLength);
             this.params.load(this);
         }
         catch (err)
@@ -151,6 +152,24 @@ class AudioEngine
             console.error(err);
             this.track.unload();
         }
+    }
+
+    loadScript(text: string)
+    {
+        return this.engine.loadScript(text);
+    }
+
+    /**
+     * Reload the bank data that is already loaded.
+     */
+    reload()
+    {
+        const data = this.track.data;
+        if (!data.ptr) return false;
+
+        this.engine.loadBank(data.ptr, data.size);
+
+        return true;
     }
 
     /**

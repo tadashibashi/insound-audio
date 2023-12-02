@@ -20,8 +20,7 @@ namespace Insound
 
         ): track(), sys(), master(), lua()
     {
-        auto env_callback = [getParam, setParam](sol::table &env) {
-            std::cout << "HELLO!!\n";
+        auto env_callback = [this, getParam, setParam](sol::table &env) {
             auto ins = env["ins"].get_or_create<sol::table>();
                 auto param = ins["param"].get_or_create<sol::table>();
                 {
@@ -31,6 +30,18 @@ namespace Insound
                     param.set_function("get", [getParam](std::variant<int, std::string> index) {
                         return getParam(index).as<float>();
                     });
+                    param.set_function("add_int",
+                        [this](std::string name, int min, int max, int defaultVal) {
+                            track->params().addInt(name, min, max, defaultVal);
+                        });
+                    param.set_function("add_float",
+                        [this](std::string name, float min, float max, float step, float defaultVal) {
+                            track->params().addFloat(name, min, max, step, defaultVal);
+                        });
+                    param.set_function("add_labels",
+                        [this](std::string name, std::vector<std::string> strings, size_t defaultIndex) {
+                            track->params().addStrings(name, strings, defaultIndex);
+                        });
                 }
 
                 auto marker = ins["marker"].get_or_create<sol::table>();
@@ -71,29 +82,25 @@ namespace Insound
     {
         assert(track);
         track->loadFsb((const char *)data, bytelength);
+    }
 
-        // TODO: load script string from JS from MongoDB
-        auto result = lua->load(R"Lua(
-            local volume = 0
+    const std::string &AudioEngine::loadScript(const std::string &text)
+    {
+        static const std::string NoErrors{};
 
-            function on_init()
-                print("Initializing Lua Script.")
-                print("Running sandbox with " .. _VERSION)
-            end
-
-            function on_load()
-                print("Loaded file")
-            end
-
-            function on_paramset(name, val)
-                print("Param was set \"" .. name.."\": ".. val)
-            end
-        )Lua");
+        auto result = lua->load(text);
         if (!result)
-            std::cerr << lua->getError() << '\n';
+            return lua->getError();
 
-        lua->doInit();
-        lua->doLoad(*track);
+        result = lua->doInit();
+        if (!result)
+            return lua->getError();
+
+        result = lua->doLoad(*track);
+        if (!result)
+            return lua->getError();
+
+        return NoErrors;
     }
 
     void AudioEngine::unloadBank()

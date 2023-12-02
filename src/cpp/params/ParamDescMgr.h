@@ -23,9 +23,9 @@ namespace Insound
          * @param max  - maximum value (inclusive)
          * @param def  - default value
          */
-        void addInt(const std::string &name, int min, int max, int def)
+        ParamDesc &addInt(const std::string &name, int min, int max, int def)
         {
-            m_params.emplace_back(name, min, max, def);
+            return m_params.emplace_back(name, min, max, def);
         }
 
         /**
@@ -38,10 +38,10 @@ namespace Insound
          *               fine-grained the slider will be
          * @param def  - default value
          */
-        void addFloat(const std::string &name, float min, float max,
+        ParamDesc &addFloat(const std::string &name, float min, float max,
             float step, float def)
         {
-            m_params.emplace_back(name, min, max, step, def);
+            return m_params.emplace_back(name, min, max, step, def);
         }
 
         /**
@@ -51,10 +51,10 @@ namespace Insound
          * @param name    - parameter name
          * @param strings - list of strings declaring enumerated value names
          */
-        void addStrings(const std::string &name, const std::vector<std::string> &strings,
+        ParamDesc &addStrings(const std::string &name, const std::vector<std::string> &strings,
             size_t defaultValue=0)
         {
-            m_params.emplace_back(name, strings, defaultValue);
+            return m_params.emplace_back(name, strings, defaultValue);
         }
 
         /**

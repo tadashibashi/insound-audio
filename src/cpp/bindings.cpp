@@ -36,6 +36,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("suspend", &T::suspend)
         .function("update", &T::update)
         .function("loadBank", &T::loadBank)
+        .function("loadScript", &T::loadScript)
         .function("unloadBank", &T::unloadBank)
         .function("isBankLoaded", &T::isBankLoaded)
         .function("setPause", &T::setPause)

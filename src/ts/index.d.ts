@@ -90,6 +90,15 @@ declare interface InsoundAudioEngine {
      */
     isBankLoaded(): boolean;
 
+    /**
+     * Load a lua script, call after bank is loaded to receive params.
+     *
+     * @param   text - lua script string
+     *
+     * @return  error message - empty if no error.
+     */
+    loadScript(text: string): boolean;
+
 
     // ===== Channel Controls =================================================
 
