@@ -76,6 +76,7 @@ namespace Insound
     {
         assert(sys);
         checkResult(sys->update());
+        lua->doUpdate();
     }
 
     void AudioEngine::loadBank(size_t data, size_t bytelength)
