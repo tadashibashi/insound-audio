@@ -145,7 +145,7 @@ class AudioEngine
 
         try {
             this.engine.loadBank(this.track.data.ptr, buffer.byteLength);
-            this.engine.loadScript(text);
+            this.engine.loadScript(script);
             this.params.load(this);
         }
         catch (err)
