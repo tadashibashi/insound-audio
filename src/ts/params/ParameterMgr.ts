@@ -1,7 +1,7 @@
 import { AudioEngine } from "../AudioEngine";
 import { NumberParameter } from "./types/NumberParameter";
 import { StringsParameter } from "./types/StringsParameter";
-import type { ParamType } from "./Paramtype";
+import { ParamType } from "./Paramtype";
 
 export class ParameterMgr
 {
