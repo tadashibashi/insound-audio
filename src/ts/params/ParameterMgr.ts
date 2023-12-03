@@ -28,9 +28,12 @@ export class ParameterMgr
         this.audio.engine.param_send(index, value);
     }
 
-    handleParamReceive(index: number, value: number)
+    handleParamReceive(index: number | string, value: number)
     {
-        this.params[index].value = value;
+        if (typeof index === "number")
+            this.params[index].value = value;
+        else
+            this.paramMap.get(index).value = value;
     }
 
     /**

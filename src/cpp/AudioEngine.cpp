@@ -24,8 +24,11 @@ namespace Insound
             auto ins = env["ins"].get_or_create<sol::table>();
                 auto param = ins["param"].get_or_create<sol::table>();
                 {
-                    param.set_function("set", [setParam](int index, float value) {
-                        setParam(index, value);
+                    param.set_function("set", [setParam](std::variant<int, std::string> index, float value) {
+                        if (index.index() == 0)
+                            setParam(std::get<int>(index), value);
+                        else
+                            setParam(std::get<std::string>(index), value);
                     });
                     param.set_function("get", [getParam](std::variant<int, std::string> index) {
                         return (index.index() == 0) ?
