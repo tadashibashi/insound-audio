@@ -28,7 +28,9 @@ namespace Insound
                         setParam(index, value);
                     });
                     param.set_function("get", [getParam](std::variant<int, std::string> index) {
-                        return getParam(index).as<float>();
+                        return (index.index() == 0) ?
+                            getParam(std::get<int>(index)).as<float>() :
+                            getParam(std::get<std::string>(index)).as<float>();
                     });
                     param.set_function("add_int",
                         [this](std::string name, int min, int max, int defaultVal) {

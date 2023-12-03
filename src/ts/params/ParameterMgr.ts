@@ -40,7 +40,6 @@ export class ParameterMgr
     load(audio: AudioEngine)
     {
         const paramCount = audio.engine.param_count();
-
         const params: (NumberParameter | StringsParameter)[] = [];
         const paramMap: Map<string, NumberParameter | StringsParameter> =
             new Map;

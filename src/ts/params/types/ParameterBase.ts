@@ -1,3 +1,5 @@
+import { ParamType } from "../ParamType";
+
 export class ParameterBase
 {
     readonly name: string;

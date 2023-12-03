@@ -1,10 +1,6 @@
-declare type pointer = number;
+type ParamType = import("./params/ParamType").ParamType;
 
-declare enum ParamType {
-    Integer,
-    Float,
-    Strings,
-}
+declare type pointer = number;
 
 declare interface StringsParam {
     values: string[];
