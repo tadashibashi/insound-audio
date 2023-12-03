@@ -1,4 +1,3 @@
-import { text } from "stream/consumers";
 import { EmHelper } from "./emscripten";
 import { ParameterMgr } from "./params/ParameterMgr";
 
