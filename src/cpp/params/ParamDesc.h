@@ -24,10 +24,18 @@ namespace Insound
             float value) : name(name), type(Type::Float), param{
             NumberParam(min, max, step, value)} { }
 
+        ParamDesc(const std::string &name, bool defaultValue)
+            : name(name), type(Type::Bool), param{NumberParam(0, 1, defaultValue)}
+        {
+
+        }
+
         ParamDesc(const std::string &name,
             const std::vector<std::string> &values, size_t defaultValue=0) :
             name(name), type(Type::Strings),
             param{StringsParam(values, defaultValue)} { }
+
+
 
         ParamDesc(ParamDesc &&other) : type(other.type), param(other.param)
         { }
@@ -35,6 +43,7 @@ namespace Insound
         enum class Type
         {
             Integer,
+            Bool,
             Float,
             Strings,
         };

@@ -1,7 +1,8 @@
 import { ParamType } from "../ParamType";
 import { ParameterBase } from "./ParameterBase";
 
-export class NumberParameter extends ParameterBase
+export
+class NumberParameter extends ParameterBase
 {
     min: number;
     max: number;

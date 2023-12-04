@@ -29,7 +29,8 @@ namespace Insound
         }
 
         /**
-         * Add a float parameter to this manager
+         * Add a float parameter to this manager, represented as a slider or
+         * knob.
          *
          * @param name - parameter name
          * @param min  - minimum value (inclusive)
@@ -37,6 +38,8 @@ namespace Insound
          * @param step - incremental interval between values - how
          *               fine-grained the slider will be
          * @param def  - default value
+         *
+         * @return reference to the created parameter.
          */
         ParamDesc &addFloat(const std::string &name, float min, float max,
             float step, float def)
@@ -45,13 +48,29 @@ namespace Insound
         }
 
         /**
+         * Add a boolean, represented as a checkbox to this manager.
+         *
+         * @param  name         - parameter name
+         * @param  defaultValue - default value of parameter
+         *
+         * @return reference to the created parameter.
+         */
+        ParamDesc &addBool(const std::string &name, bool defaultValue)
+        {
+            return m_params.emplace_back(name, defaultValue);
+        }
+
+        /**
          * Add an enumerated parameter to this manager (dropdown menu of
          * strings)
          *
          * @param name    - parameter name
          * @param strings - list of strings declaring enumerated value names
+         *
+         * @return reference to the created parameter.
          */
-        ParamDesc &addStrings(const std::string &name, const std::vector<std::string> &strings,
+        ParamDesc &addStrings(const std::string &name,
+            const std::vector<std::string> &strings,
             size_t defaultValue=0)
         {
             return m_params.emplace_back(name, strings, defaultValue);

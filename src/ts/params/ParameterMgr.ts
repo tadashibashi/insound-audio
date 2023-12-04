@@ -1,12 +1,17 @@
 import { AudioEngine } from "../AudioEngine";
+import { BoolParameter } from "./types/BoolParameter";
 import { NumberParameter } from "./types/NumberParameter";
 import { StringsParameter } from "./types/StringsParameter";
-import { ParamType } from "./Paramtype";
+import { ParamType } from "./ParamType";
+
+// Contains non-virtual children of ParameterBase
+export type Param = NumberParameter | StringsParameter | BoolParameter;
 
 export class ParameterMgr
 {
-    private params: (NumberParameter | StringsParameter)[];
-    private paramMap: Map<string, NumberParameter | StringsParameter>;
+
+    private params: Param[];
+    private paramMap: Map<string, Param>;
     private audio: AudioEngine;
 
     constructor(audio?: AudioEngine)
@@ -44,8 +49,8 @@ export class ParameterMgr
     load(audio: AudioEngine)
     {
         const paramCount = audio.engine.param_count();
-        const params: (NumberParameter | StringsParameter)[] = [];
-        const paramMap: Map<string, NumberParameter | StringsParameter> =
+        const params: Param[] = [];
+        const paramMap: Map<string, Param> =
             new Map;
 
         for (let i = 0; i < paramCount; ++i)
@@ -63,9 +68,12 @@ export class ParameterMgr
             else
             {
                 const p = audio.engine.param_getAsNumber(i);
-                const newParam = new NumberParameter(name, i, p.min, p.max,
-                    p.step, p.defaultValue, type === ParamType.Integer,
-                    this.handleParamSet);
+                const newParam = type === ParamType.Bool ?
+                    new BoolParameter(name, i, p.defaultValue,
+                        this.handleParamSet) :
+                    new NumberParameter(name, i, p.min, p.max,
+                        p.step, p.defaultValue, type === ParamType.Integer,
+                        this.handleParamSet);
                 params.push(newParam);
                 paramMap.set(name, newParam);
             }
@@ -98,7 +106,7 @@ export class ParameterMgr
      *
      */
     get(indexOrName: number | string):
-        NumberParameter | StringsParameter | undefined
+        Param | undefined
     {
         if (typeof indexOrName === "number")
         {
