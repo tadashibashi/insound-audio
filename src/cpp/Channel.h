@@ -94,6 +94,8 @@ namespace Insound
         // this is not the case.
         [[nodiscard]]
         float ch_position() const;
+
+        void release();
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;

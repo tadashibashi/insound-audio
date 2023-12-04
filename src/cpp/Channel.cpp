@@ -73,8 +73,12 @@ namespace Insound
         return {other};
     }
 
-
     Channel::~Channel()
+    {
+        release();
+    }
+
+    void Channel::release()
     {
         if (chan) // check for chan, since it may have been moved
         {
@@ -94,9 +98,10 @@ namespace Insound
                         FMOD_ErrorString(result) << '\n';
                 }
             }
+
+            chan = nullptr;
         }
     }
-
 
     Channel &Channel::volume(float val)
     {

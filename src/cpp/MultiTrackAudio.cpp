@@ -27,17 +27,21 @@ namespace Insound
 
         ~Impl()
         {
+            chans.clear();
+
             if (fsb)
                 fsb->release();
         }
 
-        FMOD::Sound *fsb;
         std::vector<Channel> chans;
+        FMOD::Sound *fsb;
+
         Channel main;
         SyncPointMgr points;
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
+        PresetMgr presets;
     };
 
 
@@ -192,7 +196,7 @@ namespace Insound
         return FMOD_OK;
     }
 
-    size_t MultiTrackAudio::getNumSyncPoints() const
+    size_t MultiTrackAudio::getSyncPointCount() const
     {
         return m->points.size();
     }
@@ -244,7 +248,26 @@ namespace Insound
 
         // find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
+        bool didUpdateSyncPoints = false;
+        if (!loopstart)
+        {
+            checkResult( firstSound->addSyncPoint(0, FMOD_TIMEUNIT_PCM,
+                "LoopStart", nullptr) );
+            didUpdateSyncPoints = true;
+        }
+
         auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+        if (!loopend)
+        {
+            unsigned int length;
+            checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
+            checkResult( firstSound->addSyncPoint(length, FMOD_TIMEUNIT_PCM,
+                "LoopEnd", nullptr) );
+            didUpdateSyncPoints = true;
+        }
+
+        if (didUpdateSyncPoints)
+            syncPoints = SyncPointMgr(firstSound);
 
         std::vector<Channel> chans;
         for (int i = 0; i < numSubSounds; ++i)
@@ -388,5 +411,41 @@ namespace Insound
     const ParamDescMgr &MultiTrackAudio::params() const
     {
         return m->params;
+    }
+
+    PresetMgr &MultiTrackAudio::presets()
+    {
+        return m->presets;
+    }
+
+    const PresetMgr &MultiTrackAudio::presets() const
+    {
+        return m->presets;
+    }
+
+    void MultiTrackAudio::applyPreset(std::string_view name, float seconds)
+    {
+        applyPreset(m->presets[name], seconds);
+    }
+
+    void MultiTrackAudio::applyPreset(size_t index, float seconds)
+    {
+        applyPreset(m->presets[index], seconds);
+    }
+
+    void MultiTrackAudio::applyPreset(const Preset &preset, float seconds)
+    {
+        auto chanSize = m->chans.size();
+
+        if (preset.volumes.size() < chanSize)
+        {
+            throw std::runtime_error("Preset " + preset.name + " does "
+                "not have enough volume settings for number of channels");
+        }
+
+        for (size_t i = 0; i < chanSize; ++i)
+        {
+            m->chans[i].fadeTo(preset.volumes[i], seconds);
+        }
     }
 }

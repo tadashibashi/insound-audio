@@ -8,6 +8,8 @@ namespace FMOD {
 
 namespace Insound {
     class ParamDescMgr;
+    class PresetMgr;
+    class Preset;
 
     /**
      * Container of loaded audio tracks to be played in sync.
@@ -108,7 +110,7 @@ namespace Insound {
          * Only checks the first track.
          */
         [[nodiscard]]
-        size_t getNumSyncPoints() const;
+        size_t getSyncPointCount() const;
         [[nodiscard]]
         const std::string &getSyncPointLabel(size_t i) const;
         [[nodiscard]]
@@ -116,6 +118,13 @@ namespace Insound {
 
         ParamDescMgr &params();
         const ParamDescMgr &params() const;
+
+        PresetMgr &presets();
+        const PresetMgr &presets() const;
+
+        void applyPreset(std::string_view name, float seconds=1.f);
+        void applyPreset(size_t index, float seconds=1.f);
+        void applyPreset(const Preset &preset, float seconds);
     private:
         // Pimple idiom
         struct Impl;
