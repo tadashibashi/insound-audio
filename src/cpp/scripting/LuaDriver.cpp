@@ -205,7 +205,7 @@ namespace Insound
 
     bool LuaDriver::doLoad(const MultiTrackAudio &track)
     {
-        auto result = m->lua["process_event"](Event::Load/*, track - need to bind this type to lua*/);
+        auto result = m->lua["process_event"](Event::Load);
         if (!result.valid())
         {
             sol::error err = result;

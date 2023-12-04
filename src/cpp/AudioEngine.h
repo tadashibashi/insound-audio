@@ -1,6 +1,6 @@
 #pragma once
 #include "Channel.h"
-#include "LuaDriver.h"
+#include "scripting/LuaDriver.h"
 #include "MultiTrackAudio.h"
 #include "params/ParamDescMgr.h"
 

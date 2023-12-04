@@ -1,8 +1,9 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
-#include "params/ParamDescMgr.h"
-#include "SyncPointMgr.h"
 #include "common.h"
+#include "params/ParamDescMgr.h"
+#include "presets/PresetMgr.h"
+#include "SyncPointMgr.h"
 
 #include <fmod.hpp>
 #include <fmod_common.h>
