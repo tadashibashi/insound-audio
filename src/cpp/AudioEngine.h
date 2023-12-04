@@ -89,16 +89,20 @@ namespace Insound
         /**
          * Seek to a postiion in the audio
          *
-         * @param seconds - time in seconds
+         * @param seconds - track time point in seconds
          */
         void seek(double seconds);
 
         /**
          * Set paused status
-         * @param pause - whether to pause
+         * @param pause   - whether to pause
+         * @param seconds - time to fade in/out of pause
          */
-        void setPause(bool pause, float seconds);
+        void setPause(bool pause, float seconds = 0);
 
+        /**
+         * Get whether engine is paused.
+         */
         [[nodiscard]]
         bool getPause() const;
 

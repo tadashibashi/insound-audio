@@ -86,8 +86,8 @@ end
 ---@param label string
 ---@param seconds number
 local function on_syncpoint(label, seconds)
-    if env.on_syncpoint ~= nil then
-        env.on_syncpoint(label, seconds)
+    if env.on_marker ~= nil then
+        env.on_marker(label, seconds)
     end
 end
 

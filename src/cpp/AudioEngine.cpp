@@ -21,44 +21,113 @@ namespace Insound
 
         ): track(), sys(), master(), lua()
     {
-        auto env_callback = [this, getParam, setParam](sol::table &env) {
-            auto ins = env["ins"].get_or_create<sol::table>();
-                auto param = ins["param"].get_or_create<sol::table>();
-                {
-                    param.set_function("set", [setParam](std::variant<int, std::string> index, float value) {
-                        if (index.index() == 0)
-                            setParam(std::get<int>(index), value);
-                        else
-                            setParam(std::get<std::string>(index), value);
-                    });
-                    param.set_function("get", [getParam](std::variant<int, std::string> index) {
-                        return (index.index() == 0) ?
-                            getParam(std::get<int>(index)).as<float>() :
-                            getParam(std::get<std::string>(index)).as<float>();
-                    });
-                    param.set_function("add_int",
-                        [this](std::string name, int min, int max, int defaultVal) {
-                            track->params().addInt(name, min, max, defaultVal);
-                        });
-                    param.set_function("add_float",
-                        [this](std::string name, float min, float max, float step, float defaultVal) {
-                            track->params().addFloat(name, min, max, step, defaultVal);
-                        });
-                    param.set_function("add_labels",
-                        [this](std::string name, std::vector<std::string> strings, size_t defaultIndex) {
-                            track->params().addStrings(name, strings, defaultIndex);
-                        });
-                }
+        using IndexOrName = std::variant<int, std::string>;
+        auto populateEnv = [this, getParam, setParam](sol::table &env)
+        {
+            Scripting::Marker::inject("Marker", env);
 
-                auto marker = ins["marker"].get_or_create<sol::table>();
-                {
+            auto snd = env["snd"].get_or_create<sol::table>();
 
-                }
+            snd.set_function("play", [this](float seconds=0) -> void
+                {
+                    this->setPause(false, seconds);
+                });
+
+            snd.set_function("pause", [this](float seconds=0) -> void
+                {
+                    this->setPause(true, seconds);
+                });
+
+            snd.set_function("set_paused",
+                [this](bool pause, float seconds=0) -> void
+                {
+                    this->setPause(pause, seconds);
+                });
+
+            snd.set_function("get_paused",
+                [this]() -> bool
+                {
+                    return this->getPause();
+                });
+
+
+
+            // param namespace
+            auto param = snd["param"].get_or_create<sol::table>();
+            param.set_function("set",
+                [setParam](std::variant<int, std::string> index, float value)
+                {
+                    if (index.index() == 0)
+                        setParam(std::get<int>(index), value);
+                    else
+                        setParam(std::get<std::string>(index), value);
+                });
+            param.set_function("get",
+                [getParam](IndexOrName index)
+                {
+                    return (index.index() == 0) ?
+                        getParam(std::get<int>(index)).as<float>() :
+                        getParam(std::get<std::string>(index)).as<float>();
+                });
+            param.set_function("add_int",
+                [this](std::string name, int min, int max, int defaultVal)
+                {
+                    track->params().addInt(name, min, max, defaultVal);
+                });
+            param.set_function("add_float",
+                [this](std::string name, float min, float max, float step,
+                    float defaultVal)
+                {
+                    track->params().addFloat(name, min, max, step, defaultVal);
+                });
+            param.set_function("add_checkbox",
+                [this](std::string name, bool defaultVal)
+                {
+                    track->params().addBool(name, defaultVal);
+                });
+            param.set_function("add_labels",
+                [this](std::string name, std::vector<std::string> strings,
+                    size_t defaultIndex)
+                {
+                    track->params().addStrings(name, strings, defaultIndex);
+                });
+
+            // marker namespace
+            auto marker = snd["marker"].get_or_create<sol::table>();
+            marker.set_function("count",
+                [this]()
+                {
+                    return this->track->getSyncPointCount();
+                });
+            marker.set_function("get",
+                [this](size_t index)
+                {
+                    --index; // offset index since lua indexes from 1
+                    auto &label = track->getSyncPointLabel(index);
+                    auto offset = track->getSyncPointOffsetSeconds(index);
+                    return Scripting::Marker{.name=label, .seconds=offset};
+                });
+
+            auto preset = snd["preset"].get_or_create<sol::table>();
+            preset.set_function("apply",
+                [this](IndexOrName nameOrIndex, float seconds)
+                {
+                    if (nameOrIndex.index() == 0)
+                    {
+                        track->applyPreset(std::get<int>(nameOrIndex),
+                            seconds);
+                    }
+                    else
+                    {
+                        track->applyPreset(std::get<std::string>(nameOrIndex),
+                            seconds);
+                    }
+                });
         };
 
         // Prepare the lua driver envrionment callback -
         // This is what will be made available in each lua scripting context.
-        lua.emplace(env_callback);
+        lua.emplace(populateEnv);
     }
 
     AudioEngine::~AudioEngine()
