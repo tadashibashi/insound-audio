@@ -9,7 +9,7 @@
 
 # Build
 build/
-src/cpp/embed/
+src/insound/embed/
 
 # Temporary
 .cache/
