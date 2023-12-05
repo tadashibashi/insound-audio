@@ -1,5 +1,4 @@
 #pragma once
-#ifdef __EMSCRIPTEN__
 
 #include <insound/Channel.h>
 #include <insound/scripting/LuaDriver.h>
@@ -145,5 +144,3 @@ namespace Insound
         std::optional<LuaDriver> lua;
     };
 }
-
-#endif

@@ -1,5 +1,7 @@
 #include "FMODError.h"
+
 #include <fmod_errors.h>
+
 #include <string>
 
 namespace Insound {

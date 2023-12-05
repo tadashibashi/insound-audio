@@ -2,6 +2,9 @@
 
 namespace Insound
 {
+    /**
+     * Class that represents a range of numbers, used by booleans, floats, ints
+     */
     class NumberParam
     {
     public:

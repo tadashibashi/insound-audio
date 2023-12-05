@@ -1,5 +1,3 @@
-#ifdef __EMSCRIPTEN__
-
 #include "AudioEngine.h"
 #include "MultiTrackAudio.h"
 #include "common.h"
@@ -453,5 +451,3 @@ namespace Insound
         lua->doParam(param, value);
     }
 }
-
-#endif
