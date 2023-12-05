@@ -1,3 +1,5 @@
+#ifdef __EMSCRIPTEN__
+
 #include "AudioEngine.h"
 #include "params/ParamDesc.h"
 #include <emscripten/bind.h>
@@ -66,3 +68,5 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("param_send", &T::param_send)
         ;
 }
+
+#endif

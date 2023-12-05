@@ -1,3 +1,4 @@
+R"__c++_include__(
 ---User can provide a lua script that will be driven inside of a sandbox
 ---environment as defined in this file.
 
@@ -119,3 +120,4 @@ local event_table = {
 function process_event(ev_type, ...)
     event_table[ev_type](...)
 end
+)__c++_include__"

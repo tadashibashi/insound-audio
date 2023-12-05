@@ -1,10 +1,12 @@
 #include "LuaDriver.h"
 #include "lua.hpp"
-#include "params/ParamDesc.h"
+#include "../params/ParamDesc.h"
 
 static auto DriverScript =
-#include "embed/driver.lua.h"
+#include "../embed/driver.lua.h"
 ;
+
+#include <chrono>
 
 static auto NoErrors = "no errors.";
 
@@ -22,6 +24,9 @@ namespace Insound
         std::string script;
         sol::state lua;
         std::function<void(sol::table &)> populateEnv;
+
+        using time_point = std::chrono::time_point<std::chrono::system_clock>;
+        time_point startTime, lastFrame;
     };
 
     LuaDriver::LuaDriver(const std::function<void(sol::table &)> &populateEnv)
@@ -129,6 +134,9 @@ namespace Insound
             std::swap(m->lua, lua);
             m->error = NoErrors;
 
+            // set clock
+            m->startTime = std::chrono::system_clock::now();
+            m->lastFrame = m->startTime;
             return true;
         }
         catch (const std::exception &e)
@@ -179,7 +187,12 @@ namespace Insound
 
     bool LuaDriver::doUpdate()
     {
-        auto result = m->lua["process_event"](Event::Update);
+        auto current = std::chrono::system_clock::now();
+        auto delta = current - m->lastFrame;
+        auto total = current - m->startTime;
+
+        auto result = m->lua["process_event"](Event::Update,
+            (double)delta.count() * .001, (double)total.count() * .001);
         if (!result.valid())
         {
             sol::error err = result;
@@ -187,6 +200,7 @@ namespace Insound
             return false;
         }
 
+        m->lastFrame = current;
         return true;
     }
 

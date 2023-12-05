@@ -60,7 +60,7 @@ namespace Insound
         size_t index = 0;
         for (auto &point : m_points)
         {
-            if (point.label() == label)
+            if (compareCaseInsensitive(point.label(), label))
                 return getOffsetSamples(index);
 
             ++index;

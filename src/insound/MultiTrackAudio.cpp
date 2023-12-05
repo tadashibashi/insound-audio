@@ -169,7 +169,7 @@ namespace Insound
         {
         case FMOD_CHANNELCONTROL_CALLBACK_SYNCPOINT:
             {
-                auto pointIndex = (int)commanddata1;
+                auto pointIndex = (int)(uintptr_t)commanddata1;
                 auto callback = track->getSyncPointCallback();
 
                 // Invoke callback, if any was set
@@ -245,25 +245,36 @@ namespace Insound
         checkResult( snd->getSubSound(0, &firstSound) );
 
         SyncPointMgr syncPoints(firstSound);
+        unsigned int length;
+        checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
+
+        if (length == 0)
+            throw std::runtime_error("Invalid subsound, no length");
 
         // find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
+        auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+
+        // if loop start or loop end were not found, add it automatically
         bool didUpdateSyncPoints = false;
         if (!loopstart)
         {
             checkResult( firstSound->addSyncPoint(0, FMOD_TIMEUNIT_PCM,
                 "LoopStart", nullptr) );
+            loopstart.emplace(0);
             didUpdateSyncPoints = true;
         }
 
-        auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+
         if (!loopend)
         {
-            unsigned int length;
-            checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
-            checkResult( firstSound->addSyncPoint(length, FMOD_TIMEUNIT_PCM,
-                "LoopEnd", nullptr) );
-            didUpdateSyncPoints = true;
+            if (length > 0)
+            {
+                checkResult( firstSound->addSyncPoint(length, FMOD_TIMEUNIT_PCM,
+                    "LoopEnd", nullptr) );
+                loopend.emplace(length);
+                didUpdateSyncPoints = true;
+            }
         }
 
         if (didUpdateSyncPoints)
@@ -275,38 +286,12 @@ namespace Insound
             FMOD::Sound *subsound;
             checkResult( snd->getSubSound(i, &subsound) );
 
-            // set loop points if the bank has any
-            if (loopstart && loopend)
-            {
-                checkResult(
-                    subsound->setLoopPoints(
-                        loopstart.value(), FMOD_TIMEUNIT_PCM,
-                        loopend.value(), FMOD_TIMEUNIT_PCM)
-                );
-            }
-            else
-            {
-                if (loopstart)
-                {
-                    unsigned int length;
-                    checkResult(subsound->getLength(&length,
-                        FMOD_TIMEUNIT_PCM) );
-                    checkResult(subsound->setLoopPoints(loopstart.value(),
-                        FMOD_TIMEUNIT_PCM, length, FMOD_TIMEUNIT_PCM));
-                }
-                else if (loopend)
-                {
-                    checkResult(subsound->setLoopPoints(
-                        0, FMOD_TIMEUNIT_PCM,
-                        loopend.value(), FMOD_TIMEUNIT_PCM)
-                    );
-                }
-                else
-                {
-                    // no looping if no loop points were found
-                    checkResult(subsound->setMode(FMOD_LOOP_OFF));
-                }
-            }
+            // set loop points
+            checkResult(
+                subsound->setLoopPoints(
+                    loopstart.value(), FMOD_TIMEUNIT_PCM,
+                    loopend.value(), FMOD_TIMEUNIT_PCM)
+            );
 
 
 

@@ -16,7 +16,6 @@
 
 #include <sol/forward.hpp>
 
-#include <emscripten/val.h>
 #include <functional>
 #include <string>
 #include <string_view>

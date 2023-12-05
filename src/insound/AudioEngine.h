@@ -1,8 +1,10 @@
 #pragma once
-#include "Channel.h"
-#include "scripting/LuaDriver.h"
-#include "MultiTrackAudio.h"
-#include "params/ParamDescMgr.h"
+#ifdef __EMSCRIPTEN__
+
+#include <insound/Channel.h>
+#include <insound/scripting/LuaDriver.h>
+#include <insound/MultiTrackAudio.h>
+#include <insound/params/ParamDescMgr.h>
 
 #include <emscripten/val.h>
 
@@ -143,3 +145,5 @@ namespace Insound
         std::optional<LuaDriver> lua;
     };
 }
+
+#endif

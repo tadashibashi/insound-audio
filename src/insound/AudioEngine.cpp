@@ -1,3 +1,5 @@
+#ifdef __EMSCRIPTEN__
+
 #include "AudioEngine.h"
 #include "MultiTrackAudio.h"
 #include "common.h"
@@ -10,6 +12,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <variant>
 
@@ -29,26 +32,58 @@ namespace Insound
             auto snd = env["snd"].get_or_create<sol::table>();
 
             snd.set_function("play", [this](float seconds=0) -> void
-                {
-                    this->setPause(false, seconds);
-                });
+            {
+                this->setPause(false, seconds);
+            });
 
             snd.set_function("pause", [this](float seconds=0) -> void
-                {
-                    this->setPause(true, seconds);
-                });
+            {
+                this->setPause(true, seconds);
+            });
 
-            snd.set_function("set_paused",
-                [this](bool pause, float seconds=0) -> void
+            snd.set_function("paused",
+            [this](std::optional<bool> pause={}, float seconds=0) -> bool
+            {
+                if (!pause)
                 {
-                    this->setPause(pause, seconds);
-                });
+                    return getPause();
+                }
+                else
+                {
+                    this->setPause(pause.value(), seconds);
+                    return pause.value();
+                }
+            });
 
-            snd.set_function("get_paused",
-                [this]() -> bool
+            snd.set_function("main_volume",
+            [this](std::optional<double> volume={})
+            {
+                if (volume)
                 {
-                    return this->getPause();
-                });
+                    this->setMainVolume(volume.value());
+                    return volume.value();
+                }
+                else
+                {
+                    return getMainVolume();
+                }
+
+            });
+
+            snd.set_function("chan_volume",
+            [this](int channel, std::optional<float> volume={})
+            {
+                --channel;
+                if (volume)
+                {
+                    setChannelVolume(channel, volume.value());
+                    return (double)volume.value();
+                }
+                else
+                {
+                    return this->getChannelVolume(channel);
+                }
+            });
 
 
 
@@ -110,16 +145,16 @@ namespace Insound
 
             auto preset = snd["preset"].get_or_create<sol::table>();
             preset.set_function("apply",
-                [this](IndexOrName nameOrIndex, float seconds)
+                [this](IndexOrName indexOrName, float seconds)
                 {
-                    if (nameOrIndex.index() == 0)
+                    if (indexOrName.index() == 0)
                     {
-                        track->applyPreset(std::get<int>(nameOrIndex),
+                        track->applyPreset(std::get<int>(indexOrName),
                             seconds);
                     }
                     else
                     {
-                        track->applyPreset(std::get<std::string>(nameOrIndex),
+                        track->applyPreset(std::get<std::string>(indexOrName),
                             seconds);
                     }
                 });
@@ -418,3 +453,5 @@ namespace Insound
         lua->doParam(param, value);
     }
 }
+
+#endif

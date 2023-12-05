@@ -31,6 +31,7 @@ except ImportError:
     has_psutil = False
 
 BASEDIR: str = os.path.dirname(__file__)
+SRCDIR: str = os.path.join(BASEDIR, "src/insound")
 
 
 def _kill_proc_tree(pid: int, sig: int = signal.SIGTERM, timeout: int = None,
@@ -103,7 +104,7 @@ def setup():
     os.system(f"{EMSDK} activate latest")
 
 
-def config(build_type="Debug"):
+def config(build_type="Debug", flags: str = ""):
     """
         Run CMake configuration
 
@@ -113,15 +114,18 @@ def config(build_type="Debug"):
     TOOLCHAIN_FILE = (f"{BASEDIR}/lib/emsdk/upstream/emscripten/cmake/Modules/"
                       "Platform/Emscripten.cmake")
 
+    TOOLCHAIN_FILE_DEF = f"-DCMAKE_TOOLCHAIN_FILE={TOOLCHAIN_FILE}"
+
     # Install Emscripten if the toolchain file does not exist
     if not os.path.exists(TOOLCHAIN_FILE):
         setup()
 
     # Run configuration
     os.system(f"cmake -S {BASEDIR} -B {BASEDIR}/build -G Ninja "
-              f"-DCMAKE_TOOLCHAIN_FILE={TOOLCHAIN_FILE} "
+              f"{TOOLCHAIN_FILE_DEF} "
               f"-DCMAKE_BUILD_TYPE={build_type.title()} "
-              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON ")
+              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON " +
+              flags)
 
 
 def build(build_type="Release"):
@@ -129,7 +133,16 @@ def build(build_type="Release"):
         Build the project
     """
     config(build_type)
-    os.system(f"cmake --build {BASEDIR}/build")
+    os.system(f"cmake --build {BASEDIR}/build --target insound-audio")
+
+
+def test(build_type="Release"):
+    """
+        Run unit tests
+    """
+    config(build_type, "-DINSOUND_BUILD_TESTS=ON, -DINSOUND_ENVIRONMENT=node")
+    os.system(f"cmake --build {BASEDIR}/build --target insound-audio-test")
+    os.system(f"bun {BASEDIR}/src/test/test-main.js")
 
 
 def help():
