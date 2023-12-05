@@ -10,6 +10,15 @@
 
 namespace Insound
 {
+    static inline FMOD_TIMEUNIT timeUnitToFMOD(TimeUnit unit)
+    {
+        switch(unit)
+        {
+        case TimeUnit::Milliseconds: return FMOD_TIMEUNIT_MS;
+        case TimeUnit::Samples:     return FMOD_TIMEUNIT_PCM;
+        }
+    }
+
     SyncPointView::SyncPointView()
         : m_label(), m_pnt(), m_snd(), m_index(-1) { }
 
@@ -110,21 +119,8 @@ namespace Insound
             std::runtime_error("SyncPointView is either empty or not loaded.");
 
         unsigned offset;
-
-        FMOD_TIMEUNIT funit;
-
-        switch(unit)
-        {
-        case TimeUnit::Milliseconds:
-            funit = FMOD_TIMEUNIT_MS;
-            break;
-        case TimeUnit::Samples:
-            funit = FMOD_TIMEUNIT_PCM;
-            break;
-        }
-
         checkResult(m_snd->getSyncPointInfo(m_pnt, nullptr, 0, &offset,
-            funit));
+            timeUnitToFMOD(unit)));
 
         return offset;
     }
@@ -142,4 +138,11 @@ namespace Insound
         return point;
     }
 
-    } // namespace Insound
+    void SyncPointView::emplace(std::string_view name, unsigned offset,
+        TimeUnit timeUnit)
+    {
+        checkResult( m_snd->addSyncPoint(offset, timeUnitToFMOD(timeUnit),
+            name.data(), nullptr) );
+    }
+
+} // namespace Insound

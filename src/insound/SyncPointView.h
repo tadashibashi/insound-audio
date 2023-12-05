@@ -57,6 +57,9 @@ namespace Insound
 
         void index(size_t index);
 
+        void emplace(std::string_view name, unsigned offset,
+            TimeUnit timeUnit);
+
         [[nodiscard]]
         unsigned int offset(TimeUnit unit = TimeUnit::Samples) const;
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <insound/SyncPointMgr.h>
 #include <string>
 #include <string_view>
 
@@ -107,7 +106,7 @@ namespace Insound {
          */
         const std::function<void()> &getEndCallback() const;
 
-        SyncPoint &addSyncPointMS(const std::string &name,
+        void addSyncPointMS(const std::string &name,
             unsigned int offset);
         /**
          * Get the number of sync points in the current track.

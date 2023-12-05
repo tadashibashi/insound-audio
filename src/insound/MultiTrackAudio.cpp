@@ -384,10 +384,10 @@ namespace Insound
         return m->syncpointCallback;
     }
 
-    SyncPoint &MultiTrackAudio::addSyncPointMS(const std::string &name,
+    void MultiTrackAudio::addSyncPointMS(const std::string &name,
         unsigned int offset)
     {
-        return m->points.emplace(name, offset, FMOD_TIMEUNIT_MS);
+        m->points.emplace(name.data(), offset, TimeUnit::Milliseconds);
     }
 
 

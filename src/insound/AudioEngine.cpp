@@ -159,9 +159,9 @@ namespace Insound
                 [this](size_t index)
                 {
                     --index; // offset index since lua indexes from 1
-                    auto &label = track->getSyncPointLabel(index);
+                    std::string label = track->getSyncPointLabel(index).data();
                     auto offset = track->getSyncPointOffsetSeconds(index);
-                    return Scripting::Marker{.name=label, .seconds=offset};
+                    return Scripting::Marker{.name=std::move(label), .seconds=offset};
                 });
             marker.set_function("add",
             [this](std::string name, double seconds)
