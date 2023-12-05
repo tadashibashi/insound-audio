@@ -14,6 +14,8 @@ namespace FMOD
 
 namespace Insound
 {
+
+
     struct SyncPoint
     {
     public:
@@ -64,6 +66,16 @@ namespace Insound
         double getOffsetSeconds(size_t i) const;
         [[nodiscard]]
         std::optional<double> getOffsetSeconds(std::string_view label) const;
+
+        /**
+         * Emplace a new sync point to the manager
+         * @param  label        name of the sync point
+         * @param  offset       time offset
+         * @param  fmodTimeUnit FMOD_TIMEUINT_ to use for time offset
+         * @return              the new SyncPoint object reference.
+         */
+        SyncPoint &emplace(std::string_view label, unsigned int offset,
+            int fmodTimeUnit);
     private:
         // Sync point data
         std::vector<SyncPoint> m_points;

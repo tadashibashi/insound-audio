@@ -48,7 +48,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getMainVolume", &T::getMainVolume)
         .function("setChannelVolume", &T::setChannelVolume)
         .function("getChannelVolume", &T::getChannelVolume)
-        .function("trackCount", &T::trackCount)
+        .function("getChannelCount", &T::getChannelCount)
         .function("isLooping", &T::isLooping)
         .function("setLooping", &T::setLooping)
         .function("fadeTo", &T::fadeTo)

@@ -207,7 +207,7 @@ declare interface InsoundAudioEngine {
     /**
      * Get the number of tracks loaded in the currently loaded fsb.
      */
-    trackCount(): number;
+    getChannelCount(): number;
 
     /**
      * Get whether track is set to loop. True by default, when loaded.

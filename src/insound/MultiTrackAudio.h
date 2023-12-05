@@ -1,4 +1,6 @@
 #pragma once
+#include <insound/SyncPointMgr.h>
+#include <string>
 #include <string_view>
 
 // Forward declaration
@@ -105,6 +107,8 @@ namespace Insound {
          */
         const std::function<void()> &getEndCallback() const;
 
+        SyncPoint &addSyncPointMS(const std::string &name,
+            unsigned int offset);
         /**
          * Get the number of sync points in the current track.
          * Only checks the first track.
@@ -116,7 +120,7 @@ namespace Insound {
         bool getSyncPointsEmpty() const;
 
         [[nodiscard]]
-        const std::string &getSyncPointLabel(size_t i) const;
+        std::string_view getSyncPointLabel(size_t i) const;
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t i) const;
 

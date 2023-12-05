@@ -1,6 +1,7 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
 #include "common.h"
+#include "insound/SyncPointView.h"
 #include "params/ParamDescMgr.h"
 #include "presets/PresetMgr.h"
 #include "SyncPointMgr.h"
@@ -37,7 +38,7 @@ namespace Insound
         FMOD::Sound *fsb;
 
         Channel main;
-        SyncPointMgr points;
+        SyncPointView points;
         std::function<void(const std::string &, double)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
@@ -210,14 +211,16 @@ namespace Insound
         return m->points.empty();
     }
 
-    const std::string &MultiTrackAudio::getSyncPointLabel(size_t i) const
+    std::string_view MultiTrackAudio::getSyncPointLabel(size_t i) const
     {
-        return m->points.getLabel(i);
+        m->points.index(i);
+        return m->points.label();
     }
 
     double MultiTrackAudio::getSyncPointOffsetSeconds(size_t i) const
     {
-        return m->points.getOffsetSeconds(i);
+        m->points.index(i);
+        return (double)m->points.offset(TimeUnit::Milliseconds) * .001;
     }
 
 
@@ -258,36 +261,29 @@ namespace Insound
         checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
 
         if (length == 0)
-            throw std::runtime_error("Invalid subsound, no length");
+            throw std::runtime_error("Invalid subsound, 0 length.");
 
         // find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
         auto loopend = syncPoints.getOffsetSamples("LoopEnd");
 
         // if loop start or loop end were not found, add it automatically
-        bool didUpdateSyncPoints = false;
         if (!loopstart)
         {
             checkResult( firstSound->addSyncPoint(0, FMOD_TIMEUNIT_PCM,
                 "LoopStart", nullptr) );
             loopstart.emplace(0);
-            didUpdateSyncPoints = true;
         }
-
 
         if (!loopend)
         {
-            if (length > 0)
-            {
-                checkResult( firstSound->addSyncPoint(length, FMOD_TIMEUNIT_PCM,
-                    "LoopEnd", nullptr) );
-                loopend.emplace(length);
-                didUpdateSyncPoints = true;
-            }
+            checkResult( firstSound->addSyncPoint(length,
+                FMOD_TIMEUNIT_PCM, "LoopEnd", nullptr) );
+            loopend.emplace(length);
         }
 
-        if (didUpdateSyncPoints)
-            syncPoints = SyncPointMgr(firstSound);
+        if (loopend.value() < loopstart.value())
+            throw std::runtime_error("LoopStart comes after LoopEnd.");
 
         std::vector<Channel> chans;
         for (int i = 0; i < numSubSounds; ++i)
@@ -320,7 +316,7 @@ namespace Insound
         unloadFsb();
         m->chans.swap(chans);
         m->fsb = snd;
-        m->points = std::move(syncPoints);
+        m->points.load(snd);
         setPause(true, 0);
     }
 
@@ -386,6 +382,12 @@ namespace Insound
     MultiTrackAudio::getSyncPointCallback() const
     {
         return m->syncpointCallback;
+    }
+
+    SyncPoint &MultiTrackAudio::addSyncPointMS(const std::string &name,
+        unsigned int offset)
+    {
+        return m->points.emplace(name, offset, FMOD_TIMEUNIT_MS);
     }
 
 

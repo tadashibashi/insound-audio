@@ -178,8 +178,8 @@ class AudioEngine
      */
     setMixPreset(volumes: number[], seconds: number)
     {
-        if (this.engine.trackCount() !== volumes.length)
-            throw Error(`setMixPreset error: volumes array length [${volumes.length}] does not match track count [${this.engine.trackCount()}]`);
+        if (this.engine.getChannelCount() !== volumes.length)
+            throw Error(`setMixPreset error: volumes array length [${volumes.length}] does not match track count [${this.engine.getChannelCount()}]`);
 
         for (let i = 0; i < volumes.length; ++i)
             this.engine.fadeChannelTo(i, volumes[i], seconds);
@@ -294,9 +294,9 @@ class AudioEngine
         this.engine.getChannelFadeLevel(ch, final);
     }
 
-    get trackCount(): number
+    get channelCount(): number
     {
-        return this.engine.trackCount();
+        return this.engine.getChannelCount();
     }
 
     get looping(): boolean

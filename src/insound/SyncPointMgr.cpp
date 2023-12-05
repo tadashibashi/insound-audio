@@ -121,4 +121,25 @@ namespace Insound
     {
         return m_points.empty();
     }
+
+    SyncPoint &SyncPointMgr::emplace(std::string_view label,
+        unsigned int offset, int unit)
+    {
+        FMOD_SYNCPOINT *point;
+        checkResult(m_sound->addSyncPoint(offset, unit, label.data(), &point));
+
+        for (size_t i = 0, size=m_points.size(); i < size; ++i)
+        {
+            unsigned int currentOffset;
+            checkResult(m_sound->getSyncPointInfo(m_points[i].point(), nullptr,
+                0, &currentOffset, unit));
+            if (currentOffset > offset)
+            {
+                return *m_points.insert(m_points.begin() + i,
+                    SyncPoint{label, point});
+            }
+        }
+
+        return m_points.emplace_back(label, point);
+    }
 }
