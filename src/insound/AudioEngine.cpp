@@ -163,6 +163,11 @@ namespace Insound
                     auto offset = track->getSyncPointOffsetSeconds(index);
                     return Scripting::Marker{.name=label, .seconds=offset};
                 });
+            marker.set_function("add",
+            [this](std::string name, double seconds)
+            {
+                track->addSyncPointMS(name, seconds * 1000);
+            });
 
             auto preset = snd["preset"].get_or_create<sol::table>();
             preset.set_function("apply",
