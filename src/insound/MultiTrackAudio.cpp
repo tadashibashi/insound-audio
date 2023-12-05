@@ -63,20 +63,24 @@ namespace Insound
         m->main.fadeTo(to, seconds);
     }
 
+
     void MultiTrackAudio::fadeChannelTo(int ch, float to, float seconds)
     {
         m->chans.at(ch).fadeTo(to, seconds);
     }
+
 
     float MultiTrackAudio::getChannelFadeLevel(int ch, bool final) const
     {
         return m->chans.at(ch).fadeLevel(final);
     }
 
+
     float MultiTrackAudio::getFadeLevel(bool final) const
     {
         return m->main.fadeLevel(final);
     }
+
 
     void MultiTrackAudio::setPause(bool pause, float seconds)
     {
@@ -199,6 +203,11 @@ namespace Insound
     size_t MultiTrackAudio::getSyncPointCount() const
     {
         return m->points.size();
+    }
+
+    bool MultiTrackAudio::getSyncPointsEmpty() const
+    {
+        return m->points.empty();
     }
 
     const std::string &MultiTrackAudio::getSyncPointLabel(size_t i) const
@@ -340,7 +349,7 @@ namespace Insound
     }
 
 
-    int MultiTrackAudio::trackCount() const
+    int MultiTrackAudio::channelCount() const
     {
         assert(m->fsb);
 
@@ -348,6 +357,7 @@ namespace Insound
         checkResult( m->fsb->getNumSubSounds(&count) );
         return count;
     }
+
 
     bool MultiTrackAudio::isLooping() const
     {
@@ -364,11 +374,13 @@ namespace Insound
         }
     }
 
+
     void MultiTrackAudio::setSyncPointCallback(
         std::function<void(const std::string &, double)> callback)
     {
         m->syncpointCallback = std::move(callback);
     }
+
 
     const std::function<void(const std::string &, double)> &
     MultiTrackAudio::getSyncPointCallback() const
@@ -376,11 +388,13 @@ namespace Insound
         return m->syncpointCallback;
     }
 
+
     void MultiTrackAudio::setEndCallback(
         std::function<void()> callback)
     {
         m->endCallback = std::move(callback);
     }
+
 
     const std::function<void()> &
     MultiTrackAudio::getEndCallback() const
@@ -388,35 +402,42 @@ namespace Insound
         return m->endCallback;
     }
 
+
     ParamDescMgr &MultiTrackAudio::params()
     {
         return m->params;
     }
+
 
     const ParamDescMgr &MultiTrackAudio::params() const
     {
         return m->params;
     }
 
+
     PresetMgr &MultiTrackAudio::presets()
     {
         return m->presets;
     }
+
 
     const PresetMgr &MultiTrackAudio::presets() const
     {
         return m->presets;
     }
 
+
     void MultiTrackAudio::applyPreset(std::string_view name, float seconds)
     {
         applyPreset(m->presets[name], seconds);
     }
 
+
     void MultiTrackAudio::applyPreset(size_t index, float seconds)
     {
         applyPreset(m->presets[index], seconds);
     }
+
 
     void MultiTrackAudio::applyPreset(const Preset &preset, float seconds)
     {

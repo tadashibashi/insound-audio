@@ -113,7 +113,7 @@ namespace Insound
         void setLooping(bool looping);
 
         [[nodiscard]]
-        int trackCount() const;
+        int getChannelCount() const;
 
         void fadeTo(float to, float seconds);
 

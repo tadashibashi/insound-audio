@@ -2,9 +2,11 @@
 #include "MultiTrackAudio.h"
 #include "common.h"
 
+#include "insound/presets/PresetMgr.h"
 #include "scripting/lua.hpp"
 #include "scripting/Marker.h"
 
+#include <any>
 #include <fmod.hpp>
 #include <fmod_errors.h>
 
@@ -68,7 +70,7 @@ namespace Insound
 
             });
 
-            snd.set_function("chan_volume",
+            snd.set_function("channel_volume",
             [this](int channel, std::optional<float> volume={})
             {
                 --channel;
@@ -81,6 +83,12 @@ namespace Insound
                 {
                     return this->getChannelVolume(channel);
                 }
+            });
+
+            snd.set_function("channel_count",
+            [this]()
+            {
+                return this->getChannelCount();
             });
 
 
@@ -102,6 +110,16 @@ namespace Insound
                         getParam(std::get<int>(index)).as<float>() :
                         getParam(std::get<std::string>(index)).as<float>();
                 });
+            param.set_function("count",
+                [this]()
+                {
+                    return track->params().size();
+                });
+            param.set_function("empty",
+                [this]()
+                {
+                    return track->params().empty();
+                });
             param.set_function("add_int",
                 [this](std::string name, int min, int max, int defaultVal)
                 {
@@ -118,7 +136,7 @@ namespace Insound
                 {
                     track->params().addBool(name, defaultVal);
                 });
-            param.set_function("add_labels",
+            param.set_function("add_options",
                 [this](std::string name, std::vector<std::string> strings,
                     size_t defaultIndex)
                 {
@@ -132,6 +150,11 @@ namespace Insound
                 {
                     return this->track->getSyncPointCount();
                 });
+            marker.set_function("empty",
+                [this]()
+                {
+                    return this->track->getSyncPointsEmpty();
+                });
             marker.set_function("get",
                 [this](size_t index)
                 {
@@ -143,19 +166,49 @@ namespace Insound
 
             auto preset = snd["preset"].get_or_create<sol::table>();
             preset.set_function("apply",
-                [this](IndexOrName indexOrName, float seconds)
+            [this](IndexOrName indexOrName, float seconds)
+            {
+                if (indexOrName.index() == 0)
                 {
-                    if (indexOrName.index() == 0)
-                    {
-                        track->applyPreset(std::get<int>(indexOrName),
-                            seconds);
-                    }
-                    else
-                    {
-                        track->applyPreset(std::get<std::string>(indexOrName),
-                            seconds);
-                    }
-                });
+                    track->applyPreset(std::get<int>(indexOrName),
+                        seconds);
+                }
+                else
+                {
+                    track->applyPreset(std::get<std::string>(indexOrName),
+                        seconds);
+                }
+            });
+
+            preset.set_function("add",
+            [this](std::string name, std::vector<float> values,
+                std::optional<size_t> position)
+            {
+                if (position)
+                    track->presets().insert(name, values, *position-1);
+                else
+                    track->presets().emplace_back(name, values);
+            });
+
+            preset.set_function("get",
+            [this](IndexOrName indexOrName) -> const std::vector<float> &
+            {
+                return (indexOrName.index() == 0) ?
+                    track->presets()[std::get<int>(indexOrName)-1].volumes :
+                    track->presets()[std::get<std::string>(indexOrName)].volumes;
+            });
+
+            preset.set_function("count",
+            [this]()
+            {
+                return track->presets().size();
+            });
+
+            preset.set_function("empty",
+            [this]()
+            {
+                return track->presets().empty();
+            });
         };
 
         // Prepare the lua driver envrionment callback -
@@ -286,10 +339,10 @@ namespace Insound
         return track->getFadeLevel(final);
     }
 
-    int AudioEngine::trackCount() const
+    int AudioEngine::getChannelCount() const
     {
         assert(track);
-        return track->trackCount();
+        return track->channelCount();
     }
 
     bool AudioEngine::isLooping() const

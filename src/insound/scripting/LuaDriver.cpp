@@ -12,6 +12,9 @@ static auto NoErrors = "no errors.";
 
 namespace Insound
 {
+    /**
+     * Implementation class for LuaDriver
+     */
     struct LuaDriver::Impl
     {
         Impl(const std::function<void(sol::table &)> &populateEnv)
@@ -20,11 +23,16 @@ namespace Insound
         {
         }
 
+        // last error that occurred
         std::string error;
+        // currently loaded script
         std::string script;
+        // lua context
         sol::state lua;
+        // callback populatates the env from owner
         std::function<void(sol::table &)> populateEnv;
 
+        // track time for update calls
         using time_point = std::chrono::time_point<std::chrono::system_clock>;
         time_point startTime, lastFrame;
     };
@@ -42,13 +50,6 @@ namespace Insound
     {
         try
         {
-
-            if (userScript.empty())
-            {
-                m->error = "cannot load empty script.";
-                return false;
-            }
-
             // Create the lua state, providing std lib
             sol::state lua;
             lua.open_libraries(
@@ -175,7 +176,15 @@ namespace Insound
 
     bool LuaDriver::doInit()
     {
-        auto result = m->lua["process_event"](Event::Init);
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+        }
+
+        auto result = process_event(Event::Init);
         if (!result.valid())
         {
             sol::error err = result;
@@ -196,8 +205,8 @@ namespace Insound
             .get<sol::protected_function>();
         if (!process_event.valid())
         {
-            m->error = "failed to get process_event in lua driver file.";
-            return false;
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
         }
 
         auto result = process_event(Event::Update,
@@ -215,7 +224,15 @@ namespace Insound
 
     bool LuaDriver::doSyncPoint(const std::string &label, double seconds)
     {
-        auto result = m->lua["process_event"](Event::SyncPoint, label, seconds);
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+        }
+
+        auto result = process_event(Event::SyncPoint, label, seconds);
         if (!result.valid())
         {
             sol::error err = result;
@@ -228,7 +245,15 @@ namespace Insound
 
     bool LuaDriver::doLoad(const MultiTrackAudio &track)
     {
-        auto result = m->lua["process_event"](Event::Load);
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+        }
+
+        auto result = process_event(Event::Load);
         if (!result.valid())
         {
             sol::error err = result;
@@ -241,7 +266,15 @@ namespace Insound
 
     bool LuaDriver::doUnload()
     {
-        auto result = m->lua["process_event"](Event::Unload);
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+        }
+
+        auto result = process_event(Event::Unload);
         if (!result.valid())
         {
             sol::error err = result;
@@ -254,7 +287,15 @@ namespace Insound
 
     bool LuaDriver::doTrackEnd()
     {
-        auto result = m->lua["process_event"](Event::TrackEnd);
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "Could not get `process_event` function from lua "
+                "driver.";
+        }
+
+        auto result = process_event(Event::TrackEnd);
         if (!result.valid())
         {
             sol::error err = result;

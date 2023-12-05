@@ -80,7 +80,7 @@ namespace Insound {
         void setChannelVolume(int ch, double vol);
 
         [[nodiscard]]
-        int trackCount() const;
+        int channelCount() const;
 
         [[nodiscard]]
         int samplerate() const;
@@ -111,6 +111,10 @@ namespace Insound {
          */
         [[nodiscard]]
         size_t getSyncPointCount() const;
+
+        [[nodiscard]]
+        bool getSyncPointsEmpty() const;
+
         [[nodiscard]]
         const std::string &getSyncPointLabel(size_t i) const;
         [[nodiscard]]

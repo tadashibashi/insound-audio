@@ -50,6 +50,9 @@ namespace Insound
         size_t size() const;
 
         [[nodiscard]]
+        bool empty() const;
+
+        [[nodiscard]]
         unsigned int getOffsetSamples(size_t i) const;
         [[nodiscard]]
         std::optional<unsigned int> getOffsetSamples(std::string_view label) const;

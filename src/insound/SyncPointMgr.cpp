@@ -117,6 +117,8 @@ namespace Insound
         return m_points.size();
     }
 
-
-
+    bool SyncPointMgr::empty() const
+    {
+        return m_points.empty();
+    }
 }

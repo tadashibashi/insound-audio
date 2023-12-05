@@ -57,6 +57,19 @@ namespace Insound
         {
             m_presets.clear();
         }
+
+        auto emplace_back(const std::string &name,
+            const std::vector<float> &values)
+        {
+            m_presets.emplace_back(name, values);
+        }
+
+        auto insert(const std::string &name,
+            const std::vector<float> &values, size_t position)
+        {
+            m_presets.insert(m_presets.begin() + position,
+                Preset{name, values});
+        }
     private:
         std::vector<Preset> m_presets;
     };
