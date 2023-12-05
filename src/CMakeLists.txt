@@ -4,9 +4,14 @@ if (INSOUND_BUILD_TESTS)
     add_subdirectory(test/cpp)
 endif()
 
-add_executable(insound-audio ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+project(insound-audio)
 
-target_link_libraries(insound-audio insound-audio-lib)
+add_executable(${PROJECT_NAME}
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/bindings.cpp
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE insound-audio-lib)
 
 # Make text file embeddable
 function(make_includable INPUT_FILE OUTPUT_FILE)
