@@ -55,6 +55,7 @@ namespace Insound
         try {
             int numsyncpoints;
             checkResult(snd->getNumSyncPoints(&numsyncpoints));
+            m_snd = snd;
             if (numsyncpoints == 0)
                 m_index = -1;
             else
@@ -97,6 +98,28 @@ namespace Insound
         m_label[0] = 0;
         m_pnt = pnt;
         m_index = index;
+    }
+
+    void SyncPointView::index(std::string_view label)
+    {
+        FMOD_SYNCPOINT *pnt;
+        char name[256];
+        for (size_t i = 0, sz = size(); i < sz; ++i)
+        {
+            checkResult(m_snd->getSyncPoint(i, &pnt));
+            checkResult(m_snd->getSyncPointInfo(pnt, name, 256, nullptr, 0));
+
+            if (name == label)
+            {
+                m_label[0] = 0;
+                m_pnt = pnt;
+                m_index = i;
+                return;
+            }
+        }
+
+        std::runtime_error("Label \"" + std::string(label) +
+            "\" does not exist in container.");
     }
 
     std::string_view SyncPointView::label() const
