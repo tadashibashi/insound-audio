@@ -145,7 +145,9 @@ class AudioEngine
 
         try {
             this.engine.loadBank(this.track.data.ptr, buffer.byteLength);
-            this.engine.loadScript(script);
+            const result = this.engine.loadScript(script);
+            if (result)
+                console.error("Lua Script error:", result);
             this.params.load(this);
         }
         catch (err)

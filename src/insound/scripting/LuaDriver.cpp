@@ -42,6 +42,7 @@ namespace Insound
     {
         try
         {
+
             if (userScript.empty())
             {
                 m->error = "cannot load empty script.";
@@ -191,7 +192,15 @@ namespace Insound
         auto delta = current - m->lastFrame;
         auto total = current - m->startTime;
 
-        auto result = m->lua["process_event"](Event::Update,
+        auto process_event = m->lua["process_event"]
+            .get<sol::protected_function>();
+        if (!process_event.valid())
+        {
+            m->error = "failed to get process_event in lua driver file.";
+            return false;
+        }
+
+        auto result = process_event(Event::Update,
             (double)delta.count() * .001, (double)total.count() * .001);
         if (!result.valid())
         {

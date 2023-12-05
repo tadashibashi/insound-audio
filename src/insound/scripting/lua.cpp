@@ -1,5 +1,5 @@
-#define MAKE_LUA
+#define MAKE_LIB
 
 extern "C" {
-#include "../../lib/lua/onelua.c"
+#include <onelua.c>
 }
