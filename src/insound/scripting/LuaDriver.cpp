@@ -176,6 +176,12 @@ namespace Insound
 
     bool LuaDriver::doInit()
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
         if (!process_event.valid())
@@ -197,6 +203,8 @@ namespace Insound
 
     bool LuaDriver::doUpdate()
     {
+        if (!isLoaded()) return false; // no err set since it may be expensive?
+
         auto current = std::chrono::system_clock::now();
         auto delta = current - m->lastFrame;
         auto total = current - m->startTime;
@@ -207,6 +215,7 @@ namespace Insound
         {
             m->error = "Could not get `process_event` function from lua "
                 "driver.";
+            return false;
         }
 
         auto result = process_event(Event::Update,
@@ -224,6 +233,12 @@ namespace Insound
 
     bool LuaDriver::doSyncPoint(const std::string &label, double seconds)
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
         if (!process_event.valid())
@@ -245,6 +260,12 @@ namespace Insound
 
     bool LuaDriver::doLoad(const MultiTrackAudio &track)
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
         if (!process_event.valid())
@@ -266,6 +287,12 @@ namespace Insound
 
     bool LuaDriver::doUnload()
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
         if (!process_event.valid())
@@ -287,6 +314,12 @@ namespace Insound
 
     bool LuaDriver::doTrackEnd()
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
         if (!process_event.valid())
@@ -308,6 +341,12 @@ namespace Insound
 
     bool LuaDriver::doParam(const ParamDesc &param, float value)
     {
+        if (!isLoaded())
+        {
+            m->error = "Script is not loaded";
+            return false;
+        }
+
         sol::protected_function_result result;
 
         auto process_event = m->lua.get<sol::protected_function>(
