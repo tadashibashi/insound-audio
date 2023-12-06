@@ -1,9 +1,9 @@
 #include "LuaDriver.h"
 #include "lua.hpp"
-#include "../params/ParamDesc.h"
+#include <insound/params/ParamDesc.h>
 
 static auto DriverScript =
-#include "../embed/driver.lua.h"
+#include <insound/embed/driver.lua.h>
 ;
 
 #include <chrono>
