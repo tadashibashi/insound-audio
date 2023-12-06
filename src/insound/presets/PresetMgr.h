@@ -41,6 +41,25 @@ namespace Insound
             return const_cast<Preset &>(operator[](name));
         }
 
+        /**
+         * Get index of a preset via name, or -1 if none exists.
+         * @param  name - name of the preset to find
+         * @return zero-based index, or -1 if it wasn't found.
+         */
+        [[nodiscard]]
+        int indexOf(std::string_view name) const
+        {
+            int i = 0;
+            for (const auto &preset : m_presets)
+            {
+                if (preset.name == name)
+                    return i;
+                ++i;
+            }
+
+            return -1;
+        }
+
         [[nodiscard]]
         auto size() const
         {
