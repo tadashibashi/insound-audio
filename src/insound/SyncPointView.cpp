@@ -37,7 +37,7 @@ namespace Insound
     SyncPointView::SyncPointView(SyncPointView &other) : m_label(),
         m_index(other.m_index), m_pnt(other.m_pnt), m_snd(other.m_snd)
     {
-        std::strcpy(m_label, other.m_label);
+        
     }
 
     SyncPointView &SyncPointView::operator=(SyncPointView &other)
