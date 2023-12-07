@@ -31,7 +31,10 @@ namespace Insound {
          */
         void loadFsb(const char *data, size_t bytelength, bool looping=true);
 
-        void unloadFsb();
+        /**
+         * Unload fsb file from memory and reset internals
+         */
+        void clear();
 
         [[nodiscard]]
         bool isLoaded() const;

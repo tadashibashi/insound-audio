@@ -134,17 +134,23 @@ namespace Insound
     }
 
 
-    void MultiTrackAudio::unloadFsb()
+    void MultiTrackAudio::clear()
     {
-        // Check if already unloaded
-        if (!this->isLoaded()) return;
-
+        m->params.clear();
         m->chans.clear();
+        m->points.clear();
+        m->presets.clear();
+        m->syncpointCallback =
+            std::function<void(const std::string &, double)>{};
 
         // Release bank
-        m->fsb->release();
-        m->fsb = nullptr;
-        m->params.clear();
+        if (m->fsb)
+        {
+            m->fsb->release();
+            m->fsb = nullptr;
+        }
+
+
     }
 
 
@@ -313,7 +319,7 @@ namespace Insound
         }
 
         // success, commit changes
-        unloadFsb();
+        clear();
         m->chans.swap(chans);
         m->fsb = snd;
         std::swap(m->points, syncPoints);

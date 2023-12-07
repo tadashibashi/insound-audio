@@ -273,7 +273,7 @@ namespace Insound
     void AudioEngine::unloadBank()
     {
         assert(track);
-        track->unloadFsb();
+        track->clear();
     }
 
     void AudioEngine::setPause(bool pause, float seconds)
@@ -424,7 +424,7 @@ namespace Insound
 
         if (this->track)
         {
-            this->track->unloadFsb();
+            this->track->clear();
             delete this->track;
         }
 
