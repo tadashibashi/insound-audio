@@ -24,6 +24,8 @@ class NumberParameter extends ParameterBase
 
     override set value(v: number)
     {
+        const constant = 1/this.step;
+        v = Math.round(constant * (v-this.min) ) / constant + this.min;
         v = Math.max(Math.min(v, this.max), this.min);
         super.value = v;
     }
