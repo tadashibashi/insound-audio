@@ -21,4 +21,15 @@ class NumberParameter extends ParameterBase
         this.max = max;
         this.step = step;
     }
+
+    override set value(v: number)
+    {
+        v = Math.max(Math.min(v, this.max), this.min);
+        super.value = v;
+    }
+
+    override get value(): number
+    {
+        return this.m_value;
+    }
 }
