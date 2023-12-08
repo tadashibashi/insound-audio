@@ -13,10 +13,18 @@ class NumberParameter extends ParameterBase
         step: number, defaultValue: number, isInteger: boolean,
         onSetCallback: (index: number, value: number) => void)
     {
+        // Validate min, max, and step
+        if (min > max)
+            throw Error("Invalid arguments: Min is greater than Max");
+        if (step <= 0 || step > max - min)
+            throw Error(
+                `Step ${step} is out of range. Valid values: 0 to ${max-min}`);
+
         super(name, index,
             isInteger ? ParamType.Integer : ParamType.Float,
             defaultValue,
             onSetCallback);
+
         this.min = min;
         this.max = max;
         this.step = step;
