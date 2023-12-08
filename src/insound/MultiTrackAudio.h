@@ -23,11 +23,15 @@ namespace Insound {
         ~MultiTrackAudio();
 
         /**
-         * Load fsb file from memory. Copies memory, safe to delete afterward.
+         * Load fsb file from memory.
+         * Reads all syncpoint/marker data from the first sound in the bank,
+         * all other track syncoints are ignored.
+         *
          * @param  data       memory pointer to the fsb
          * @param  bytelength byte size of the memory block
          *
-         * @throw FMODError on error
+         * @throw runtime_error on error, or FMODError, which is a subclass of
+         *                      runtime_error.
          */
         void loadFsb(const char *data, size_t bytelength, bool looping=true);
 
@@ -36,53 +40,92 @@ namespace Insound {
          */
         void clear();
 
+        /**
+         * Check if bank is currently loaded
+         */
         [[nodiscard]]
         bool isLoaded() const;
 
-        void seek(double seconds);
+        /**
+         * Seek current track to a position in the track (in seconds)
+         *
+         * @param seconds - position in the number of seconds to seek to.
+         */
+        void position(double seconds);
+
+        /**
+         * Get current seek position of the track in seconds.
+         */
+        [[nodiscard]]
+        double position() const;
+
+        /**
+         * Get the length of the track in seconds.
+         */
+        [[nodiscard]]
+        double length() const;
+
+        /**
+         * Set the paused status of the track
+         *
+         * @param pause   - whether to pause `true` or unpause `false` track
+         * @param seconds - number of seconds to fade in/out pause
+         */
+        void pause(bool pause, float seconds);
 
         [[nodiscard]]
-        double getPosition() const;
-
-        [[nodiscard]]
-        double getLength() const;
-
-        void setPause(bool pause, float seconds);
-
-        [[nodiscard]]
-        bool getPause() const;
+        bool paused() const;
 
 
-        [[nodiscard]]
-        bool isLooping() const;
+
 
         // Fade main volume to a certain level
         void fadeTo(float to, float seconds);
 
         void fadeChannelTo(int ch, float to, float seconds);
 
+        /**
+         * Get the current fade level of the track's master bus
+         *
+         * @param final - whether to get live calculated value `false`, or the
+         *                value targeted by the last call to a fade function
+         *                `true` (default behavior)
+         *
+         * @return - current fade level (0=no sound, 1=full sound)
+         */
         [[nodiscard]]
-        float getFadeLevel(bool final=true) const;
+        float fadeLevel(bool final=true) const;
 
+        /**
+         * Get the current fade level of a channel
+         *
+         * @param final - whether to get live calculated value `false`, or the
+         *                value targeted by the last call to a fade function
+         *                `true` (default behavior)
+         *
+         * @return - current fade level of channel (0=no sound, 1=full sound)
+         */
         [[nodiscard]]
-        float getChannelFadeLevel(int ch, bool final=true) const;
+        float channelFadeLevel(int ch, bool final=true) const;
 
         /**
          * Set whether the track should loop
          * @param looping - whether track should loop
          */
-        void setLooping(bool looping);
-
-
-        [[nodiscard]]
-        double getMainVolume() const;
-
-        void setMainVolume(double vol);
+        void looping(bool looping);
 
         [[nodiscard]]
-        double getChannelVolume(int ch) const;
+        bool looping() const;
 
-        void setChannelVolume(int ch, double vol);
+        [[nodiscard]]
+        double mainVolume() const;
+
+        void mainVolume(double vol);
+
+        [[nodiscard]]
+        double channelVolume(int ch) const;
+
+        void channelVolume(int ch, double vol);
 
         [[nodiscard]]
         int channelCount() const;

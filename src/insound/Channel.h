@@ -46,7 +46,7 @@ namespace Insound
          * @param  seconds - number of seconds to fade in/out
          * @return reference to this channel for chaining.
          */
-        Channel &paused(bool value, float seconds = 0);
+        Channel &pause(bool value, float seconds = 0);
 
         Channel &volume(float val);
 

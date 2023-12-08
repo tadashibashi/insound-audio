@@ -6,7 +6,6 @@ namespace Insound {
     public:
         explicit FMODError(int code);
 
-    private:
         /**
          * FMOD Error code, directly corresponds with the FMOD_RESULT enum
          */
@@ -15,6 +14,6 @@ namespace Insound {
         /**
          * The error message in a human-readable form
          */
-        const char *errorMessage;
+        const char *message;
     };
 }

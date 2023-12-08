@@ -279,54 +279,54 @@ namespace Insound
     void AudioEngine::setPause(bool pause, float seconds)
     {
         assert(track);
-        track->setPause(pause, seconds);
+        track->pause(pause, seconds);
     }
 
     bool AudioEngine::getPause() const
     {
-        return track->getPause();
+        return track->paused();
     }
 
     double AudioEngine::getPosition() const
     {
         assert(track);
-        return track->getPosition();
+        return track->position();
     }
 
     double AudioEngine::getLength() const
     {
         assert(track);
-        return track->getLength();
+        return track->length();
     }
 
     void AudioEngine::seek(double seconds)
     {
         assert(track);
-        track->seek(seconds);
+        track->position(seconds);
     }
 
     void AudioEngine::setMainVolume(double vol)
     {
         assert(track);
-        track->setMainVolume(vol);
+        track->mainVolume(vol);
     }
 
     double AudioEngine::getMainVolume() const
     {
         assert(track);
-        return track->getMainVolume();
+        return track->mainVolume();
     }
 
     void AudioEngine::setChannelVolume(int ch, double vol)
     {
         assert(track);
-        return track->setChannelVolume(ch, vol);
+        return track->channelVolume(ch, vol);
     }
 
     double AudioEngine::getChannelVolume(int ch) const
     {
         assert(track);
-        return track->getChannelVolume(ch);
+        return track->channelVolume(ch);
     }
 
     void AudioEngine::fadeChannelTo(int ch, float level, float seconds)
@@ -336,12 +336,12 @@ namespace Insound
 
     float AudioEngine::getChannelFadeLevel(int ch, bool final) const
     {
-        return track->getChannelFadeLevel(ch, final);
+        return track->channelFadeLevel(ch, final);
     }
 
     float AudioEngine::getFadeLevel(bool final) const
     {
-        return track->getFadeLevel(final);
+        return track->fadeLevel(final);
     }
 
     int AudioEngine::getChannelCount() const
@@ -353,13 +353,13 @@ namespace Insound
     bool AudioEngine::isLooping() const
     {
         assert(track);
-        return track->isLooping();
+        return track->looping();
     }
 
     void AudioEngine::setLooping(bool looping)
     {
         assert(track);
-        track->setLooping(looping);
+        track->looping(looping);
     }
 
     void AudioEngine::fadeTo(float to, float seconds)

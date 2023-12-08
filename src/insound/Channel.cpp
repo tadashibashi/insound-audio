@@ -166,7 +166,7 @@ namespace Insound
     }
 
 
-    Channel &Channel::paused(bool value, float seconds)
+    Channel &Channel::pause(bool value, float seconds)
     {
         if (this->paused() == value) return *this;
 

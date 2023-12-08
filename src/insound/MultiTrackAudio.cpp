@@ -70,40 +70,40 @@ namespace Insound
     }
 
 
-    float MultiTrackAudio::getChannelFadeLevel(int ch, bool final) const
+    float MultiTrackAudio::channelFadeLevel(int ch, bool final) const
     {
         return m->chans.at(ch).fadeLevel(final);
     }
 
 
-    float MultiTrackAudio::getFadeLevel(bool final) const
+    float MultiTrackAudio::fadeLevel(bool final) const
     {
         return m->main.fadeLevel(final);
     }
 
 
-    void MultiTrackAudio::setPause(bool pause, float seconds)
+    void MultiTrackAudio::pause(bool value, float seconds)
     {
-        if (!isLoaded() || getPause() == pause) return;
+        if (!isLoaded() || paused() == value) return;
 
-        m->main.paused(pause, seconds);
+        m->main.pause(value, seconds);
     }
 
 
-    bool MultiTrackAudio::getPause() const
+    bool MultiTrackAudio::paused() const
     {
         return m->main.paused();
     }
 
 
-    void MultiTrackAudio::seek(double seconds)
+    void MultiTrackAudio::position(double seconds)
     {
         for (auto &chan : m->chans)
             chan.ch_position(seconds);
     }
 
 
-    double MultiTrackAudio::getPosition() const
+    double MultiTrackAudio::position() const
     {
         if (m->chans.empty()) return 0;
 
@@ -112,7 +112,7 @@ namespace Insound
     }
 
 
-    double MultiTrackAudio::getLength() const
+    double MultiTrackAudio::length() const
     {
         int numSounds;
         checkResult( m->fsb->getNumSubSounds(&numSounds) );
@@ -232,15 +232,14 @@ namespace Insound
     {
         // Set relevant info to load the fsb
         auto exinfo{FMOD_CREATESOUNDEXINFO()};
-
         std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
         exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
         exinfo.length = bytelength;
 
+        // Load the sound bank via system object
         FMOD::System *sys;
         checkResult( m->main.raw()->getSystemObject(&sys) );
 
-        // Load the bank
         FMOD::Sound *snd;
         checkResult( sys->createSound(data,
             FMOD_OPENMEMORY_POINT |
@@ -249,9 +248,9 @@ namespace Insound
             &exinfo, &snd)
         );
 
+        // Ensure there is at least one sound in the bank
         int numSubSounds;
         checkResult( snd->getNumSubSounds(&numSubSounds) );
-
         if (numSubSounds == 0)
             throw std::runtime_error("No subsounds in the fsbank file.");
 
@@ -260,17 +259,18 @@ namespace Insound
         checkResult( snd->getSubSound(0, &firstSound) );
 
         SyncPointMgr syncPoints(firstSound);
+
         unsigned int length;
         checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
-
         if (length == 0)
             throw std::runtime_error("Invalid subsound, 0 length.");
 
-        // find loop start / end points if they exist
+        // Find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetSamples("LoopStart");
         auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+
+        // If loop start or loop end were not found, add it automatically
         bool didSetLoop = false;
-        // if loop start or loop end were not found, add it automatically
         if (!loopstart)
         {
             checkResult( firstSound->addSyncPoint(0, FMOD_TIMEUNIT_PCM,
@@ -287,12 +287,15 @@ namespace Insound
             didSetLoop = true;
         }
 
+        // Update sync points manager if any were added
         if (didSetLoop)
             syncPoints = SyncPointMgr(firstSound);
 
+        // Validate loop points
         if (loopend.value() < loopstart.value())
             throw std::runtime_error("LoopStart comes after LoopEnd.");
 
+        // Set loop points on each sound, emplacing them into a Channel vector
         std::vector<Channel> chans;
         for (int i = 0; i < numSubSounds; ++i)
         {
@@ -311,41 +314,41 @@ namespace Insound
                 (FMOD::ChannelGroup *)m->main.raw(), sys, i);
         }
 
-        // set callback
+        // Set channel callback on first channel
         if (!chans.empty())
         {
             checkResult( chans[0].raw()->setUserData(this));
             checkResult( chans[0].raw()->setCallback(channelCallback) );
         }
 
-        // success, commit changes
+        // Success, clear any prior internals then commit changes
         clear();
         m->chans.swap(chans);
         m->fsb = snd;
         std::swap(m->points, syncPoints);
-        setPause(true, 0);
+        pause(true, 0); // pause, wait for user to trigger start
     }
 
 
-    void MultiTrackAudio::setMainVolume(double vol)
+    void MultiTrackAudio::mainVolume(double vol)
     {
         m->main.volume(vol);
     }
 
 
-    double MultiTrackAudio::getMainVolume() const
+    double MultiTrackAudio::mainVolume() const
     {
         return m->main.volume();
     }
 
 
-    void MultiTrackAudio::setChannelVolume(int ch, double vol)
+    void MultiTrackAudio::channelVolume(int ch, double vol)
     {
         m->chans.at(ch).volume(vol);
     }
 
 
-    double MultiTrackAudio::getChannelVolume(int ch) const
+    double MultiTrackAudio::channelVolume(int ch) const
     {
         return m->chans.at(ch).volume();
     }
@@ -361,14 +364,14 @@ namespace Insound
     }
 
 
-    bool MultiTrackAudio::isLooping() const
+    bool MultiTrackAudio::looping() const
     {
         // only need to check first channel, since all should be uniform
         return m->chans.at(0).looping();
     }
 
 
-    void MultiTrackAudio::setLooping(bool looping)
+    void MultiTrackAudio::looping(bool looping)
     {
         for (auto &chan : m->chans)
         {

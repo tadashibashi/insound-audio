@@ -1,4 +1,7 @@
 #include "common.h"
+
+#include <insound/FMODError.h>
+
 #include <stdexcept>
 #include <string>
 
@@ -6,7 +9,7 @@ namespace Insound {
     void checkResult(FMOD_RESULT result)
     {
         if (result != FMOD_OK)
-            throw std::runtime_error(FMOD_ErrorString(result));
+            throw FMODError(result);
     }
 
     bool compareCaseInsensitive(std::string_view a, std::string_view b)
