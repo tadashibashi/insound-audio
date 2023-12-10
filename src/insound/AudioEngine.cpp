@@ -413,6 +413,15 @@ namespace Insound
             return false;
         }
 
+        FMOD_REVERB_PROPERTIES reverbPreset = FMOD_PRESET_CONCERTHALL;
+        result = sys->setReverbProperties(0, &reverbPreset);
+        if (result != FMOD_OK)
+        {
+            sys->release();
+            std::cerr << FMOD_ErrorString(result) << '\n';
+            return false;
+        }
+
         FMOD::ChannelGroup *master;
         result = sys->getMasterChannelGroup(&master);
         if (result != FMOD_OK)

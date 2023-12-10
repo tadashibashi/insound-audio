@@ -22,6 +22,7 @@ namespace Insound
         checkResult( system->playSound(sound, group, false, &tempChan) );
 
         checkResult( tempChan->setUserData(this) );
+        checkResult( tempChan->setReverbProperties(0, 0) );
 
         this->samplerate = rate;
         this->chan = static_cast<FMOD::ChannelControl *>(tempChan);
@@ -39,10 +40,12 @@ namespace Insound
         checkResult( system->createChannelGroup(name.data(), &group) );
 
         checkResult( group->setUserData(this) );
+        checkResult( group->setReverbProperties(0, 0) );
 
         this->chan = static_cast<FMOD::ChannelControl *>(group);
         this->samplerate = rate;
     }
+
 
     Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
         lastFadePoint(1.f), m_isGroup(true), samplerate(),
@@ -56,6 +59,13 @@ namespace Insound
 
         checkResult( group->setUserData(this) );
 
+        // Need to check against master channel, since reverb send cannot be
+        // set here, or it would cause an infinite loop as reverbs are
+        // fed into it.
+        FMOD::ChannelGroup *master;
+        checkResult(system->getMasterChannelGroup(&master));
+        if (group != master)
+            checkResult( group->setReverbProperties(0, 0) );
         this->samplerate = rate;
         this->chan = group;
     }
@@ -68,15 +78,18 @@ namespace Insound
         other.chan = nullptr;
     }
 
+
     Channel &Channel::operator=(Channel &&other)
     {
         return {other};
     }
 
+
     Channel::~Channel()
     {
         release();
     }
+
 
     void Channel::release()
     {
@@ -102,6 +115,7 @@ namespace Insound
             chan = nullptr;
         }
     }
+
 
     Channel &Channel::volume(float val)
     {
