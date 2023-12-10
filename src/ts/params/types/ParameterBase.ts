@@ -8,7 +8,7 @@ function lerp(value: number, target: number, percent: number)
 // Use finalization registry to clean up any existing intervals
 // However, this is a backup to explicitly calling `ParameterBase#clear`
 const registry = new FinalizationRegistry((heldValue: any) => {
-    if (heldValue && heldValue.interval instanceof NodeJS.Timeout)
+    if (heldValue && typeof heldValue.interval === "number" && heldValue.inverval !== 0)
     {
         clearInterval(heldValue.interval);
     }
@@ -28,7 +28,7 @@ class ParameterBase
     readonly index: number;
 
     private lastValue: number;
-    private transitionInterval: { interval: NodeJS.Timeout | null };
+    private transitionInterval: { interval: number | null };
 
     constructor(name: string, index: number, type: ParamType,
         defaultValue: number,
