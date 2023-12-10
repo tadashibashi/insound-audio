@@ -42,4 +42,11 @@ class NumberParameter extends ParameterBase
     {
         return this.m_value;
     }
+
+    override transitionTo(value: number, seconds: number): void {
+        if (isNaN(value))
+            return;
+        value = Math.min(Math.max(value, this.min), this.max);
+        super.transitionTo(value, seconds);
+    }
 }

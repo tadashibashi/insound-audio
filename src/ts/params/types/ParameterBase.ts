@@ -1,5 +1,19 @@
 import { ParamType } from "../ParamType";
 
+function lerp(value: number, target: number, percent: number)
+{
+    return (target - value) * percent + value;
+}
+
+// Use finalization registry to clean up any existing intervals
+// However, this is a backup to explicitly calling `ParameterBase#clear`
+const registry = new FinalizationRegistry((heldValue: any) => {
+    if (heldValue && heldValue.interval instanceof NodeJS.Timeout)
+    {
+        clearInterval(heldValue.interval);
+    }
+});
+
 export
 class ParameterBase
 {
@@ -14,6 +28,7 @@ class ParameterBase
     readonly index: number;
 
     private lastValue: number;
+    private transitionInterval: { interval: NodeJS.Timeout | null };
 
     constructor(name: string, index: number, type: ParamType,
         defaultValue: number,
@@ -26,6 +41,10 @@ class ParameterBase
         this.defaultValue = defaultValue;
         this.onSetCallback = onSetCallback;
         this.index = index;
+
+        this.transitionInterval = {interval: null};
+
+        registry.register(this, this.transitionInterval, this);
     }
 
     get value()
@@ -56,7 +75,40 @@ class ParameterBase
 
     transitionTo(value: number, seconds: number)
     {
-        throw "not implemented error";
-        // TODO: implement via tweens
+        if (isNaN(value))
+            return;
+
+        if (this.transitionInterval.interval)
+        {
+            clearInterval(this.transitionInterval.interval);
+        }
+
+        if (seconds <= 0)
+        {
+            this.value = value;
+            return;
+        }
+
+        const milliseconds = seconds * 1000;
+        const intervalTime = 1000/50; // 50fps
+        let time = 0;
+        this.transitionInterval.interval = setInterval(() => {
+            time += intervalTime;
+            this.value = lerp(this.value, value, Math.min(1, time/milliseconds)); // curved, maybe make linear?
+            if (time >= milliseconds)
+            {
+                clearInterval(this.transitionInterval.interval);
+                this.transitionInterval.interval = null;
+            }
+        }, intervalTime);
+    }
+
+    clear()
+    {
+        if (this.transitionInterval.interval)
+        {
+            clearInterval(this.transitionInterval.interval);
+            this.transitionInterval.interval = null;
+        }
     }
 }

@@ -69,7 +69,7 @@ export class ParameterMgr
             {
                 const p = audio.engine.param_getAsNumber(i);
                 const newParam = type === ParamType.Bool ?
-                    new BoolParameter(name, i, p.defaultValue,
+                    new BoolParameter(name, i, p.defaultValue !== 0,
                         this.handleParamSet) :
                     new NumberParameter(name, i, p.min, p.max,
                         p.step, p.defaultValue, type === ParamType.Integer,
@@ -79,15 +79,32 @@ export class ParameterMgr
             }
         }
 
-        this.params = params;
-        this.paramMap = paramMap;
+        this.clear(params, paramMap);
         this.audio = audio;
     }
 
-    clear(): void
+    /**
+     * Clear the ParameterMgr with option to emplace new internals
+     * @param params? - new parameter array
+     * @param pMap?   - new parameter map
+     */
+    clear(params?: Param[], pMap?: Map<string, Param>): void
     {
-        this.params.length = 0;
-        this.paramMap.clear();
+        // Clean up any old intervals that may be firing
+        const oldParams = this.params;
+        for (let i = 0; i < oldParams.length; ++i) {
+            oldParams[i].clear();
+        }
+
+        if (params)
+            this.params = params;
+        else
+            this.params.length = 0;
+
+        if (pMap)
+            this.paramMap = pMap;
+        else
+            this.paramMap.clear();
     }
 
     /**
