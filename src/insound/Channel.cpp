@@ -306,4 +306,17 @@ namespace Insound
         return volume;
     }
 
+    float Channel::reverbLevel() const
+    {
+        float level;
+        checkResult(chan->getReverbProperties(0, &level));
+        return level;
+    }
+
+    Channel &Channel::reverbLevel(float level)
+    {
+        checkResult(chan->setReverbProperties(0, level));
+        return *this;
+    }
+
 }

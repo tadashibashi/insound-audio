@@ -273,6 +273,17 @@ class AudioEngine
         return this;
     }
 
+    setMainReverbLevel(level: number)
+    {
+        this.engine.setMainReverbLevel(level);
+        return this;
+    }
+
+    getMainReverbLevel(): number
+    {
+        return this.engine.getMainReverbLevel();
+    }
+
     getChannelVolume(ch: number): number
     {
         return this.engine.getChannelVolume(ch);
@@ -281,6 +292,17 @@ class AudioEngine
     setChannelVolume(ch: number, volume: number)
     {
         this.engine.setChannelVolume(ch, volume);
+        return this;
+    }
+
+    getChannelReverbLevel(ch: number)
+    {
+        return this.engine.getChannelReverbLevel(ch);
+    }
+
+    setChannelReverbLevel(ch: number, level: number)
+    {
+        this.engine.setChannelReverbLevel(ch, level);
         return this;
     }
 

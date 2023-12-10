@@ -147,6 +147,20 @@ declare interface InsoundAudioEngine {
     getMainVolume(): number;
 
     /**
+     * Set the main bus reverb send level
+     *
+     * @param level - the send level to set
+     */
+    setMainReverbLevel(level: number): void;
+
+    /**
+     * Get the main bus reverb send level
+     *
+     * @return main bus reverb send level.
+     */
+    getMainReverbLevel(): number;
+
+    /**
      * Set a specific channel's volume. For now, it gets reset every time
      * play is called, so it should be called during every call to start if
      * playback should begin at a differeing level.
@@ -168,6 +182,22 @@ declare interface InsoundAudioEngine {
      *
      */
     getChannelVolume(ch: number): number;
+
+    /**
+     * Set channel reverb send level
+     *
+     * @param {number} ch    - the channel index to target (0-indexed)
+     * @param {number} level - the channel's reverb level to set
+     */
+    setChannelReverbLevel(ch: number, level: number): void;
+
+    /**
+     * Get a channel's reverb send level
+     *
+     * @param  ch - channel index to target (0-indexed)
+     * @return the channel's current reverb send level
+     */
+    getChannelReverbLevel(ch: number): number;
 
     /**
      * Fade main bus from current fade volume to another in number of `seconds`

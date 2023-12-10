@@ -466,4 +466,24 @@ namespace Insound
             m->chans[i].fadeTo(preset.volumes[i], seconds);
         }
     }
+
+    void MultiTrackAudio::channelReverbLevel(int ch, float level)
+    {
+        m->chans.at(ch).reverbLevel(level);
+    }
+
+    float MultiTrackAudio::channelReverbLevel(int ch) const
+    {
+        return m->chans.at(ch).reverbLevel();
+    }
+
+    void MultiTrackAudio::mainReverbLevel(float level)
+    {
+        m->main.reverbLevel(level);
+    }
+
+    float MultiTrackAudio::mainReverbLevel() const
+    {
+        return m->main.reverbLevel();
+    }
 }

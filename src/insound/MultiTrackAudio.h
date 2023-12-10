@@ -179,6 +179,16 @@ namespace Insound {
         void applyPreset(std::string_view name, float seconds=1.f);
         void applyPreset(size_t index, float seconds=1.f);
         void applyPreset(const Preset &preset, float seconds);
+
+        [[nodiscard]]
+        float channelReverbLevel(int ch) const;
+
+        void channelReverbLevel(int ch, float level);
+
+        [[nodiscard]]
+        float mainReverbLevel() const;
+
+        void mainReverbLevel(float level);
     private:
         // Pimple idiom
         struct Impl;

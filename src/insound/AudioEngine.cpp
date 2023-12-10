@@ -508,4 +508,24 @@ namespace Insound
         auto &param = track->params()[index];
         lua->doParam(param, value);
     }
+
+    void AudioEngine::setMainReverbLevel(float level)
+    {
+        track->mainReverbLevel(level);
+    }
+
+    float AudioEngine::getMainReverbLevel() const
+    {
+        return track->mainReverbLevel();
+    }
+
+    void AudioEngine::setChannelReverbLevel(int ch, float level)
+    {
+        track->channelReverbLevel(ch, level);
+    }
+
+    float AudioEngine::getChannelReverbLevel(int ch) const
+    {
+        return track->channelReverbLevel(ch);
+    }
 }

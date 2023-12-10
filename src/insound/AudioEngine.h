@@ -137,6 +137,13 @@ namespace Insound
         // Notifies Lua Driver for scriptable callbacks.
         void param_send(size_t index, float value);
 
+        void setMainReverbLevel(float level);
+        [[nodiscard]]
+        float getMainReverbLevel() const;
+
+        void setChannelReverbLevel(int ch, float level);
+        [[nodiscard]]
+        float getChannelReverbLevel(int ch) const;
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
