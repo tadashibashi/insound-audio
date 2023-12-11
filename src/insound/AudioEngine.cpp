@@ -18,7 +18,7 @@
 
 namespace Insound
 {
-    static void validateCallbacks(std::initializer_list<std::string_view> names, const emscripten::val &cbs)
+    static void validateCallbacks(std::initializer_list<const char *> names, const emscripten::val &cbs)
     {
         for (auto name : names)
         {
