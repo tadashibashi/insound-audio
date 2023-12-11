@@ -1,4 +1,4 @@
-import { audioModuleWasInit, initAudioModule } from "./emaudio/AudioModule";
+import { audioModuleWasInit } from "./emaudio/AudioModule";
 import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
@@ -91,7 +91,7 @@ class AudioEngine
     reload()
     {
         const data = this.trackData;
-        if (!data.isLoaded) return false;
+        if (data.isNull) return false;
 
         this.engine.loadBank(data.ptr, data.size);
 
