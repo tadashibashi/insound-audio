@@ -33,6 +33,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_compile_options(${PROJECT_NAME} PUBLIC
         -O0 -fexceptions
     )
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DINS_DEBUG=1)
 else()
     target_link_options(${PROJECT_NAME} PUBLIC
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
@@ -42,7 +43,8 @@ else()
         -sWASM_BIGINT=1 -sENVIRONMENT=${INSOUND_ENVIRONMENT}
         -sALLOW_MEMORY_GROWTH=1
     )
-    target_compile_options(${PROJECT_NAME} PUBLIC
+    target_compile_options(${PROJECT_NAME} PUBLIC -DINS_DEBUG=0
         -flto -Os
     )
+    target_compile_definitions(${PROJECT_NAME})
 endif()

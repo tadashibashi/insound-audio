@@ -32,7 +32,12 @@ namespace Insound
         emscripten::val cbs): track(), sys(), master(), lua()
     {
         using IndexOrName = std::variant<int, std::string>;
-        auto populateEnv = [this, getParam, setParam](sol::table &env)
+
+#if INS_DEBUG
+        validateCallbacks({"setParam", "getParam"}, cbs);
+#endif
+
+        auto populateEnv = [this, cbs](sol::table &env)
         {
             emscripten::val setParam = cbs["setParam"];
             emscripten::val getParam = cbs["getParam"];
