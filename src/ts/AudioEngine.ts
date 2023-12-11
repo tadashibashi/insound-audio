@@ -1,106 +1,34 @@
-import { EmHelper } from "./emscripten";
+import { audioModuleWasInit, initAudioModule } from "./emaudio/AudioModule";
+import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
+import { Audio } from "./emaudio/AudioModule";
 
-const Audio = {} as InsoundAudioModule;
-
-type pointer = number;
-const NULL: pointer = 0;
-
-export
-async function initAudio()
-{
-    if (Audio._free)
-    {
-        console.warn("initAudio: Audio module was already initialized.");
-        return;
-    }
-
-    try {
-        await new Promise<void>( (resolve, reject) => {
-            const timeout = setTimeout(reject, 7500); // timeout if it doesn't load in 7.5 seconds.
-            Audio.onRuntimeInitialized = () => {
-                clearTimeout(timeout);
-                resolve();
-            };
-
-            AudioModule(Audio);
-        });
-
-    } catch(err) {
-        console.error(err);
-        throw err;
-    }
-}
-
-interface PointerWrapper {
-    ptr: pointer;
-    size: number;
-}
-
-/**
- * Wrapper for WebAssembly memory pointer (in our use for an FSBank)
- */
-export
-class FSBank
-{
-    static registry: FinalizationRegistry<PointerWrapper>;
-    data: PointerWrapper;
-
-    constructor() {
-        this.data = {ptr: NULL, size: 0};
-
-        FSBank.registry.register(this, this.data, this);
-    }
-
-    load(buffer: ArrayBuffer)
-    {
-        const ptr = EmHelper.allocBuffer(Audio, buffer);
-        this.unload();
-        this.data = { ptr: ptr, size: buffer.byteLength};
-    }
-
-    unload()
-    {
-        if (this.data.ptr === NULL) return;
-
-        EmHelper.free(Audio, this.data.ptr);
-
-        this.data.ptr = NULL;
-    }
-}
-
-FSBank.registry = new FinalizationRegistry<PointerWrapper>((heldValue) => {
-    if (heldValue && heldValue.ptr !== undefined)
-    {
-        EmHelper.free(Audio, heldValue.ptr);
-    }
-    else
-    {
-        console.error("Failed to finalize MultiLayeredTrack: Wrong type was " +
-            "passed to the FinalizationRegistry.");
+const registry = new FinalizationRegistry((heldValue) => {
+    if (heldValue instanceof Audio.AudioEngine) {
+        heldValue.delete();
+    } else {
+        console.error("Failed to finalize AudioEngine object: Wrong " +
+            "type was passed to the finalization registry.");
     }
 });
-
 
 export
 class AudioEngine
 {
-    static registry: FinalizationRegistry<InsoundAudioEngine>;
-
     engine: InsoundAudioEngine;
 
     // container managing the current track data
-    track: FSBank;
+    trackData: EmBuffer;
     updateHandler: (() => void) | null;
     params: ParameterMgr;
 
     constructor()
     {
         // Ensure WebAssembly module was initialized
-        if (Audio._free === undefined)
+        if (!audioModuleWasInit())
         {
-            throw Error("initAudio must be successfully called before " +
-                "using instantiating AudioEngine");
+            throw Error("Cannot instantiate AudioEngine without first " +
+                "initializing AudioModule");
         }
 
         this.params = new ParameterMgr;
@@ -118,10 +46,10 @@ class AudioEngine
             throw new Error("Failed to initialize AudioEngine");
         }
 
-        this.track = new FSBank();
+        this.trackData = new EmBuffer();
         this.updateHandler = null;
 
-        AudioEngine.registry.register(this, this.engine, this);
+        registry.register(this, this.engine, this);
     }
 
     /**
@@ -141,10 +69,10 @@ class AudioEngine
      */
     loadTrack(buffer: ArrayBuffer, script: string)
     {
-        this.track.load(buffer);
+        this.trackData.alloc(buffer, Audio);
 
         try {
-            this.engine.loadBank(this.track.data.ptr, buffer.byteLength);
+            this.engine.loadBank(this.trackData.ptr, buffer.byteLength);
             const result = this.engine.loadScript(script);
             if (result)
                 console.error("Lua Script error:", result);
@@ -153,7 +81,7 @@ class AudioEngine
         catch (err)
         {
             console.error(err);
-            this.track.unload();
+            this.trackData.free();
         }
     }
 
@@ -162,8 +90,8 @@ class AudioEngine
      */
     reload()
     {
-        const data = this.track.data;
-        if (!data.ptr) return false;
+        const data = this.trackData;
+        if (!data.isLoaded) return false;
 
         this.engine.loadBank(data.ptr, data.size);
 
@@ -191,7 +119,7 @@ class AudioEngine
     unloadTrack()
     {
         this.engine.unloadBank();
-        this.track.unload();
+        this.trackData.free();
     }
 
     /**
@@ -366,12 +294,3 @@ class AudioEngine
         this.engine.delete();
     }
 }
-
-AudioEngine.registry = new FinalizationRegistry((heldValue) => {
-    if (heldValue instanceof Audio.AudioEngine) {
-        heldValue.delete();
-    } else {
-        console.error("Failed to finalize AudioEngine object: Wrong " +
-            "type was passed to the finalization registry.");
-    }
-});

@@ -1,4 +1,5 @@
-type ParamType = import("./params/ParamType").ParamType;
+type LuaCallbacks = import("./LuaCallbacks").LuaCallbacks;
+type ParamType = import("../params/ParamType").ParamType;
 
 declare type pointer = number;
 
@@ -281,10 +282,7 @@ declare interface InsoundAudioEngine {
 
 declare interface InsoundAudioModule extends EmscriptenModule {
     AudioEngine: {
-        new (callbacks: {
-            setParam: (index: number, value: number) => void,
-            getParam: (nameOrIndex: string | number) => number
-        }): InsoundAudioEngine;
+        new (callbacks: LuaCallbacks): InsoundAudioEngine;
     }
 
     ParamType: ParamType;
