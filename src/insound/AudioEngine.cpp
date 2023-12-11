@@ -18,15 +18,25 @@
 
 namespace Insound
 {
-    AudioEngine::AudioEngine(
-        emscripten::val setParam,
-        emscripten::val getParam
+    static void validateCallbacks(std::initializer_list<std::string_view> names, const emscripten::val &cbs)
+    {
+        for (auto name : names)
+        {
+            if (cbs[name].typeOf().as<std::string>() != "function")
+                throw std::runtime_error("missing callback \"" +
+                    std::string(name) + "\"");
+        }
+    }
 
-        ): track(), sys(), master(), lua()
+    AudioEngine::AudioEngine(
+        emscripten::val cbs): track(), sys(), master(), lua()
     {
         using IndexOrName = std::variant<int, std::string>;
         auto populateEnv = [this, getParam, setParam](sol::table &env)
         {
+            emscripten::val setParam = cbs["setParam"];
+            emscripten::val getParam = cbs["getParam"];
+
             Scripting::Marker::inject("Marker", env);
 
             auto snd = env["snd"].get_or_create<sol::table>();
@@ -90,8 +100,6 @@ namespace Insound
             {
                 return this->getChannelCount();
             });
-
-
 
             // param namespace
             auto param = snd["param"].get_or_create<sol::table>();

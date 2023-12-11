@@ -30,7 +30,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
     using T = AudioEngine;
 
     class_<AudioEngine>("AudioEngine")
-        .constructor<emscripten::val, emscripten::val>()
+        .constructor<emscripten::val>()
         .function("init", &T::init)
         .function("resume", &T::resume)
         .function("suspend", &T::suspend)

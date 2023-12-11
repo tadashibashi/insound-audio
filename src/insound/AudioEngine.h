@@ -20,9 +20,7 @@ namespace Insound
     class AudioEngine
     {
     public:
-        AudioEngine(
-            emscripten::val setParam,
-            emscripten::val getParam);
+        AudioEngine(emscripten::val cbs);
         ~AudioEngine();
 
     public:

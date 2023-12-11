@@ -105,12 +105,12 @@ class AudioEngine
 
         this.params = new ParameterMgr;
 
-        this.engine = new Audio.AudioEngine(
-            this.params.handleParamReceive,
-            (nameOrIndex: string | number) => {
+        this.engine = new Audio.AudioEngine({
+            setParam: this.params.handleParamReceive,
+            getParam: (nameOrIndex: string | number) => {
                 return this.params.get(nameOrIndex).value;
             }
-        );
+        });
 
         if (!this.engine.init())
         {

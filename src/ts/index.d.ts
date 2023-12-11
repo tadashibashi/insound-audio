@@ -281,10 +281,10 @@ declare interface InsoundAudioEngine {
 
 declare interface InsoundAudioModule extends EmscriptenModule {
     AudioEngine: {
-        new (
-            paramSet: (index: number, value: number) => void,
-            paramGet: (nameOrIndex: string | number) => number
-        ): InsoundAudioEngine;
+        new (callbacks: {
+            setParam: (index: number, value: number) => void,
+            getParam: (nameOrIndex: string | number) => number
+        }): InsoundAudioEngine;
     }
 
     ParamType: ParamType;
