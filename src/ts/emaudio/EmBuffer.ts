@@ -1,4 +1,11 @@
 /**
+ * @file EmBuffer.ts
+ * Contains classes for managing memory in an Emscripten module.
+ *
+ * Depends on Emscripten types.
+ */
+
+/**
  * Wrapper around allocated memory in an Emscripten module.
  */
 class EmPointer
@@ -187,14 +194,14 @@ class EmBuffer
     /**
      * Size of allocated memory.
      */
-    get size() {
+    get size(): number {
         return this.data.size;
     }
 
     /**
      * The emscripten module object data is allocated in.
      */
-    get mod() {
+    get mod(): EmscriptenModule {
         return this.data.mod;
     }
 }
