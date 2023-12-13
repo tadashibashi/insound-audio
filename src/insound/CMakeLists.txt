@@ -43,7 +43,7 @@ else()
         -sWASM_BIGINT=1 -sENVIRONMENT=${INSOUND_ENVIRONMENT}
         -sALLOW_MEMORY_GROWTH=1
     )
-    target_compile_options(${PROJECT_NAME} PUBLIC -DINS_DEBUG=0
+    target_compile_options(${PROJECT_NAME} PUBLIC
         -flto -Os
     )
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DINS_DEBUG=0)
