@@ -10,6 +10,8 @@
 
 namespace Insound
 {
+    static const unsigned int MaxFadePoints = 2;
+
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
         FMOD::System *system, int index) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
@@ -134,30 +136,22 @@ namespace Insound
         unsigned int numPoints;
         checkResult(chan->getFadePoints(&numPoints, nullptr, nullptr));
 
-        if (numPoints)
+        if (numPoints >= 2)
         {
-            std::vector<unsigned long long> clocks(numPoints, 0);
-            std::vector<float> volumes(numPoints, 0);
+            unsigned long long clocks[MaxFadePoints];
+            float volumes[MaxFadePoints];
 
-            checkResult(chan->getFadePoints(&numPoints, clocks.data(),
-                volumes.data()));
+            checkResult( chan->getFadePoints(&numPoints, clocks, volumes) );
 
-            for (int i = 0, end = (int)numPoints-1; i < end; ++i)
+            if (clocks[0] <= clock && clocks[1] >= clock)
             {
-                if (clocks[i] <= clock && clocks[i+1] >= clock)
-                {
-                    float percentage =
-                        ((float)clock - clocks[i]) / (clocks[i+1] - clocks[i]);
-                    return std::abs(volumes[i+1] - volumes[i] * percentage);
-                }
+                float percentage =
+                    ((float)clock - clocks[0]) / (clocks[1] - clocks[0]);
+                return std::abs(volumes[1] - volumes[0] * percentage);
             }
+        }
 
-            return this->lastFadePoint;
-        }
-        else
-        {
-            return this->lastFadePoint;
-        }
+        return this->lastFadePoint;
     }
 
 
