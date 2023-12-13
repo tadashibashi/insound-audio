@@ -46,4 +46,5 @@ else()
     target_compile_options(${PROJECT_NAME} PUBLIC -DINS_DEBUG=0
         -flto -Os
     )
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DINS_DEBUG=0)
 endif()
