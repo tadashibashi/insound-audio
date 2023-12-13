@@ -141,6 +141,8 @@ namespace Insound
             unsigned long long clocks[MaxFadePoints];
             float volumes[MaxFadePoints];
 
+            if (numPoints > 2)
+                numPoints = 2;
             checkResult( chan->getFadePoints(&numPoints, clocks, volumes) );
 
             if (clocks[0] <= clock && clocks[1] >= clock)
@@ -164,13 +166,15 @@ namespace Insound
         checkResult( chan->removeFadePoints(clock, clock + 60 * samplerate));
         checkResult( chan->addFadePoint(clock, from) );
         checkResult( chan->addFadePoint(clock + seconds * samplerate, to) );
+
+        this->lastFadePoint = to;
         return *this;
     }
 
 
     Channel &Channel::fadeTo(float vol, float seconds)
     {
-        return fade(fadeLevel(), vol, seconds);
+        return fade(fadeLevel(true), vol, seconds);
     }
 
 
@@ -193,11 +197,11 @@ namespace Insound
         }
         else       // unpause
         {
-            // fade-in in `seconds`
-            fadeTo(1, seconds);
-
             // unpause right now
             checkResult( chan->setDelay(clock, 0, false) );
+
+            // fade-in in `seconds`
+            fade(0.f, 1.f, seconds);
         }
 
         m_isPaused = value;
