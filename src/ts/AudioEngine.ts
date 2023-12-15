@@ -2,6 +2,7 @@ import { audioModuleWasInit } from "./emaudio/AudioModule";
 import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
+import { SyncPointMgr } from "./SyncPointMgr";
 
 const registry = new FinalizationRegistry((heldValue) => {
     if (heldValue instanceof Audio.AudioEngine) {
@@ -21,6 +22,7 @@ class AudioEngine
     trackData: EmBuffer;
     updateHandler: (() => void) | null;
     params: ParameterMgr;
+    points: SyncPointMgr;
 
     constructor()
     {
@@ -32,11 +34,14 @@ class AudioEngine
         }
 
         this.params = new ParameterMgr;
-
+        this.points = new SyncPointMgr;
         this.engine = new Audio.AudioEngine({
             setParam: this.params.handleParamReceive,
             getParam: (nameOrIndex: string | number) => {
                 return this.params.get(nameOrIndex).value;
+            },
+            syncpointUpdated: () => {
+                this.points.update(this);
             }
         });
 

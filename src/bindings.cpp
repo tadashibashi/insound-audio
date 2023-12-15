@@ -68,5 +68,9 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("param_getAsNumber", &T::param_getAsNumber)
         .function("param_getAsStrings", &T::param_getAsStrings)
         .function("param_send", &T::param_send)
+
+        .function("getSyncPointCount", &T::getSyncPointCount)
+        .function("getSyncPointOffsetSeconds", &T::getSyncPointOffsetSeconds)
+        .function("getSyncPointLabel", &T::getSyncPointLabel)
         ;
 }

@@ -142,6 +142,13 @@ namespace Insound
         void setChannelReverbLevel(int ch, float level);
         [[nodiscard]]
         float getChannelReverbLevel(int ch) const;
+
+        [[nodiscard]]
+        size_t getSyncPointCount() const;
+        [[nodiscard]]
+        std::string getSyncPointLabel(size_t index) const;
+        [[nodiscard]]
+        double getSyncPointOffsetSeconds(size_t index) const;
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;

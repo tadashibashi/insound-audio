@@ -34,13 +34,14 @@ namespace Insound
         using IndexOrName = std::variant<int, std::string>;
 
 #if INS_DEBUG
-        validateCallbacks({"setParam", "getParam"}, cbs);
+        validateCallbacks({"setParam", "getParam", "syncpointUpdated"}, cbs);
 #endif
 
         auto populateEnv = [this, cbs](sol::table &env)
         {
             emscripten::val setParam = cbs["setParam"];
             emscripten::val getParam = cbs["getParam"];
+            emscripten::val syncpointUpdated = cbs["syncpointUpdated"];
 
             Scripting::Marker::inject("Marker", env);
 
@@ -177,9 +178,10 @@ namespace Insound
                     return Scripting::Marker{.name=label.data(), .seconds=offset};
                 });
             marker.set_function("add",
-            [this](std::string name, double seconds)
+            [this, syncpointUpdated](std::string name, double seconds)
             {
                 track->addSyncPointMS(name, seconds * 1000);
+                syncpointUpdated();
             });
 
             auto preset = snd["preset"].get_or_create<sol::table>();
@@ -549,5 +551,21 @@ namespace Insound
     float AudioEngine::getChannelReverbLevel(int ch) const
     {
         return track->channelReverbLevel(ch);
+    }
+
+
+    size_t AudioEngine::getSyncPointCount() const
+    {
+        return track->getSyncPointCount();
+    }
+
+    std::string AudioEngine::getSyncPointLabel(size_t index) const
+    {
+        return track->getSyncPointLabel(index).data();
+    }
+
+    double AudioEngine::getSyncPointOffsetSeconds(size_t index) const
+    {
+        return track->getSyncPointOffsetSeconds(index);
     }
 }

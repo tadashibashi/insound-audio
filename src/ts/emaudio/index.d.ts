@@ -278,6 +278,27 @@ declare interface InsoundAudioEngine {
     param_getAsNumber(index: number): NumberParam;
     param_getAsStrings(index: number): StringsParam;
     param_send(index: number, value: number): void;
+
+    /**
+     * Get the number of SyncPoints currently available in the loaded sound
+     */
+    getSyncPointCount(): number;
+
+    /**
+     * Get the number of offset seconds for the syncpoint with the specified
+     * index.
+     *
+     * @param  {number} index - 0-based index, see `getSyncPointCount` to get
+     *                          max number of sync points available.
+     */
+    getSyncPointOffsetSeconds(index: number): number;
+
+    /**
+     * Get the label for the syncpoint with the specified index.
+     * @param  {numer}  index - 0-based index; see `getSyncPointCount` to get
+     *                          the max number of sync points available.
+     */
+    getSyncPointLabel(index: number): string;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

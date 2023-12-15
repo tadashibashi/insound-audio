@@ -7,4 +7,6 @@ export interface LuaCallbacks
 
     // Requests a parameter from JS to send to Lua.
     getParam: (nameOrIndex: string | number) => number
+
+    syncpointUpdated: () => void;
 }
