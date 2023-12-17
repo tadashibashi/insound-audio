@@ -486,4 +486,69 @@ namespace Insound
     {
         return m->main.reverbLevel();
     }
+
+    static void replaceLoopSyncPoints(FMOD::Sound *sound,
+        unsigned loopstart, FMOD_TIMEUNIT loopstarttype,
+        unsigned loopend, FMOD_TIMEUNIT loopendtype)
+    {
+        int syncpointCount;
+        checkResult(sound->getNumSyncPoints(&syncpointCount));
+
+        char nameBuf[256];
+        for (int i = 0; i < syncpointCount;)
+        {
+            FMOD_SYNCPOINT *point;
+            checkResult(sound->getSyncPoint(i, &point));
+            checkResult(sound->getSyncPointInfo(point, nameBuf, 256, nullptr, 0));
+            if (std::strcmp(nameBuf, "LoopStart") == 0 || std::strcmp(nameBuf, "LoopEnd") == 0)
+            {
+                checkResult(sound->deleteSyncPoint(point));
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+
+    void MultiTrackAudio::loopSeconds(double loopstart, double loopend)
+    {
+        for (auto &ch : m->chans)
+        {
+            ch.ch_loopSeconds(loopstart, loopend);
+        }
+
+        // Replace markers indicating loop points
+        FMOD::Sound *firstSound;
+        checkResult(m->fsb->getSubSound(0, &firstSound));
+
+        replaceLoopSyncPoints(firstSound, loopstart * 1000, FMOD_TIMEUNIT_MS,
+            loopend * 1000, FMOD_TIMEUNIT_MS);
+    }
+
+    void MultiTrackAudio::loopSamples(unsigned loopstart, unsigned loopend)
+    {
+        for (auto &ch : m->chans)
+        {
+            ch.ch_loopSamples(loopstart, loopend);
+        }
+
+        // Replace markers indicating loop points
+        FMOD::Sound *firstSound;
+        checkResult(m->fsb->getSubSound(0, &firstSound));
+
+        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_MS,
+            loopend, FMOD_TIMEUNIT_PCM);
+    }
+
+
+    LoopInfo<double> MultiTrackAudio::loopSeconds() const
+    {
+        return m->chans.at(0).ch_loopSeconds();
+    }
+
+    LoopInfo<unsigned> MultiTrackAudio::loopSamples() const
+    {
+        return m->chans.at(0).ch_loopSamples();
+    }
 }

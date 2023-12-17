@@ -1,6 +1,7 @@
 #pragma once
 
 // Forward declarations
+#include "insound/LoopInfo.h"
 namespace FMOD
 {
     class ChannelControl;
@@ -89,6 +90,14 @@ namespace Insound
          * @return reference to this object for chaining.
          */
         Channel &ch_position(float seconds);
+
+        Channel &ch_loopSeconds(double loopstart, double loopend);
+        Channel &ch_loopSamples(unsigned loopstart, unsigned loopend);
+
+        [[nodiscard]]
+        LoopInfo<double> ch_loopSeconds() const;
+        [[nodiscard]]
+        LoopInfo<unsigned> ch_loopSamples() const;
 
         /**
          * Set the reverb send level.

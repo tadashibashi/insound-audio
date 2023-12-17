@@ -1,5 +1,7 @@
 #include <insound/AudioEngine.h>
 #include <insound/params/ParamDesc.h>
+#include <insound/LoopInfo.h>
+
 #include <emscripten/bind.h>
 
 using namespace emscripten;
@@ -27,6 +29,16 @@ EMSCRIPTEN_BINDINGS(Params)
 }
 
 EMSCRIPTEN_BINDINGS(AudioEngine) {
+
+    value_object<LoopInfo<unsigned>>("LoopInfoSamples")
+        .field("loopstart", &LoopInfo<unsigned>::loopstart)
+        .field("loopend", &LoopInfo<unsigned>::loopend)
+        ;
+    value_object<LoopInfo<double>>("LoopInfoSeconds")
+        .field("loopstart", &LoopInfo<double>::loopstart)
+        .field("loopend", &LoopInfo<double>::loopend)
+        ;
+
     using T = AudioEngine;
 
     class_<AudioEngine>("AudioEngine")
@@ -55,6 +67,10 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("setChannelReverbLevel", &T::setChannelReverbLevel)
         .function("isLooping", &T::isLooping)
         .function("setLooping", &T::setLooping)
+        .function("setLoopSeconds", &T::setLoopSeconds)
+        .function("setLoopSamples", &T::setLoopSamples)
+        .function("getLoopSeconds", &T::getLoopSeconds)
+        .function("getLoopSamples", &T::getLoopSamples)
         .function("fadeTo", &T::fadeTo)
         .function("fadeChannelTo", &T::fadeChannelTo)
         .function("getChannelFadeLevel", &T::getChannelFadeLevel)

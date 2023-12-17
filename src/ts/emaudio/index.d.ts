@@ -253,6 +253,26 @@ declare interface InsoundAudioEngine {
     setLooping(looping: boolean): void;
 
     /**
+     * Set loop start and end points (in number of seconds).
+     */
+    setLoopSeconds(loopstart: number, loopend: number): void;
+
+    /**
+     * Set loop start and end points (in number of audio samples).
+     */
+    setLoopSamples(loopstart: number, loopend: number): void;
+
+    /**
+     * Get loop points in seconds.
+     */
+    getLoopSeconds(): {loopstart: number, loopend: number};
+
+    /**
+     * Get loop points in samples.
+     */
+    getLoopSamples(): {loopstart: number, loopend: number};
+
+    /**
      * Set the callback that fires when a syncpoint has been reached
      * @param callback - the callback to set with the following parameters:
      *

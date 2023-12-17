@@ -107,6 +107,17 @@ namespace Insound
                 return this->getChannelCount();
             });
 
+            snd.set_function("loop_point",
+            [this](std::optional<double> loopstart, std::optional<double> loopend)
+            {
+                if (loopstart)
+                {
+                    setLoopSeconds(loopstart.value(), loopend.value_or(getLength()));
+                }
+
+                return track->loopSeconds();
+            });
+
             // param namespace
             auto param = snd["param"].get_or_create<sol::table>();
             param.set_function("set",
@@ -567,5 +578,25 @@ namespace Insound
     double AudioEngine::getSyncPointOffsetSeconds(size_t index) const
     {
         return track->getSyncPointOffsetSeconds(index);
+    }
+
+    void AudioEngine::setLoopSeconds(double loopstart, double loopend)
+    {
+        track->loopSeconds(loopstart, loopend);
+    }
+
+    void AudioEngine::setLoopSamples(unsigned loopstart, unsigned loopend)
+    {
+        track->loopSamples(loopstart, loopend);
+    }
+
+    LoopInfo<double> AudioEngine::getLoopSeconds() const
+    {
+        return track->loopSeconds();
+    }
+
+    LoopInfo<unsigned> AudioEngine::getLoopSamples() const
+    {
+        return track->loopSamples();
     }
 }

@@ -110,6 +110,14 @@ namespace Insound
 
         void setLooping(bool looping);
 
+        void setLoopSeconds(double loopstart, double loopend);
+        void setLoopSamples(unsigned loopstart, unsigned loopend);
+
+        [[nodiscard]]
+        LoopInfo<double> getLoopSeconds() const;
+        [[nodiscard]]
+        LoopInfo<unsigned> getLoopSamples() const;
+
         [[nodiscard]]
         int getChannelCount() const;
 

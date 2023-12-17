@@ -1,4 +1,5 @@
 #pragma once
+#include "insound/LoopInfo.h"
 #include <functional>
 #include <string>
 #include <string_view>
@@ -189,6 +190,13 @@ namespace Insound {
         float mainReverbLevel() const;
 
         void mainReverbLevel(float level);
+
+
+        void loopSeconds(double loopstart, double loopend);
+        void loopSamples(unsigned loopstart, unsigned loopend);
+
+        LoopInfo<double> loopSeconds() const;
+        LoopInfo<unsigned> loopSamples() const;
     private:
         // Pimple idiom
         struct Impl;
