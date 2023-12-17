@@ -38,7 +38,7 @@ namespace Insound
 
         Channel main;
         SyncPointMgr points;
-        std::function<void(const std::string &, double)> syncpointCallback;
+        std::function<void(const std::string &, double, int)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
         PresetMgr presets;
@@ -141,7 +141,7 @@ namespace Insound
         m->points.clear();
         m->presets.clear();
         m->syncpointCallback =
-            std::function<void(const std::string &, double)>{};
+            std::function<void(const std::string &, double, int)>{};
 
         // Release bank
         if (m->fsb)
@@ -186,7 +186,8 @@ namespace Insound
                 if (callback)
                     callback(
                         track->getSyncPointLabel(pointIndex).data(),
-                        track->getSyncPointOffsetSeconds(pointIndex)
+                        track->getSyncPointOffsetSeconds(pointIndex),
+                        pointIndex
                     );
 
                 break;
@@ -381,13 +382,13 @@ namespace Insound
 
 
     void MultiTrackAudio::setSyncPointCallback(
-        std::function<void(const std::string &, double)> callback)
+        std::function<void(const std::string &, double, int)> callback)
     {
         m->syncpointCallback = std::move(callback);
     }
 
 
-    const std::function<void(const std::string &, double)> &
+    const std::function<void(const std::string &, double, int)> &
     MultiTrackAudio::getSyncPointCallback() const
     {
         return m->syncpointCallback;

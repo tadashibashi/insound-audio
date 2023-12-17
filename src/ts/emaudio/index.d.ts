@@ -283,7 +283,8 @@ declare interface InsoundAudioEngine {
      * Callback return value is discarded.
      */
     setSyncPointCallback(
-        callback: (label: string, offsetSeconds: number) => void): void;
+        callback: (label: string, offsetSeconds: number, index: number) =>
+            void): void;
 
     /**
      * Set the callback that fires when track has reached the end

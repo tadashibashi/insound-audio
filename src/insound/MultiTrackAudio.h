@@ -135,9 +135,9 @@ namespace Insound {
         int samplerate() const;
 
         void setSyncPointCallback(
-            std::function<void(const std::string &, double)> callback);
+            std::function<void(const std::string &, double, int)> callback);
         [[nodiscard]]
-        const std::function<void(const std::string &, double)> &
+        const std::function<void(const std::string &, double, int)> &
         getSyncPointCallback() const;
 
         /**
