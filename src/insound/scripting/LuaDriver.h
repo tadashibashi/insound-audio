@@ -65,7 +65,7 @@ namespace Insound
         const std::string &getError() const;
 
         bool doInit();
-        bool doUpdate();
+        bool doUpdate(double delta, double total);
         bool doSyncPoint(const std::string &label, double seconds);
         bool doLoad(const MultiTrackAudio &track);
         bool doUnload();

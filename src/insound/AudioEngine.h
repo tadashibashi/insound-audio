@@ -7,6 +7,8 @@
 
 #include <emscripten/val.h>
 
+#include <chrono>
+
 // Forward declaration
 namespace FMOD
 {
@@ -162,5 +164,13 @@ namespace Insound
         MultiTrackAudio *track;
         std::optional<Channel> master;
         std::optional<LuaDriver> lua;
+
+        // track time for update calls
+        using time_point = std::chrono::time_point<std::chrono::system_clock>;
+        time_point startTime, lastFrame;
+
+        unsigned long long downtime;
+
+        bool isSuspended;
     };
 }

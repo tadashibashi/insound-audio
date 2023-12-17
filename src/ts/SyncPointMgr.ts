@@ -1,4 +1,5 @@
 import { AudioEngine } from "./AudioEngine";
+import { LinearHashContainer } from "./LinearHashContainer";
 
 
 export interface SyncPoint {
@@ -8,33 +9,72 @@ export interface SyncPoint {
 
 export class SyncPointMgr
 {
-    points: SyncPoint[];
+    private m_points: LinearHashContainer<SyncPoint>;
+
+
+    // Do not modify from the outside - readonly!
+    get points() { return this.m_points.items; }
 
     constructor()
     {
-        this.points = [];
+        this.m_points = new LinearHashContainer(8);
     }
 
     /**
-     * Update sync points from AudioEngine
+     * Update sync points from AudioEngine.
+     * Exception unsafe for efficiency...
      */
     update(audio: AudioEngine)
     {
-        const tempPoints: SyncPoint[] = [];
-
+        const audioLength = audio.length;
         const count = audio.engine.getSyncPointCount();
+
+        this.m_points.clear();
         for (let i = 0; i < count; ++i)
         {
-            tempPoints.push({
+            const offset = audio.engine.getSyncPointOffsetSeconds(i);
+            this.m_points.push({
                 text: audio.engine.getSyncPointLabel(i),
-                offset: audio.engine.getSyncPointOffsetSeconds(i)
-            });
+                offset: offset
+            }, audioLength ? offset / audioLength : 0);
         }
-
-        this.points = tempPoints;
     }
 
     get(index: number) {
-        return this.points.at(index);
+        return this.m_points.items.at(index);
+    }
+
+    /**
+     * Get sync points that have occurred between now and last frame.
+     *
+     * Uses out val pattern for efficiency (no creating a bunch of arrays for
+     * the garbage collector to have to recycle).
+     *
+     * @param  currentTime   current track time in seconds
+     * @param  lastFrameTime last frame's track time in seconds
+     * @param  trackLength   track's total length in seconds
+     * @param  syncPointOut  Array to populate
+     * @return Number of sync points retrieved
+     */
+    findByTime(currentTime: number, lastFrameTime: number, trackLength: number,
+        syncPointOut: SyncPoint[]): number
+    {
+        const bucket = this.m_points.getBucket(currentTime/trackLength);
+        const bucketLength = bucket.length;
+        if (bucket.length === 0) return 0;
+
+        let count = 0;
+        for (let i = 0; i < bucketLength; ++i)
+        {
+            const point = bucket[i];
+            if (point.offset <= currentTime && point.offset > lastFrameTime)
+            {
+                syncPointOut[count];
+                ++count;
+            }
+        }
+
+        syncPointOut.length = count;
+        return count;
     }
 }

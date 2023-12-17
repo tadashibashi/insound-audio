@@ -2,7 +2,7 @@ import { audioModuleWasInit } from "./emaudio/AudioModule";
 import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
-import { SyncPointMgr } from "./SyncPointMgr";
+import { SyncPoint, SyncPointMgr } from "./SyncPointMgr";
 
 const registry = new FinalizationRegistry((heldValue) => {
     if (heldValue instanceof Audio.AudioEngine) {
@@ -13,16 +13,47 @@ const registry = new FinalizationRegistry((heldValue) => {
     }
 });
 
+export interface LoadOptions
+{
+    script?: string;
+    loopstart?: number;
+    loopend?: number;
+}
+
 export
 class AudioEngine
 {
-    engine: InsoundAudioEngine;
+    readonly engine: InsoundAudioEngine;
 
     // container managing the current track data
     trackData: EmBuffer;
     updateHandler: (() => void) | null;
     params: ParameterMgr;
     points: SyncPointMgr;
+
+    private m_lastPosition: number;
+    private m_position: number;
+
+    get lastPosition() {
+        return this.m_lastPosition;
+    }
+
+    get position()
+    {
+        return this.m_position;
+    }
+
+    private m_currentSyncPoints: SyncPoint[];
+
+    get currentSyncPoints(): SyncPoint[]
+    {
+        const syncpoints = this.m_currentSyncPoints;
+
+        this.points.findByTime(this.m_position, this.m_lastPosition,
+            this.engine.getLength(), syncpoints);
+
+        return syncpoints;
+    }
 
     constructor()
     {
@@ -55,6 +86,10 @@ class AudioEngine
         this.updateHandler = null;
 
         registry.register(this, this.engine, this);
+
+        this.m_lastPosition = 0;
+        this.m_position = 0;
+        this.m_currentSyncPoints = [];
     }
 
     /**
@@ -72,16 +107,23 @@ class AudioEngine
      * @param {ArrayBuffer} buffer - data buffer
      *
      */
-    loadTrack(buffer: ArrayBuffer, script: string)
+    loadTrack(buffer: ArrayBuffer, opts: LoadOptions = {
+        script: ""
+    })
     {
         this.trackData.alloc(buffer, Audio);
 
         try {
             this.engine.loadBank(this.trackData.ptr, buffer.byteLength);
-            const result = this.engine.loadScript(script);
+            const result = this.engine.loadScript(opts.script || "");
             if (result)
                 console.error("Lua Script error:", result);
+            if (opts.loopend !== undefined && opts.loopstart !== undefined)
+                this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
             this.params.load(this);
+            this.points.update(this);
+            this.m_lastPosition = 0;
+            this.m_position = 0;
         }
         catch (err)
         {
@@ -99,6 +141,10 @@ class AudioEngine
         if (data.isNull) return false;
 
         this.engine.loadBank(data.ptr, data.size);
+        this.params.load(this);
+        this.points.update(this);
+        this.m_lastPosition = 0;
+        this.m_position = 0;
 
         return true;
     }
@@ -148,6 +194,9 @@ class AudioEngine
     update()
     {
         this.engine.update();
+        this.m_lastPosition = this.m_position;
+        this.m_position = this.engine.getPosition();
+
     }
 
     play()
@@ -183,11 +232,6 @@ class AudioEngine
     get paused()
     {
         return this.engine.getPause();
-    }
-
-    get position(): number
-    {
-        return this.engine.getPosition();
     }
 
     get length(): number

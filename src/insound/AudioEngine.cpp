@@ -29,9 +29,13 @@ namespace Insound
     }
 
     AudioEngine::AudioEngine(
-        emscripten::val cbs): track(), sys(), master(), lua()
+        emscripten::val cbs): track(), sys(), master(), lua(),
+        startTime(), lastFrame(), isSuspended(false), downtime()
     {
         using IndexOrName = std::variant<int, std::string>;
+
+        startTime = std::chrono::system_clock::now();
+        lastFrame = startTime;
 
 #if INS_DEBUG
         validateCallbacks({"setParam", "getParam", "syncpointUpdated"}, cbs);
@@ -254,27 +258,66 @@ namespace Insound
 
     void AudioEngine::resume()
     {
-        assert(sys);
         checkResult(sys->mixerResume());
+        isSuspended = false;
     }
 
     void AudioEngine::suspend()
     {
-        assert(sys);
         checkResult(sys->mixerSuspend());
+        isSuspended = true;
     }
 
     void AudioEngine::update()
     {
-        assert(sys);
-        checkResult(sys->update());
-        lua->doUpdate();
+        auto current = std::chrono::system_clock::now();
+        auto delta = current - lastFrame;
+        auto total = current - startTime;
+
+        // auto-suspend when there is no activity
+        if (!isSuspended)
+        {
+            if (track->isLoaded())
+            {
+                // Suspend audio engine after 5 seconds of pause
+                if (track->paused())
+                {
+                    downtime += delta.count();
+
+                    if (downtime > 5000000)
+                    {
+                        suspend();
+                        downtime = 0;
+                    }
+                }
+
+                checkResult(sys->update());
+                lua->doUpdate(delta.count() * .001, total.count() * .001);
+            }
+            else
+            {
+                downtime += delta.count();
+
+                if (downtime > 5000000)
+                {
+                    suspend();
+                    downtime = 0;
+                }
+            }
+        }
+
+        lastFrame = current;
+
     }
 
     void AudioEngine::loadBank(size_t data, size_t bytelength)
     {
         assert(track);
         track->loadFsb((const char *)data, bytelength);
+
+        // set clock
+        startTime = std::chrono::system_clock::now();
+        lastFrame = startTime;
     }
 
     const std::string &AudioEngine::loadScript(const std::string &text)
@@ -306,6 +349,9 @@ namespace Insound
     {
         assert(track);
         track->pause(pause, seconds);
+
+        if (!pause && isSuspended)
+            resume();
     }
 
     bool AudioEngine::getPause() const

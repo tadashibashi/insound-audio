@@ -31,10 +31,6 @@ namespace Insound
         sol::state lua;
         // callback populatates the env from owner
         std::function<void(sol::table &)> populateEnv;
-
-        // track time for update calls
-        using time_point = std::chrono::time_point<std::chrono::system_clock>;
-        time_point startTime, lastFrame;
     };
 
     LuaDriver::LuaDriver(const std::function<void(sol::table &)> &populateEnv)
@@ -136,9 +132,6 @@ namespace Insound
             std::swap(m->lua, lua);
             m->error = NoErrors;
 
-            // set clock
-            m->startTime = std::chrono::system_clock::now();
-            m->lastFrame = m->startTime;
             return true;
         }
         catch (const std::exception &e)
@@ -201,13 +194,9 @@ namespace Insound
         return true;
     }
 
-    bool LuaDriver::doUpdate()
+    bool LuaDriver::doUpdate(double delta, double total)
     {
         if (!isLoaded()) return false; // no err set since it may be expensive?
-
-        auto current = std::chrono::system_clock::now();
-        auto delta = current - m->lastFrame;
-        auto total = current - m->startTime;
 
         auto process_event = m->lua["process_event"]
             .get<sol::protected_function>();
@@ -218,8 +207,7 @@ namespace Insound
             return false;
         }
 
-        auto result = process_event(Event::Update,
-            (double)delta.count() * .001, (double)total.count() * .001);
+        auto result = process_event(Event::Update, delta, total);
         if (!result.valid())
         {
             sol::error err = result;
@@ -227,7 +215,6 @@ namespace Insound
             return false;
         }
 
-        m->lastFrame = current;
         return true;
     }
 
