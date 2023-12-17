@@ -2,7 +2,7 @@ import { audioModuleWasInit } from "./emaudio/AudioModule";
 import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
-import { SyncPoint, SyncPointMgr } from "./SyncPointMgr";
+import { SyncPointMgr } from "./SyncPointMgr";
 
 const registry = new FinalizationRegistry((heldValue) => {
     if (heldValue instanceof Audio.AudioEngine) {
@@ -43,18 +43,6 @@ class AudioEngine
         return this.m_position;
     }
 
-    private m_currentSyncPoints: SyncPoint[];
-
-    get currentSyncPoints(): SyncPoint[]
-    {
-        const syncpoints = this.m_currentSyncPoints;
-
-        this.points.findByTime(this.m_position, this.m_lastPosition,
-            this.engine.getLength(), syncpoints);
-
-        return syncpoints;
-    }
-
     constructor()
     {
         // Ensure WebAssembly module was initialized
@@ -89,7 +77,6 @@ class AudioEngine
 
         this.m_lastPosition = 0;
         this.m_position = 0;
-        this.m_currentSyncPoints = [];
     }
 
     /**
@@ -321,7 +308,8 @@ class AudioEngine
     }
 
     setSyncPointCallback(
-        callback: (label: string, seconds: number) => void): void
+        callback: (label: string, seconds: number, index: number) => void)
+        : void
     {
         this.engine.setSyncPointCallback(callback);
     }
