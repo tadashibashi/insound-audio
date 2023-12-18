@@ -96,5 +96,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
 
         .function("addPreset", &T::addPreset)
         .function("getPresetByName", &T::getPresetByName)
+        .function("getPresetCount", &T::getPresetCount)
+        .function("getPresetByIndex", &T::getPresetByIndex)
         ;
 }
