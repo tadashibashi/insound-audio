@@ -41,4 +41,9 @@ export class SyncPointMgr
     {
         return this.m_points.at(index);
     }
+
+    clear()
+    {
+        this.m_points.length = 0;
+    }
 }

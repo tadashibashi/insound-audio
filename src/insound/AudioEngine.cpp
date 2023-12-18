@@ -38,7 +38,8 @@ namespace Insound
         lastFrame = startTime;
 
 #if INS_DEBUG
-        validateCallbacks({"setParam", "getParam", "syncpointUpdated"}, cbs);
+        validateCallbacks({"setParam", "getParam", "syncpointUpdated",
+            "mixPresetsUpdated"}, cbs);
 #endif
 
         auto populateEnv = [this, cbs](sol::table &env)
@@ -46,6 +47,7 @@ namespace Insound
             emscripten::val setParam = cbs["setParam"];
             emscripten::val getParam = cbs["getParam"];
             emscripten::val syncpointUpdated = cbs["syncpointUpdated"];
+            emscripten::val mixPresetsUpdated = cbs["mixPresetsUpdated"];
 
             Scripting::Marker::inject("Marker", env);
 
@@ -216,13 +218,15 @@ namespace Insound
             });
 
             preset.set_function("add",
-            [this](std::string name, std::vector<float> values,
+            [this, mixPresetsUpdated](std::string name, std::vector<float> values,
                 std::optional<size_t> position)
             {
                 if (position)
                     track->presets().insert(name, values, *position-1);
                 else
                     track->presets().emplace_back(name, values);
+
+                mixPresetsUpdated();
             });
 
             preset.set_function("get",

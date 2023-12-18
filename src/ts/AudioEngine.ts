@@ -3,6 +3,7 @@ import { EmBuffer } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
 import { SyncPointMgr } from "./SyncPointMgr";
+import { MixPresetMgr } from "./MixPresetMgr";
 
 const registry = new FinalizationRegistry((heldValue) => {
     if (heldValue instanceof Audio.AudioEngine) {
@@ -30,6 +31,7 @@ class AudioEngine
     updateHandler: (() => void) | null;
     params: ParameterMgr;
     points: SyncPointMgr;
+    presets: MixPresetMgr;
 
     private m_lastPosition: number;
     private m_position: number;
@@ -54,6 +56,7 @@ class AudioEngine
 
         this.params = new ParameterMgr;
         this.points = new SyncPointMgr;
+        this.presets = new MixPresetMgr;
         this.engine = new Audio.AudioEngine({
             setParam: this.params.handleParamReceive,
             getParam: (nameOrIndex: string | number) => {
@@ -61,6 +64,9 @@ class AudioEngine
             },
             syncpointUpdated: () => {
                 this.points.update(this);
+            },
+            mixPresetsUpdated: () => {
+                this.presets.update(this);
             }
         });
 
@@ -109,6 +115,7 @@ class AudioEngine
                 this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
             this.params.load(this);
             this.points.update(this);
+            this.presets.update(this);
             this.m_lastPosition = 0;
             this.m_position = 0;
         }
@@ -130,6 +137,7 @@ class AudioEngine
         this.engine.loadBank(data.ptr, data.size);
         this.params.load(this);
         this.points.update(this);
+        this.presets.update(this);
         this.m_lastPosition = 0;
         this.m_position = 0;
 
@@ -158,6 +166,10 @@ class AudioEngine
     {
         this.engine.unloadBank();
         this.trackData.free();
+
+        this.params.clear();
+        this.points.points.length = 0;
+        this.presets.presets.length = 0;
     }
 
     /**
