@@ -162,6 +162,22 @@ declare interface InsoundAudioEngine {
     getMainReverbLevel(): number;
 
     /**
+     * Fade main bus from current fade volume to another in number of `seconds`
+     *
+     * Note that fade level is different from volume level - they are scaled
+     * against each other. Use `getFadeLevel` to get the current fade level.
+     */
+    fadeTo(to: number, seconds: number): void;
+
+    /**
+     * Get the fade level of the main bus
+     */
+    getFadeLevel(final: boolean): number;
+
+
+    // ----- Individual channel controls --------------------------------------
+
+    /**
      * Set a specific channel's volume. For now, it gets reset every time
      * play is called, so it should be called during every call to start if
      * playback should begin at a differeing level.
@@ -201,19 +217,6 @@ declare interface InsoundAudioEngine {
     getChannelReverbLevel(ch: number): number;
 
     /**
-     * Fade main bus from current fade volume to another in number of `seconds`
-     *
-     * Note that fade level is different from volume level - they are scaled
-     * against each other. Use `getFadeLevel` to get the current fade level.
-     */
-    fadeTo(to: number, seconds: number): void;
-
-    /**
-     * Get the fade level of the main bus
-     */
-    getFadeLevel(final: boolean): number;
-
-    /**
      * Fade channel to a level - this value is different from the chennel
      * volume, by which it is scaled against. Use `getChannelFadeLevel` to
      * get the fade level of a channel.
@@ -240,6 +243,9 @@ declare interface InsoundAudioEngine {
      */
     getChannelCount(): number;
 
+
+    // ----- Looping ----------------------------------------------------------
+
     /**
      * Get whether track is set to loop. True by default, when loaded.
      */
@@ -258,33 +264,20 @@ declare interface InsoundAudioEngine {
     setLoopSeconds(loopstart: number, loopend: number): void;
 
     /**
-     * Set loop start and end points (in number of audio samples).
+     * Set loop start and end points (in number of pcm audio samples).
      */
     setLoopSamples(loopstart: number, loopend: number): void;
 
     /**
-     * Get loop points in seconds.
+     * Get loop start and end points in number of seconds.
      */
     getLoopSeconds(): {loopstart: number, loopend: number};
 
     /**
-     * Get loop points in samples.
+     * Get loop start and end points in number of pcm audio samples.
      */
     getLoopSamples(): {loopstart: number, loopend: number};
 
-    /**
-     * Set the callback that fires when a syncpoint has been reached
-     * @param callback - the callback to set with the following parameters:
-     *
-     * label         - syncpoint name / label text
-     *
-     * offsetSeconds - offset position of sync point in number of seconds
-     *
-     * Callback return value is discarded.
-     */
-    setSyncPointCallback(
-        callback: (label: string, offsetSeconds: number, index: number) =>
-            void): void;
 
     /**
      * Set the callback that fires when track has reached the end
@@ -293,12 +286,58 @@ declare interface InsoundAudioEngine {
      */
     setEndCallback(callback: () => void): void;
 
+    // ----- Parameters -------------------------------------------------------
+    // Parameters are global for the whole track and not tied to specific
+    // channels. However, a parameter may influence specific channel instances
+    // if so defined in the lua script implementation by the user.
+
+    /**
+     * Get the number of parameters in the current track.
+     */
     param_count(): number;
+
+    /**
+     * Get a parameter name by index
+     *
+     * @param index - zero-based index of the parameter to query
+     */
     param_getName(index: number): string;
+
+    /**
+     * Get the type of parameter of a parameter by index
+     * @param index - zero-based index of the parameter to query
+     *
+     * @returns enumeration of the parameter type. @see ParamType
+     */
     param_getType(index: number): ParamType;
+
+    /**
+     * Get parameter and cast it to a number parameter.
+     *
+     * @throws error if the type is wrong.
+     *
+     * @param  index -zero-based index of the parameter to query
+     */
     param_getAsNumber(index: number): NumberParam;
+
+    /**
+     * Get parameter and cast it to a number parameter.
+     *
+     * @param  index -zero-based index of the parameter to query
+     */
     param_getAsStrings(index: number): StringsParam;
+
+    /**
+     * Send a parameter set to the lua script
+     *
+     * @param index - zero-based index of the parameter to query
+     * @param value - value to set
+     */
     param_send(index: number, value: number): void;
+
+
+    // ----- Sync points ------------------------------------------------------
+    // Note: sync points are called "markers" on the frontend
 
     /**
      * Get the number of SyncPoints currently available in the loaded sound
@@ -320,6 +359,50 @@ declare interface InsoundAudioEngine {
      *                          the max number of sync points available.
      */
     getSyncPointLabel(index: number): string;
+
+    /**
+     * Set the callback that fires when a syncpoint has been reached
+     * @param callback - the callback to set with the following parameters:
+     *
+     * label         - syncpoint name / label text
+     *
+     * offsetSeconds - offset position of sync point in number of seconds
+     *
+     * Callback return value is discarded.
+     */
+    setSyncPointCallback(
+        callback: (label: string, offsetSeconds: number, index: number) =>
+            void): void;
+
+
+    // ----- Mix Presets ------------------------------------------------------
+
+    /**
+     * Add a mix preset to the mix preset manager
+     *
+     * @param name - preset name
+     * @param values - volumes to set, one for each channel
+     */
+    addPreset(name: string, values: number[]): void;
+
+    /**
+     * Get a preset from the manager
+     * @param {string} name [description]
+     */
+    getPresetByName(name: string): {name: string, volumes: number[]};
+
+    /**
+     * Get the number of presets currently stored in the manager.
+     */
+    getPresetCount(): number;
+
+    /**
+     * Get mix preset by index. Use `AudioEngine#getPresetCount` to get the
+     * number of total presets.
+     *
+     * @param index - zero-based index of the preset to get.
+     */
+    getPresetByIndex(index: number): {name: string, volumes: number[]};
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {
