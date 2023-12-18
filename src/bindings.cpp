@@ -1,3 +1,4 @@
+#include "insound/presets/Preset.h"
 #include <insound/AudioEngine.h>
 #include <insound/params/ParamDesc.h>
 #include <insound/LoopInfo.h>
@@ -29,6 +30,10 @@ EMSCRIPTEN_BINDINGS(Params)
 }
 
 EMSCRIPTEN_BINDINGS(AudioEngine) {
+
+    value_object<Preset>("MixPreset")
+        .field("name", &Preset::name)
+        .field("volumes", &Preset::volumes);
 
     value_object<LoopInfo<unsigned>>("LoopInfoSamples")
         .field("loopstart", &LoopInfo<unsigned>::loopstart)
@@ -88,5 +93,8 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getSyncPointCount", &T::getSyncPointCount)
         .function("getSyncPointOffsetSeconds", &T::getSyncPointOffsetSeconds)
         .function("getSyncPointLabel", &T::getSyncPointLabel)
+
+        .function("addPreset", &T::addPreset)
+        .function("getPresetByName", &T::getPresetByName)
         ;
 }

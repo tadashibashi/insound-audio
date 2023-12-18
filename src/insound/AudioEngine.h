@@ -159,6 +159,14 @@ namespace Insound
         std::string getSyncPointLabel(size_t index) const;
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t index) const;
+
+        void addPreset(const std::string &name, std::vector<float> volumes);
+        [[nodiscard]]
+        const Preset &getPresetByName(const std::string &name) const;
+        [[nodiscard]]
+        size_t getPresetCount() const;
+        [[nodiscard]]
+        const Preset &getPresetByIndex(size_t index) const;
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;

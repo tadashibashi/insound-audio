@@ -645,4 +645,24 @@ namespace Insound
     {
         return track->loopSamples();
     }
+
+    void AudioEngine::addPreset(const std::string &name, std::vector<float> volumes)
+    {
+        track->presets().emplace_back(name, volumes);
+    }
+
+    const Preset &AudioEngine::getPresetByName(const std::string &name) const
+    {
+        return track->presets()[name];
+    }
+
+    size_t AudioEngine::getPresetCount() const
+    {
+        return track->presets().size();
+    }
+
+    const Preset &AudioEngine::getPresetByIndex(size_t index) const
+    {
+        return track->presets()[index];
+    }
 }
