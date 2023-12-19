@@ -31,7 +31,7 @@ EMSCRIPTEN_BINDINGS(Params)
 
 EMSCRIPTEN_BINDINGS(AudioEngine) {
 
-    value_object<Preset>("MixPreset")
+    value_object<Preset>("Preset")
         .field("name", &Preset::name)
         .field("volumes", &Preset::volumes);
 

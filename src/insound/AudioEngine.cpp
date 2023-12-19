@@ -218,9 +218,17 @@ namespace Insound
             });
 
             preset.set_function("add",
-            [this, mixPresetsUpdated](std::string name, std::vector<float> values,
-                std::optional<size_t> position)
+            [this, mixPresetsUpdated](std::string name, sol::object valArrayp,
+                std::optional<size_t> position = {})
             {
+                std::vector<double> values;
+                auto valArray = valArrayp.as<sol::table>();
+                auto size = valArray.size();
+                values.reserve(size);
+
+                for (int i = 0; i < size; ++i)
+                    values.emplace_back(valArray[i+1].get<double>());
+
                 if (position)
                     track->presets().insert(name, values, *position-1);
                 else
@@ -230,11 +238,11 @@ namespace Insound
             });
 
             preset.set_function("get",
-            [this](IndexOrName indexOrName) -> const std::vector<float> &
+            [this](IndexOrName indexOrName)
             {
-                return (indexOrName.index() == 0) ?
+                return sol::as_table((indexOrName.index() == 0) ?
                     track->presets()[std::get<int>(indexOrName)-1].volumes :
-                    track->presets()[std::get<std::string>(indexOrName)].volumes;
+                    track->presets()[std::get<std::string>(indexOrName)].volumes);
             });
 
             preset.set_function("count",
@@ -650,8 +658,19 @@ namespace Insound
         return track->loopSamples();
     }
 
-    void AudioEngine::addPreset(const std::string &name, std::vector<float> volumes)
+    void AudioEngine::addPreset(const std::string &name, emscripten::val volArray)
     {
+        if (!volArray.isArray())
+            throw std::runtime_error("volArray param must be an array");
+        auto volumes = std::vector<double>();
+
+        auto length = volArray["length"].as<size_t>();
+        volumes.reserve(length);
+        for (int i = 0; i < length; ++i)
+        {
+            volumes.emplace_back(volArray[i].as<double>());
+        }
+
         track->presets().emplace_back(name, volumes);
     }
 

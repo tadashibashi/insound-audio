@@ -160,7 +160,7 @@ namespace Insound
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t index) const;
 
-        void addPreset(const std::string &name, std::vector<float> volumes);
+        void addPreset(const std::string &name, emscripten::val volumes);
         [[nodiscard]]
         const Preset &getPresetByName(const std::string &name) const;
         [[nodiscard]]

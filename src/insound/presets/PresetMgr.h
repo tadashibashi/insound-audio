@@ -14,32 +14,16 @@ namespace Insound
         PresetMgr() : m_presets() { }
 
         [[nodiscard]]
-        const Preset &operator[](size_t index) const
-        {
-            return m_presets[index];
-        }
+        const Preset &operator[](size_t index) const;
 
         [[nodiscard]]
-        Preset &operator[](size_t index)
-        {
-            return m_presets[index];
-        }
+        Preset &operator[](size_t index);
 
         [[nodiscard]]
-        const Preset &operator[](std::string_view name) const
-        {
-            for (const auto &preset : m_presets)
-                if (preset.name == name)
-                    return preset;
-            throw std::runtime_error("Could not find Preset with name " +
-                std::string(name));
-        }
+        const Preset &operator[](std::string_view name) const;
 
         [[nodiscard]]
-        Preset &operator[](std::string_view name)
-        {
-            return const_cast<Preset &>(operator[](name));
-        }
+        Preset &operator[](std::string_view name);
 
         /**
          * Get index of a preset via name, or -1 if none exists.
@@ -47,18 +31,7 @@ namespace Insound
          * @return zero-based index, or -1 if it wasn't found.
          */
         [[nodiscard]]
-        int indexOf(std::string_view name) const
-        {
-            int i = 0;
-            for (const auto &preset : m_presets)
-            {
-                if (preset.name == name)
-                    return i;
-                ++i;
-            }
-
-            return -1;
-        }
+        int indexOf(std::string_view name) const;
 
         [[nodiscard]]
         auto size() const
@@ -78,13 +51,13 @@ namespace Insound
         }
 
         auto emplace_back(const std::string &name,
-            const std::vector<float> &values)
+            const std::vector<double> &values)
         {
             m_presets.emplace_back(name, values);
         }
 
         auto insert(const std::string &name,
-            const std::vector<float> &values, size_t position)
+            const std::vector<double> &values, size_t position)
         {
             m_presets.insert(m_presets.begin() + position,
                 Preset{name, values});
