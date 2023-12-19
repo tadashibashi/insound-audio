@@ -17,25 +17,29 @@ export class MixPresetMgr
         this.m_presets = [];
     }
 
-    /**
-     * Update sync points from AudioEngine.
-     * Exception unsafe for efficiency...
-     */
-    update(audio: AudioEngine)
-    {
-        const presets = this.m_presets;
-        presets.length = 0;
-
-        const count = audio.engine.getPresetCount();
-        for (let i = 0; i < count; ++i)
-        {
-            presets.push(audio.engine.getPresetByIndex(i));
-        }
-    }
-
-    get(index: number)
+    getByIndex(index: number)
     {
         return this.m_presets.at(index);
+    }
+
+    getByName(name: string)
+    {
+        const presets = this.m_presets;
+        const length = presets.length;
+        for (let i = 0; i < length; ++i)
+        {
+            if (presets[i].name === name)
+                return presets[i];
+        }
+
+        throw Error("Could not find a preset with name \"" + name + "\"");
+    }
+
+    add(name: string, volumes: number[])
+    {
+        this.m_presets.push({
+            name, volumes
+        });
     }
 
     clear()

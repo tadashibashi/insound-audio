@@ -65,8 +65,30 @@ class AudioEngine
             syncpointUpdated: () => {
                 this.points.update(this);
             },
-            mixPresetsUpdated: () => {
-                this.presets.update(this);
+            addPreset: (name, volumes) => {
+                this.presets.add(name, volumes);
+            },
+            applyPreset: (indexOrName, seconds) => {
+                let preset: {name: string, volumes: number[]};
+
+                if (typeof indexOrName === "string")
+                {
+                    preset = this.presets.getByName(indexOrName);
+                }
+                else
+                {
+                    preset = this.presets.getByIndex(indexOrName);
+                }
+
+                this.setMixPreset(preset.volumes, seconds);
+            },
+            getPreset: (indexOrName) => {
+                return (typeof indexOrName === "string") ?
+                    this.presets.getByName(indexOrName) :
+                    this.presets.getByIndex(indexOrName);
+            },
+            getPresetCount: () => {
+                return this.presets.presets.length;
             }
         });
 
@@ -115,7 +137,6 @@ class AudioEngine
                 this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
             this.params.load(this);
             this.points.update(this);
-            this.presets.update(this);
             this.m_lastPosition = 0;
             this.m_position = 0;
         }
@@ -137,7 +158,6 @@ class AudioEngine
         this.engine.loadBank(data.ptr, data.size);
         this.params.load(this);
         this.points.update(this);
-        this.presets.update(this);
         this.m_lastPosition = 0;
         this.m_position = 0;
 
@@ -152,11 +172,13 @@ class AudioEngine
      */
     setMixPreset(volumes: number[], seconds: number)
     {
-        if (this.engine.getChannelCount() !== volumes.length)
-            throw Error(`setMixPreset error: volumes array length [${volumes.length}] does not match track count [${this.engine.getChannelCount()}]`);
+        const length = Math.min(this.channelCount, volumes.length);
 
-        for (let i = 0; i < volumes.length; ++i)
+        for (let i = 0; i < length; ++i)
+        {
+
             this.engine.fadeChannelTo(i, volumes[i], seconds);
+        }
     }
 
     /**

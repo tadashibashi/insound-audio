@@ -2,7 +2,6 @@
 #include "Channel.h"
 #include "common.h"
 #include "params/ParamDescMgr.h"
-#include "presets/PresetMgr.h"
 #include "SyncPointMgr.h"
 
 #include <fmod.hpp>
@@ -41,7 +40,6 @@ namespace Insound
         std::function<void(const std::string &, double, int)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
-        PresetMgr presets;
         bool looping;
     };
 
@@ -140,7 +138,6 @@ namespace Insound
         m->params.clear();
         m->chans.clear();
         m->points.clear();
-        m->presets.clear();
         m->syncpointCallback =
             std::function<void(const std::string &, double, int)>{};
 
@@ -433,46 +430,6 @@ namespace Insound
         return m->params;
     }
 
-
-    PresetMgr &MultiTrackAudio::presets()
-    {
-        return m->presets;
-    }
-
-
-    const PresetMgr &MultiTrackAudio::presets() const
-    {
-        return m->presets;
-    }
-
-
-    void MultiTrackAudio::applyPreset(std::string_view name, float seconds)
-    {
-        applyPreset(m->presets[name], seconds);
-    }
-
-
-    void MultiTrackAudio::applyPreset(size_t index, float seconds)
-    {
-        applyPreset(m->presets[index], seconds);
-    }
-
-
-    void MultiTrackAudio::applyPreset(const Preset &preset, float seconds)
-    {
-        auto chanSize = m->chans.size();
-
-        if (preset.volumes.size() < chanSize)
-        {
-            throw std::runtime_error("Preset " + preset.name + " does "
-                "not have enough volume settings for number of channels");
-        }
-
-        for (size_t i = 0; i < chanSize; ++i)
-        {
-            m->chans[i].fadeTo(preset.volumes[i], seconds);
-        }
-    }
 
     void MultiTrackAudio::channelReverbLevel(int ch, float level)
     {

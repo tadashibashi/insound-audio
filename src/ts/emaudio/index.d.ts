@@ -373,36 +373,6 @@ declare interface InsoundAudioEngine {
     setSyncPointCallback(
         callback: (label: string, offsetSeconds: number, index: number) =>
             void): void;
-
-
-    // ----- Mix Presets ------------------------------------------------------
-
-    /**
-     * Add a mix preset to the mix preset manager
-     *
-     * @param name - preset name
-     * @param values - volumes to set, one for each channel
-     */
-    addPreset(name: string, values: number[]): void;
-
-    /**
-     * Get a preset from the manager
-     * @param {string} name [description]
-     */
-    getPresetByName(name: string): {name: string, volumes: number[]};
-
-    /**
-     * Get the number of presets currently stored in the manager.
-     */
-    getPresetCount(): number;
-
-    /**
-     * Get mix preset by index. Use `AudioEngine#getPresetCount` to get the
-     * number of total presets.
-     *
-     * @param index - zero-based index of the preset to get.
-     */
-    getPresetByIndex(index: number): {name: string, volumes: number[]};
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

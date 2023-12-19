@@ -93,10 +93,5 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getSyncPointCount", &T::getSyncPointCount)
         .function("getSyncPointOffsetSeconds", &T::getSyncPointOffsetSeconds)
         .function("getSyncPointLabel", &T::getSyncPointLabel)
-
-        .function("addPreset", &T::addPreset)
-        .function("getPresetByName", &T::getPresetByName)
-        .function("getPresetCount", &T::getPresetCount)
-        .function("getPresetByIndex", &T::getPresetByIndex)
         ;
 }

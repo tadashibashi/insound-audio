@@ -11,7 +11,6 @@ namespace FMOD {
 
 namespace Insound {
     class ParamDescMgr;
-    class PresetMgr;
     class Preset;
 
     /**
@@ -173,13 +172,6 @@ namespace Insound {
 
         ParamDescMgr &params();
         const ParamDescMgr &params() const;
-
-        PresetMgr &presets();
-        const PresetMgr &presets() const;
-
-        void applyPreset(std::string_view name, float seconds=1.f);
-        void applyPreset(size_t index, float seconds=1.f);
-        void applyPreset(const Preset &preset, float seconds);
 
         [[nodiscard]]
         float channelReverbLevel(int ch) const;

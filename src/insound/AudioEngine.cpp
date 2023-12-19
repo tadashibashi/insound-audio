@@ -39,7 +39,7 @@ namespace Insound
 
 #if INS_DEBUG
         validateCallbacks({"setParam", "getParam", "syncpointUpdated",
-            "mixPresetsUpdated"}, cbs);
+            "addPreset", "applyPreset", "getPreset", "getPresetCount"}, cbs);
 #endif
 
         auto populateEnv = [this, cbs](sol::table &env)
@@ -47,7 +47,10 @@ namespace Insound
             emscripten::val setParam = cbs["setParam"];
             emscripten::val getParam = cbs["getParam"];
             emscripten::val syncpointUpdated = cbs["syncpointUpdated"];
-            emscripten::val mixPresetsUpdated = cbs["mixPresetsUpdated"];
+            emscripten::val addPreset = cbs["addPreset"];
+            emscripten::val applyPreset = cbs["applyPreset"];
+            emscripten::val getPreset = cbs["getPreset"];
+            emscripten::val getPresetCount = cbs["getPresetCount"];
 
             Scripting::Marker::inject("Marker", env);
 
@@ -203,58 +206,71 @@ namespace Insound
 
             auto preset = snd["preset"].get_or_create<sol::table>();
             preset.set_function("apply",
-            [this](IndexOrName indexOrName, float seconds)
+            [this, applyPreset](IndexOrName indexOrName, float seconds = 0)
             {
                 if (indexOrName.index() == 0)
                 {
-                    track->applyPreset(std::get<int>(indexOrName),
+                    applyPreset(std::get<int>(indexOrName),
                         seconds);
                 }
                 else
                 {
-                    track->applyPreset(std::get<std::string>(indexOrName),
+                    applyPreset(std::get<std::string>(indexOrName),
                         seconds);
                 }
             });
 
             preset.set_function("add",
-            [this, mixPresetsUpdated](std::string name, sol::object valArrayp,
-                std::optional<size_t> position = {})
+            [this, addPreset](std::string name, sol::object valArrayp)
             {
-                std::vector<double> values;
+                auto values = emscripten::val::array();
+
                 auto valArray = valArrayp.as<sol::table>();
                 auto size = valArray.size();
-                values.reserve(size);
 
                 for (int i = 0; i < size; ++i)
-                    values.emplace_back(valArray[i+1].get<double>());
+                    values.set(i, valArray[i+1].get<double>());
 
-                if (position)
-                    track->presets().insert(name, values, *position-1);
-                else
-                    track->presets().emplace_back(name, values);
-
-                mixPresetsUpdated();
+                addPreset(name, values);
             });
 
             preset.set_function("get",
-            [this](IndexOrName indexOrName)
+            [this, getPreset](IndexOrName indexOrName)
             {
-                return sol::as_table((indexOrName.index() == 0) ?
-                    track->presets()[std::get<int>(indexOrName)-1].volumes :
-                    track->presets()[std::get<std::string>(indexOrName)].volumes);
+                emscripten::val preset;
+                if (indexOrName.index() == 0)
+                {
+                    preset = getPreset(std::get<int>(indexOrName));
+                }
+                else
+                {
+                    preset = getPreset(std::get<std::string>(indexOrName));
+                }
+
+                sol::table res;
+                res["name"] = preset["name"].as<std::string>();
+                auto luaVolumes = res["volumes"].get_or_create<sol::table>();
+
+                auto volumes = preset["volumes"];
+                size_t length = volumes["length"].as<size_t>();
+                for (size_t i = 0; i < length; ++i)
+                {
+                    luaVolumes[i+1] = volumes[i].as<double>();
+                }
+
+                return res;
             });
 
             preset.set_function("count",
-            [this]()
+            [this, getPresetCount]()
             {
-                return track->presets().size();
+                return getPresetCount().as<size_t>();
             });
 
             preset.set_function("empty",
-            [this]()
+            [this, getPresetCount]()
             {
-                return track->presets().empty();
+                return getPresetCount().as<size_t>() == 0;
             });
         };
 
@@ -658,34 +674,4 @@ namespace Insound
         return track->loopSamples();
     }
 
-    void AudioEngine::addPreset(const std::string &name, emscripten::val volArray)
-    {
-        if (!volArray.isArray())
-            throw std::runtime_error("volArray param must be an array");
-        auto volumes = std::vector<double>();
-
-        auto length = volArray["length"].as<size_t>();
-        volumes.reserve(length);
-        for (int i = 0; i < length; ++i)
-        {
-            volumes.emplace_back(volArray[i].as<double>());
-        }
-
-        track->presets().emplace_back(name, volumes);
-    }
-
-    const Preset &AudioEngine::getPresetByName(const std::string &name) const
-    {
-        return track->presets()[name];
-    }
-
-    size_t AudioEngine::getPresetCount() const
-    {
-        return track->presets().size();
-    }
-
-    const Preset &AudioEngine::getPresetByIndex(size_t index) const
-    {
-        return track->presets()[index];
-    }
 }
