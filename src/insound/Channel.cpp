@@ -209,35 +209,6 @@ namespace Insound
     }
 
 
-    Channel &Channel::looping(bool set)
-    {
-        FMOD_MODE mode;
-        checkResult( chan->getMode(&mode) );
-
-        if (set)
-        {
-            mode &= ~FMOD_LOOP_OFF;
-            checkResult( chan->setMode(mode | FMOD_LOOP_NORMAL) );
-        }
-        else
-        {
-            mode |= FMOD_LOOP_OFF;
-            mode &= ~FMOD_LOOP_NORMAL;
-        }
-
-        return *this;
-    }
-
-
-    bool Channel::looping() const
-    {
-        FMOD_MODE mode;
-        checkResult( chan->getMode(&mode) );
-
-        return mode & (FMOD_LOOP_NORMAL | FMOD_LOOP_BIDI);
-    }
-
-
     float Channel::ch_position() const
     {
         if (m_isGroup)

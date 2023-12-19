@@ -23,7 +23,8 @@ class ParameterBase
     // All parameters have underlying number as value
     protected m_value: number;
 
-    private onSetCallback: (index: number, value: number) => void;
+    private onSetCallback: ((index: number, value: number) => void)[];
+
     readonly defaultValue: number;
     readonly index: number;
 
@@ -39,12 +40,31 @@ class ParameterBase
         this.m_value = defaultValue;
         this.lastValue = this.m_value;
         this.defaultValue = defaultValue;
-        this.onSetCallback = onSetCallback;
+        this.onSetCallback = [onSetCallback];
         this.index = index;
 
         this.transitionInterval = {interval: null};
 
         registry.register(this, this.transitionInterval, this);
+    }
+
+    addSetCallback(cb: (index: number, value: number) => void)
+    {
+        this.onSetCallback.push(cb);
+    }
+
+    removeSetCallback(cb: (index: number, value: number) => void)
+    {
+        const cbs = this.onSetCallback;
+        const length = cbs.length;
+        for (let i = 0; i < length; ++i)
+        {
+            if (cbs[i] === cb)
+            {
+                cbs.splice(i, 1);
+                break;
+            }
+        }
     }
 
     get value()
@@ -64,7 +84,12 @@ class ParameterBase
         if (value !== lastValue)
         {
             this.m_value = value;
-            this.onSetCallback(this.index, value);
+
+            const cbs = this.onSetCallback;
+            const length = cbs.length;
+            const index = this.index;
+            for (let i = 0; i < length; ++i)
+                cbs[i](index, value);
         }
     }
 
@@ -89,14 +114,18 @@ class ParameterBase
             return;
         }
 
+        if (this.value === value) return;
+
         const milliseconds = seconds * 1000;
         const intervalTime = 1000/50; // 50fps
+        const startingVal = this.value;
         let time = 0;
         this.transitionInterval.interval = setInterval(() => {
             time += intervalTime;
-            this.value = lerp(this.value, value, Math.min(1, time/milliseconds)); // curved, maybe make linear?
+            this.value = lerp(startingVal, value, Math.min(1, time/milliseconds));
             if (time >= milliseconds)
             {
+                this.value = value;
                 clearInterval(this.transitionInterval.interval);
                 this.transitionInterval.interval = null;
             }

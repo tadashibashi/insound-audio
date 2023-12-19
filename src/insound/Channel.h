@@ -55,13 +55,6 @@ namespace Insound
         Channel &fadeTo(float vol, float seconds);
 
         /**
-         * Set whether the channel should loop
-         * @param  setLooping - whether channel should loop
-         * @return reference to this object for chaining.
-         */
-        Channel &looping(bool setLooping);
-
-        /**
          * Set paused status
          * @param  set     - set value of pause
          * @param  seconds - number of seconds to fade in/out
@@ -114,12 +107,6 @@ namespace Insound
          */
         [[nodiscard]]
         float fadeLevel(bool final=true) const;
-
-        /**
-         * Get whether the channel is set to looping
-         */
-        [[nodiscard]]
-        bool looping() const;
 
         /**
          * Get whether the channel is paused

@@ -21,7 +21,7 @@ namespace Insound
     public:
         Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(),
             main("main", sys), points(), syncpointCallback(), endCallback(),
-            params()
+            params(), looping(true)
         {
         }
 
@@ -42,6 +42,7 @@ namespace Insound
         std::function<void()> endCallback;
         ParamDescMgr params;
         PresetMgr presets;
+        bool looping;
     };
 
 
@@ -195,9 +196,11 @@ namespace Insound
 
         case FMOD_CHANNELCONTROL_CALLBACK_END:
             {
+
                 auto callback = track->getEndCallback();
                 if (callback)
                     callback();
+
                 break;
             }
 
@@ -368,16 +371,19 @@ namespace Insound
     bool MultiTrackAudio::looping() const
     {
         // only need to check first channel, since all should be uniform
-        return m->chans.at(0).looping();
+        //return m->chans.at(0).looping();
+
+        return m->looping;
     }
 
 
     void MultiTrackAudio::looping(bool looping)
     {
-        for (auto &chan : m->chans)
-        {
-            chan.looping(looping);
-        }
+        // for (auto &chan : m->chans)
+        // {
+        //     chan.looping(looping);
+        // }
+        m->looping = looping;
     }
 
 
