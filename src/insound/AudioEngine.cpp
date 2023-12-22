@@ -318,9 +318,6 @@ namespace Insound
                         downtime = 0;
                     }
                 }
-
-                checkResult(sys->update());
-                lua->doUpdate(delta.count() * .001, total.count() * .001);
             }
             else
             {
@@ -334,8 +331,10 @@ namespace Insound
             }
         }
 
-        lastFrame = current;
+        checkResult(sys->update());
+        lua->doUpdate(delta.count() * .001, total.count() * .001);
 
+        lastFrame = current;
     }
 
     void AudioEngine::loadSound(size_t data, size_t bytelength)
