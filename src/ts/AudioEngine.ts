@@ -152,6 +152,9 @@ class AudioEngine
         script: ""
     })
     {
+        if (this.isTrackLoaded())
+            this.unloadTrack();
+
         const size = buffers.reduce(
             (accum, buffer) => buffer.byteLength + accum, 0);
         const buf = new Uint8Array(size);
@@ -169,7 +172,7 @@ class AudioEngine
         try {
             const ptr = this.trackData.ptr;
             ptrOffset = 0;
-            for (let i = 0; i < size; ++i)
+            for (let i = 0; i < buffers.length; ++i)
             {
                 this.engine.loadSound(ptr + ptrOffset, buffers[i].byteLength);
                 ptrOffset += buffers[i].byteLength;
