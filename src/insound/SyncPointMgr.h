@@ -76,6 +76,8 @@ namespace Insound
          */
         SyncPoint &emplace(std::string_view label, unsigned int offset,
             int fmodTimeUnit);
+
+        void swap(SyncPointMgr &other);
     private:
         // Sync point data
         std::vector<SyncPoint> m_points;

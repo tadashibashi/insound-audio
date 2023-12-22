@@ -142,4 +142,14 @@ namespace Insound
 
         return m_points.emplace_back(label, point);
     }
+
+    void SyncPointMgr::swap(SyncPointMgr &other)
+    {
+        m_points.swap(other.m_points);
+
+        // swap sound objects
+        auto tempSound = other.m_sound;
+        other.m_sound = m_sound;
+        m_sound = tempSound;
+    }
 }
