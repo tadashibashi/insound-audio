@@ -241,12 +241,6 @@ namespace Insound
         FMOD::System *sys;
         checkResult( m->main.raw()->getSystemObject(&sys) );
 
-        if (m->fsb)
-        {
-            // unload any fsb that was previously loaded
-            clear();
-        }
-
         // Set relevant info to load the fsb
         auto exinfo{FMOD_CREATESOUNDEXINFO()};
         std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
@@ -258,14 +252,69 @@ namespace Insound
         checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT, &exinfo,
             &sound) );
 
-        auto numChans = m->chans.size();
+        SyncPointMgr points(sound);
+
+        if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
+        {
+            // set loop info from markers
+            auto loopStart = points.getOffsetSamples("LoopStart");
+            auto loopEnd = points.getOffsetSamples("LoopEnd");
+            bool didAlterLoop = false;
+
+            if (!loopStart)
+            {
+                loopStart.emplace(0);
+                didAlterLoop = true;
+            }
+
+            if (!loopEnd)
+            {
+                unsigned int length;
+                checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCM));
+
+                loopEnd.emplace(length);
+                didAlterLoop = true;
+            }
+
+            checkResult( sound->setLoopPoints(
+                loopStart.value(), FMOD_TIMEUNIT_PCM,
+                loopEnd.value(), FMOD_TIMEUNIT_PCM) );
+
+            if (didAlterLoop)
+                points.load(sound);
+        }
+        else
+        {
+            // set loop position from other sounds
+            unsigned int loopstart, loopend;
+            checkResult( m->sounds[0]->getLoopPoints(
+                &loopstart, FMOD_TIMEUNIT_PCM,
+                &loopend, FMOD_TIMEUNIT_PCM) );
+
+            checkResult( sound->setLoopPoints(
+                loopstart, FMOD_TIMEUNIT_PCM,
+                loopend, FMOD_TIMEUNIT_PCM) );
+        }
+
+        // done, commit results
+
+        if (m->fsb)
+        {
+            clear();
+        }
+
+        auto chanSize = m->chans.size();
 
         auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
-            sys, numChans);
+            sys, m->chans.size());
 
-        // match its position to other sounds
-        if (numChans == 0)
+        if (chanSize == 0)
         {
+            m->points.swap(points); // only set points of first track
+        }
+        else
+        {
+            // set channel track position to others' position
             auto seconds = m->chans[0].ch_position();
             chan.ch_position(seconds);
         }
