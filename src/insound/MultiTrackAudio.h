@@ -36,6 +36,15 @@ namespace Insound {
         void loadFsb(const char *data, size_t bytelength, bool looping=true);
 
         /**
+         * Add sounds separately. This is useful for testing audio without
+         * needing a compiled FSBank.
+         *
+         * @param data       - pointer to the data
+         * @param bytelength - byte size of the data
+         */
+        void loadSound(const char *data, size_t bytelength);
+
+        /**
          * Unload fsb file from memory and reset internals
          */
         void clear();

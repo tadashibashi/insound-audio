@@ -20,7 +20,7 @@ namespace Insound
     public:
         Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(),
             main("main", sys), points(), syncpointCallback(), endCallback(),
-            params(), looping(true)
+            params(), looping(true), sounds()
         {
         }
 
@@ -32,6 +32,7 @@ namespace Insound
                 fsb->release();
         }
 
+        std::vector<FMOD::Sound *> sounds;
         std::vector<Channel> chans;
         FMOD::Sound *fsb;
 
@@ -53,6 +54,7 @@ namespace Insound
 
     MultiTrackAudio::~MultiTrackAudio()
     {
+        clear();
         delete m;
     }
 
@@ -147,14 +149,21 @@ namespace Insound
             m->fsb->release();
             m->fsb = nullptr;
         }
+        else if (!m->sounds.empty()) // otherwise release individual sounds
+        {
+            for (auto *sound : m->sounds)
+            {
+                sound->release();
+            }
+        }
 
-
+        m->sounds.clear();
     }
 
 
     bool MultiTrackAudio::isLoaded() const
     {
-        return static_cast<bool>(m->fsb);
+        return static_cast<bool>(!m->sounds.empty());
     }
 
     static FMOD_RESULT F_CALLBACK channelCallback(
@@ -227,6 +236,42 @@ namespace Insound
         return (double)m->points.getOffsetSeconds(i);
     }
 
+    void MultiTrackAudio::loadSound(const char *data, size_t bytelength)
+    {
+        FMOD::System *sys;
+        checkResult( m->main.raw()->getSystemObject(&sys) );
+
+        if (m->fsb)
+        {
+            // unload any fsb that was previously loaded
+            clear();
+        }
+
+        // Set relevant info to load the fsb
+        auto exinfo{FMOD_CREATESOUNDEXINFO()};
+        std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
+        exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
+        exinfo.length = bytelength;
+
+        // add sound to the existing sounds and set its position accordingly
+        FMOD::Sound *sound;
+        checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT, &exinfo,
+            &sound) );
+
+        auto numChans = m->chans.size();
+
+        auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
+            sys, numChans);
+
+        // match its position to other sounds
+        if (numChans == 0)
+        {
+            auto seconds = m->chans[0].ch_position();
+            chan.ch_position(seconds);
+        }
+
+        m->sounds.emplace_back(sound);
+    }
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength,
         bool looping)
@@ -298,6 +343,7 @@ namespace Insound
 
         // Set loop points on each sound, emplacing them into a Channel vector
         std::vector<Channel> chans;
+        std::vector<FMOD::Sound *> sounds;
         for (int i = 0; i < numSubSounds; ++i)
         {
             FMOD::Sound *subsound;
@@ -313,6 +359,7 @@ namespace Insound
             // create the channel wrapper object from the subsound
             chans.emplace_back(subsound,
                 (FMOD::ChannelGroup *)m->main.raw(), sys, i);
+            sounds.emplace_back(subsound);
         }
 
         // Set channel callback on first channel
@@ -326,6 +373,7 @@ namespace Insound
         clear();
         m->chans.swap(chans);
         m->fsb = snd;
+        m->sounds.swap(sounds);
         std::swap(m->points, syncPoints);
         pause(true, 0); // pause, wait for user to trigger start
     }
@@ -357,11 +405,7 @@ namespace Insound
 
     int MultiTrackAudio::channelCount() const
     {
-        assert(m->fsb);
-
-        int count;
-        checkResult( m->fsb->getNumSubSounds(&count) );
-        return count;
+        return m->chans.size();
     }
 
 
