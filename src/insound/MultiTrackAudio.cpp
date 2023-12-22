@@ -115,14 +115,12 @@ namespace Insound
 
     double MultiTrackAudio::length() const
     {
-        int numSounds;
-        checkResult( m->fsb->getNumSubSounds(&numSounds) );
+        auto numSounds = m->sounds.size();
 
         unsigned int maxLength = 0;
         for (int i = 0; i < numSounds; ++i)
         {
-            FMOD::Sound *sound;
-            checkResult( m->fsb->getSubSound(i, &sound));
+            const auto sound = m->sounds[i];
 
             unsigned int length;
             checkResult( sound->getLength(&length, FMOD_TIMEUNIT_MS) );
