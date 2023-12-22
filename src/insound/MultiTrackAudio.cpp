@@ -185,7 +185,7 @@ namespace Insound
         case FMOD_CHANNELCONTROL_CALLBACK_SYNCPOINT:
             {
                 auto pointIndex = (int)(uintptr_t)commanddata1;
-                auto callback = track->getSyncPointCallback();
+                const auto &callback = track->getSyncPointCallback();
 
                 // Invoke callback, if any was set
                 if (callback)
@@ -200,8 +200,7 @@ namespace Insound
 
         case FMOD_CHANNELCONTROL_CALLBACK_END:
             {
-
-                auto callback = track->getEndCallback();
+                const auto &callback = track->getEndCallback();
                 if (callback)
                     callback();
 
@@ -317,6 +316,9 @@ namespace Insound
         if (chanSize == 0)
         {
             m->points.swap(points); // only set points of first track
+
+            checkResult( chan.raw()->setUserData(this));
+            checkResult( chan.raw()->setCallback(channelCallback) );
         }
         else
         {
