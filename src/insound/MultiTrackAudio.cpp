@@ -247,8 +247,11 @@ namespace Insound
 
         // add sound to the existing sounds and set its position accordingly
         FMOD::Sound *sound;
-        checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT, &exinfo,
-            &sound) );
+        checkResult( sys->createSound(data,
+            FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL,
+            &exinfo,
+            &sound)
+        );
 
         SyncPointMgr points(sound);
 
@@ -262,6 +265,8 @@ namespace Insound
             if (!loopStart)
             {
                 loopStart.emplace(0);
+                sound->addSyncPoint(0, FMOD_TIMEUNIT_PCM, "LoopStart",
+                    nullptr);
                 didAlterLoop = true;
             }
 
@@ -271,6 +276,9 @@ namespace Insound
                 checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCM));
 
                 loopEnd.emplace(length);
+                sound->addSyncPoint(length, FMOD_TIMEUNIT_PCM, "LoopEnd",
+                    nullptr);
+
                 didAlterLoop = true;
             }
 
@@ -318,6 +326,7 @@ namespace Insound
         }
 
         m->sounds.emplace_back(sound);
+        pause(true, 0); // pause, wait for user to trigger start
     }
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength,
