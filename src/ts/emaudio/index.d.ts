@@ -75,6 +75,16 @@ declare interface InsoundAudioEngine {
     loadBank(dataPtr: pointer, bytelength: number): void;
 
     /**
+     * Load an individual sound. Adds a layer. If a bank was previously loaded
+     * with `AudioEngine#loadBank` it will be unloaded here.
+     * Please make sure to keep data alive for the lifetime of its usage.
+     *
+     * @param dataPtr  - const pointer to data
+     * @param bytelength - size of data
+     */
+    loadSound(dataPtr: pointer, bytelength: number): void;
+
+    /**
      * Unload bank from storage. Data should be freed externally as this class
      * does not take ownership of it.
      */

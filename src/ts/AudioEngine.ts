@@ -28,6 +28,7 @@ class AudioEngine
 
     // container managing the current track data
     trackData: EmBuffer;
+    soundsData: EmBuffer[];
     updateHandler: (() => void) | null;
     params: ParameterMgr;
     points: SyncPointMgr;
@@ -145,6 +146,51 @@ class AudioEngine
             console.error(err);
             this.trackData.free();
         }
+    }
+
+    loadSounds(buffers: ArrayBuffer[], opts: LoadOptions = {
+        script: ""
+    })
+    {
+        const size = buffers.reduce(
+            (accum, buffer) => buffer.byteLength + accum, 0);
+        const buf = new Uint8Array(size);
+
+        let ptrOffset = 0;
+        for (let i = 0; i < buffers.length; ++i)
+        {
+            const curBuf = new Uint8Array(buffers[i]);
+            buf.set(curBuf, ptrOffset);
+            ptrOffset += curBuf.length;
+        }
+
+        this.trackData.alloc(buf, Audio);
+
+        try {
+            const ptr = this.trackData.ptr;
+            ptrOffset = 0;
+            for (let i = 0; i < size; ++i)
+            {
+                this.engine.loadSound(ptr + ptrOffset, buffers[i].byteLength);
+                ptrOffset += buffers[i].byteLength;
+            }
+
+            const result = this.engine.loadScript(opts.script || "");
+            if (result)
+                console.error("Lua Script error:", result);
+            if (opts.loopend !== undefined && opts.loopstart !== undefined)
+                this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
+            this.params.load(this);
+            this.points.update(this);
+            this.m_lastPosition = 0;
+            this.m_position = 0;
+        }
+        catch(err)
+        {
+            console.error(err);
+            this.trackData.free();
+        }
+
     }
 
     /**

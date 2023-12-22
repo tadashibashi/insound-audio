@@ -41,6 +41,16 @@ namespace Insound
         void loadBank(size_t data, size_t bytelength);
         void unloadBank();
 
+        /**
+         * Load multiple sounds into the track. Unloads any currently loaded
+         * files or bank. Please keep the data valid for the lifetime of use
+         * and dispose after unload has been called.
+         * @param dataBuffers - pointers to data
+         * @param byteLengths - bytelength of each buffer
+         * @param bufferCount - number of buffers provided
+         */
+        void loadSound(size_t data, size_t bytelength);
+
         const std::string &loadScript(const std::string &text);
 
         [[nodiscard]]

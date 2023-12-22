@@ -338,6 +338,16 @@ namespace Insound
 
     }
 
+    void AudioEngine::loadSound(size_t data, size_t bytelength)
+    {
+        assert(track);
+        track->loadSound((const char *)data, bytelength);
+
+        // set clock
+        startTime = std::chrono::system_clock::now();
+        lastFrame = startTime;
+    }
+
     void AudioEngine::loadBank(size_t data, size_t bytelength)
     {
         assert(track);
