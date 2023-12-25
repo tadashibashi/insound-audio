@@ -27,6 +27,14 @@ function snd.pause() end
 function snd.paused(pause) end
 
 ---
+---Set/get the current playhead position
+---
+---@param seconds? number - seconds to seek to, if provided
+---
+---@return number - number of seconds track playhead is at
+function snd.position(seconds) end
+
+---
 ---Set the main master volume. If no value is passed to `volume`, it will
 ---instead return the current main volume level.
 ---

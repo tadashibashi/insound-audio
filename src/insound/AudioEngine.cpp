@@ -80,6 +80,18 @@ namespace Insound
                 }
             });
 
+            snd.set_function("position",
+            [this](std::optional<double> seconds = {})
+            {
+                double pos;
+                if (seconds)
+                {
+                    seek(seconds.value());
+                }
+
+                return getPosition();
+            });
+
             snd.set_function("main_volume",
             [this](std::optional<double> volume={})
             {
