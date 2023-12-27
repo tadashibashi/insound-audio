@@ -218,7 +218,7 @@ namespace Insound
         return true;
     }
 
-    bool LuaDriver::doSyncPoint(const std::string &label, double seconds)
+    bool LuaDriver::doSyncPoint(const std::string &label, double seconds, int index)
     {
         if (!isLoaded())
         {

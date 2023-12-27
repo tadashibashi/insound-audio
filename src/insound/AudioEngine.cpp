@@ -593,7 +593,12 @@ namespace Insound
         if (!track)
             throw std::runtime_error("AudioEngine cannot set syncpoint "
                 "callback because track was not loaded.");
-        track->setSyncPointCallback(callback);
+        track->setSyncPointCallback(
+            [callback, this](const std::string &name, double offset, int index)
+            {
+                callback(name, offset, index);
+                lua->doSyncPoint(name, offset, index);
+            });
     }
 
     void AudioEngine::setEndCallback(emscripten::val callback)
