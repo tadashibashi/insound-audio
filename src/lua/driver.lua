@@ -59,8 +59,8 @@ end
 
 ---Callback that fires when the sound bank has been loaded
 local function on_load()
-    if env.on_load ~= nil then
-        env.on_load()
+    if env.on_ready ~= nil then
+        env.on_ready()
     end
 end
 
