@@ -104,7 +104,48 @@ namespace Insound
                 {
                     return getMainVolume();
                 }
+            });
 
+            snd.set_function("main_pan_left",
+            [this](std::optional<float> value = {})
+            {
+                if (value)
+                {
+                    this->setMainPanLeft(value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getMainPanLeft();
+                }
+            });
+
+            snd.set_function("main_pan_right",
+            [this](std::optional<float> value = {})
+            {
+                if (value)
+                {
+                    this->setMainPanRight(value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getMainPanRight();
+                }
+            });
+
+            snd.set_function("main_reverb",
+            [this](std::optional<float> value = {})
+            {
+                if (value)
+                {
+                    this->setMainReverbLevel(value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getMainReverbLevel();
+                }
             });
 
             snd.set_function("channel_volume",
@@ -119,6 +160,51 @@ namespace Insound
                 else
                 {
                     return this->getChannelVolume(channel);
+                }
+            });
+
+            snd.set_function("channel_pan_left",
+            [this](int channel, std::optional<float> value = {})
+            {
+                --channel;
+                if (value)
+                {
+                    this->setChannelPanLeft(channel, value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getChannelPanLeft(channel);
+                }
+            });
+
+            snd.set_function("channel_pan_right",
+            [this](int channel, std::optional<float> value = {})
+            {
+                --channel;
+                if (value)
+                {
+                    this->setChannelPanRight(channel, value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getChannelPanRight(channel);
+                }
+            });
+
+            snd.set_function("channel_reverb",
+            [this](int channel, std::optional<float> value={})
+            {
+                --channel;
+                if (value)
+                {
+                    this->setChannelReverbLevel(channel, value.value());
+                    return value.value();
+                }
+                else
+                {
+                    return this->getChannelReverbLevel(channel);
                 }
             });
 
