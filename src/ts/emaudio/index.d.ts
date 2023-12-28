@@ -171,6 +171,12 @@ declare interface InsoundAudioEngine {
      */
     getMainReverbLevel(): number;
 
+    setMainPanLeft(level: number): void;
+    setMainPanRight(level: number): void;
+    setMainPan(left: number, right: number): void;
+    getMainPanLeft(): number;
+    getMainPanRight(): number;
+
     /**
      * Fade main bus from current fade volume to another in number of `seconds`
      *
@@ -225,6 +231,12 @@ declare interface InsoundAudioEngine {
      * @return the channel's current reverb send level
      */
     getChannelReverbLevel(ch: number): number;
+
+    setChannelPanLeft(ch: number, level: number): void;
+    setChannelPanRight(ch: number, level: number): void;
+    setChannelPan(ch: number, left: number, right: number): void;
+    getChannelPanLeft(ch: number): number;
+    getChannelPanRight(ch: number): number;
 
     /**
      * Fade channel to a level - this value is different from the chennel

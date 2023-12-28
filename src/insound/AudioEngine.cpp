@@ -700,4 +700,52 @@ namespace Insound
         return track->loopSamples();
     }
 
+    void AudioEngine::setChannelPanLeft(int ch, float level)
+    {
+        track->channel(ch).panLeft(level);
+    }
+
+    void AudioEngine::setChannelPanRight(int ch, float level)
+    {
+        track->channel(ch).panRight(level);
+    }
+
+    void AudioEngine::setChannelPan(int ch, float left, float right)
+    {
+        track->channel(ch).pan(left, right);
+    }
+
+    float AudioEngine::getChannelPanLeft(int ch) const
+    {
+        return track->channel(ch).panLeft();
+    }
+
+    float AudioEngine::getChannelPanRight(int ch) const
+    {
+        return track->channel(ch).panRight();
+    }
+
+    void AudioEngine::setMainPanLeft(float level)
+    {
+        track->main().panLeft(level);
+    }
+
+    void AudioEngine::setMainPanRight(float level)
+    {
+        track->main().panRight(level);
+    }
+    void AudioEngine::setMainPan(float left, float right)
+    {
+        track->main().pan(left, right);
+    }
+
+    float AudioEngine::getMainPanLeft() const
+    {
+        return track->main().panLeft();
+    }
+
+    float AudioEngine::getMainPanRight() const
+    {
+        return track->main().panRight();
+    }
 }

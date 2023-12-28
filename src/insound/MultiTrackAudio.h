@@ -1,4 +1,5 @@
 #pragma once
+#include "insound/Channel.h"
 #include "insound/LoopInfo.h"
 #include <functional>
 #include <string>
@@ -137,6 +138,12 @@ namespace Insound {
         void channelVolume(int ch, double vol);
 
         [[nodiscard]]
+        Channel &channel(int ch);
+        [[nodiscard]]
+        const Channel &channel(int ch) const;
+
+
+        [[nodiscard]]
         int channelCount() const;
 
         [[nodiscard]]
@@ -198,6 +205,9 @@ namespace Insound {
 
         LoopInfo<double> loopSeconds() const;
         LoopInfo<unsigned> loopSamples() const;
+
+        Channel &main();
+        const Channel &main() const;
     private:
         // Pimple idiom
         struct Impl;

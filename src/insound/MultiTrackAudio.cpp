@@ -617,4 +617,24 @@ namespace Insound
     {
         return m->chans.at(0).ch_loopSamples();
     }
+
+    Channel &MultiTrackAudio::channel(int ch)
+    {
+        return m->chans.at(ch);
+    }
+
+    const Channel &MultiTrackAudio::channel(int ch) const
+    {
+        return m->chans.at(ch);
+    }
+
+    Channel &MultiTrackAudio::main()
+    {
+        return m->main;
+    }
+
+    const Channel &MultiTrackAudio::main() const
+    {
+        return m->main;
+    }
 }

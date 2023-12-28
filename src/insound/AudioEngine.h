@@ -170,6 +170,24 @@ namespace Insound
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t index) const;
 
+        void setChannelPanLeft(int ch, float level);
+        void setChannelPanRight(int ch, float level);
+        void setChannelPan(int ch, float left, float right);
+
+        [[nodiscard]]
+        float getChannelPanLeft(int ch) const;
+        [[nodiscard]]
+        float getChannelPanRight(int ch) const;
+
+        void setMainPanLeft(float level);
+        void setMainPanRight(float level);
+        void setMainPan(float left, float right);
+
+        [[nodiscard]]
+        float getMainPanLeft() const;
+        [[nodiscard]]
+        float getMainPanRight() const;
+
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
