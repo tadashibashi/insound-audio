@@ -13,12 +13,11 @@ class NumberParameter extends ParameterBase
         step: number, defaultValue: number, isInteger: boolean,
         onSetCallback: (index: number, value: number) => void)
     {
-        // Validate min, max, and step
-        if (min > max)
-            throw Error("Invalid arguments: Min is greater than Max");
-        if (step <= 0 || step > max - min)
+        // Validate step
+        const diff = Math.abs(max - min);
+        if (step <= 0 || step > diff)
             throw Error(
-                `Step ${step} is out of range. Valid values: 0 to ${max-min}`);
+                `Step ${step} is out of range. Valid values: 0 to ${diff}`);
 
         super(name, index,
             isInteger ? ParamType.Integer : ParamType.Float,
@@ -33,8 +32,20 @@ class NumberParameter extends ParameterBase
     override set value(v: number)
     {
         const constant = 1/this.step;
-        v = Math.round(constant * (v-this.min) ) / constant + this.min;
-        v = Math.max(Math.min(v, this.max), this.min);
+        let min: number, max: number;
+        if (this.min < this.max)
+        {
+            min = this.min;
+            max = this.max;
+        }
+        else
+        {
+            min = this.max;
+            max = this.min;
+        }
+
+        v = Math.round(constant * (v-min) ) / constant + min;
+        v = Math.max(Math.min(v, max), min);
         super.value = v;
     }
 
@@ -46,7 +57,20 @@ class NumberParameter extends ParameterBase
     override transitionTo(value: number, seconds: number): void {
         if (isNaN(value))
             return;
-        value = Math.min(Math.max(value, this.min), this.max);
+
+        let min: number, max: number;
+        if (this.min > this.max)
+        {
+            min = this.max;
+            max = this.min;
+        }
+        else
+        {
+            min = this.min;
+            max = this.max;
+        }
+
+        value = Math.min(Math.max(value, min), max);
         super.transitionTo(value, seconds);
     }
 }
