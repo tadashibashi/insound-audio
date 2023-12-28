@@ -64,6 +64,41 @@ namespace Insound
 
         Channel &volume(float val);
 
+        Channel &panLeft(float value);
+
+        /**
+         * Get the left pan value
+         *
+         * @return value: 1 = fully left, 0 = fully right, .5 = middle
+         */
+        [[nodiscard]]
+        float panLeft() const;
+
+        /**
+         * Set right pan value.
+         * @param value: 1 = fully right, 0 = fully left, .5 = middle
+         *
+         * @return reference to this channel for chaining.
+         */
+        Channel &panRight(float value);
+
+        /**
+         * Get the right pan value.
+         *
+         * @return value: 1 = fully right, 0 = fully left, .5 = middle
+         */
+        [[nodiscard]]
+        float panRight() const;
+
+        /**
+         * Set both pan values at once
+         * @param  left  : 1 = fully left, 0 = fully right, .5 = middle
+         * @param  right : 1 = fully right, 0 = fully left, .5 = middle
+         *
+         * @return reference to this channel for chaining.
+         */
+        Channel &pan(float left, float right);
+
         /**
          * Set the output channel group - only available if this is an
          * FMOD::Channel. Check that `isGroup` is `false`.
@@ -170,5 +205,7 @@ namespace Insound
         // channel number in a track set
         int m_index;
 
+        float m_leftPan;
+        float m_rightPan;
     };
 }

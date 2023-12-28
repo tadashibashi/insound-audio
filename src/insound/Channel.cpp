@@ -15,7 +15,7 @@ namespace Insound
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
         FMOD::System *system, int index) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
-            m_isPaused(), m_index(index)
+            m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
@@ -33,7 +33,7 @@ namespace Insound
 
     Channel::Channel(std::string_view name, FMOD::System *system, int index) :
         chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(index)
+        m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
@@ -51,7 +51,7 @@ namespace Insound
 
     Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
         lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(-1)
+        m_isPaused(), m_index(-1), m_leftPan(1.f), m_rightPan(1.f)
     {
         FMOD::System *system;
         checkResult( group->getSystemObject(&system) );
@@ -75,7 +75,8 @@ namespace Insound
 
     Channel::Channel(Channel &&other) : chan(other.chan),
         lastFadePoint(other.lastFadePoint), m_isGroup(other.m_isGroup),
-        samplerate(other.samplerate), m_isPaused(other.m_isPaused)
+        samplerate(other.samplerate), m_isPaused(other.m_isPaused),
+        m_leftPan(1.f), m_rightPan(1.f)
     {
         other.chan = nullptr;
     }
@@ -355,6 +356,47 @@ namespace Insound
     Channel &Channel::reverbLevel(float level)
     {
         checkResult(chan->setReverbProperties(0, level));
+        return *this;
+    }
+
+
+    Channel &Channel::panLeft(float value)
+    {
+        float values[4] = {value, 1.f - m_rightPan, 1.f - value, m_rightPan};
+
+        checkResult(chan->setMixMatrix(values, 2, 2, 2));
+        m_leftPan = value;
+        return *this;
+    }
+
+    float Channel::panLeft() const
+    {
+        return m_leftPan;
+    }
+
+    Channel &Channel::panRight(float value)
+    {
+        float values[4] = {m_leftPan, 1.f-value, 1.f - m_leftPan, value};
+
+        checkResult(chan->setMixMatrix(values, 2, 2, 2));
+
+        m_rightPan = value;
+        return *this;
+    }
+
+    float Channel::panRight() const
+    {
+        return m_rightPan;
+    }
+
+    Channel &Channel::pan(float left, float right)
+    {
+        float values[4] = {left, 1.f-right, 1.f-left, right};
+
+        checkResult(chan->setMixMatrix(values, 2, 2, 2));
+
+        m_leftPan = left;
+        m_rightPan = right;
         return *this;
     }
 
