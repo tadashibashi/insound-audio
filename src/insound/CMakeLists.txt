@@ -25,26 +25,26 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_link_options(${PROJECT_NAME} PUBLIC
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
         -sEXPORT_NAME=${INSOUND_MODULE_NAME}
-        -sASSERTIONS=1 -sNO_DISABLE_EXCEPTION_CATCHING=1 -O0
-        -sFILESYSTEM=0 -fexceptions
+        -sASSERTIONS=1 -sNO_DISABLE_EXCEPTION_CATCHING=0 -O0
+        -sFILESYSTEM=0 -fwasm-exceptions
         -sWASM_BIGINT=1 -sENVIRONMENT=${INSOUND_ENVIRONMENT}
         -sALLOW_MEMORY_GROWTH=1
     )
     target_compile_options(${PROJECT_NAME} PUBLIC
-        -O0 -fexceptions
+        -O0 -fwasm-exceptions
     )
     target_compile_definitions(${PROJECT_NAME} PUBLIC INS_DEBUG=1)
 else()
     target_link_options(${PROJECT_NAME} PUBLIC
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
         -sEXPORT_NAME=${INSOUND_MODULE_NAME}
-        -sASSERTIONS=1 -sNO_DISABLE_EXCEPTION_CATCHING=1 -Os
+        -sASSERTIONS=1 -sNO_DISABLE_EXCEPTION_CATCHING=0 -Os
         -sFILESYSTEM=0 -flto
         -sWASM_BIGINT=1 -sENVIRONMENT=${INSOUND_ENVIRONMENT}
-        -sALLOW_MEMORY_GROWTH=1
+        -sALLOW_MEMORY_GROWTH=1 -fwasm-exceptions
     )
     target_compile_options(${PROJECT_NAME} PUBLIC
-        -flto -Os
+        -flto -Os -fwasm-exceptions
     )
     target_compile_definitions(${PROJECT_NAME} PUBLIC INS_DEBUG=0)
 endif()
