@@ -21,6 +21,21 @@ export interface LoadOptions
     loopend?: number;
 }
 
+export class SoundLoadError extends Error {
+
+    soundIndices: number[];
+
+    getErrorMessage(names: string[]): string[] {
+        return this.soundIndices.map(index => names[index] || "Unknown File");
+    }
+
+    constructor(indices: number[])
+    {
+        super();
+        this.soundIndices = indices;
+    }
+}
+
 export
 class AudioEngine
 {
@@ -143,8 +158,9 @@ class AudioEngine
         }
         catch (err)
         {
-            console.error(err);
             this.trackData.free();
+
+            throw err;
         }
     }
 
@@ -170,12 +186,28 @@ class AudioEngine
         this.trackData.alloc(buf, Audio);
 
         try {
+            const problematicSounds: number[] = [];
             const ptr = this.trackData.ptr;
             ptrOffset = 0;
             for (let i = 0; i < buffers.length; ++i)
             {
-                this.engine.loadSound(ptr + ptrOffset, buffers[i].byteLength);
-                ptrOffset += buffers[i].byteLength;
+                try {
+                    this.engine.loadSound(ptr + ptrOffset, buffers[i].byteLength);
+                }
+                catch(err)
+                {
+                    problematicSounds.push(i);
+                    console.log(err);
+                }
+                finally
+                {
+                    ptrOffset += buffers[i].byteLength;
+                }
+            }
+
+            if (problematicSounds.length > 0)
+            {
+                throw new SoundLoadError(problematicSounds);
             }
 
             const result = this.engine.loadScript(opts.script || "");
