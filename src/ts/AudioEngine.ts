@@ -190,10 +190,9 @@ class AudioEngine
         }
         catch(err)
         {
-            console.error(err);
             this.trackData.free();
+            throw err;
         }
-
     }
 
     /**
