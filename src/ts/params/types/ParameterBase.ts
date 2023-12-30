@@ -17,7 +17,7 @@ const registry = new FinalizationRegistry((heldValue: any) => {
 export
 class ParameterBase
 {
-    readonly name: string;
+    name: string;
     readonly type: ParamType;
 
     // All parameters have underlying number as value
@@ -46,6 +46,16 @@ class ParameterBase
         this.transitionInterval = {interval: null};
 
         registry.register(this, this.transitionInterval, this);
+    }
+
+    /**
+     * Set the value to the default
+     *
+     * @param seconds - time to transition to the default value
+     */
+    reset(seconds: number = 0)
+    {
+        this.transitionTo(this.defaultValue, seconds);
     }
 
     addSetCallback(cb: (index: number, value: number) => void)
@@ -120,6 +130,7 @@ class ParameterBase
         const intervalTime = 1000/50; // 50fps
         const startingVal = this.value;
         let time = 0;
+
         this.transitionInterval.interval = setInterval(() => {
             time += intervalTime;
             this.value = lerp(startingVal, value, Math.min(1, time/milliseconds));
