@@ -33,7 +33,7 @@ class EmPointer
 
         const ptr = mod._malloc(buffer.byteLength);
         try {
-            mod.HEAP8.set(new Uint8Array(buffer), ptr);
+            mod.HEAPU8.set(new Uint8Array(buffer), ptr);
             this.free();
         }
         catch(e)
@@ -45,6 +45,13 @@ class EmPointer
         this.m_ptr = ptr;
         this.m_size = buffer.byteLength;
         this.m_mod = mod;
+    }
+
+    constructor()
+    {
+        this.m_mod = null;
+        this.m_ptr = -1;
+        this.m_size = 0;
     }
 
     /**
@@ -82,12 +89,12 @@ class EmPointer
      */
     free()
     {
-        if (this.m_ptr !== 0 && this.m_mod)
+        if (this.m_ptr !== -1 && this.m_mod)
         {
             this.m_mod._free(this.m_ptr);
             this.m_size = 0;
             this.m_mod = null;
-            this.m_ptr = 0;
+            this.m_ptr = -1;
         }
     }
 
@@ -137,6 +144,7 @@ const registry = new FinalizationRegistry<EmPointer>((heldValue) => {
             "passed to the FinalizationRegistry.");
     }
 });
+
 
 /**
  * Wrapper around a pointer to EmscriptenModule memory.
@@ -205,3 +213,46 @@ class EmBuffer
         return this.data.mod;
     }
 }
+
+export
+class EmBufferGroup
+{
+    readonly data: EmPointer[];
+
+    constructor()
+    {
+        this.data = [];
+    }
+
+    alloc(buffer: ArrayBuffer, emModule: EmscriptenModule)
+    {
+        const newPtr = new EmPointer();
+        newPtr.allocBuffer(buffer, emModule);
+
+        this.data.push(newPtr);
+    }
+
+    get size(): number
+    {
+        return this.data.reduce((accum, current) => accum + current.size, 0);
+    }
+
+    /**
+     * Free all pointers and clears the data array
+     */
+    free(): void
+    {
+        if (this.data.length > 0)
+        {
+            this.data.forEach(buf => buf.free());
+            this.data.length = 0;
+        }
+    }
+
+    /** Whether there is any data in the buffer group */
+    empty(): boolean
+    {
+        return this.data.length === 0;
+    }
+}
+
