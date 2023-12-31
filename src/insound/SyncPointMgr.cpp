@@ -26,7 +26,7 @@ namespace Insound
             FMOD_SYNCPOINT *fPoint;
             checkResult( sound->getSyncPoint(i, &fPoint) );
             char buffer[256];
-            checkResult( sound->getSyncPointInfo(fPoint, buffer, 256,
+            checkResult( sound->getSyncPointInfo(fPoint, buffer, 255,
                 nullptr, 0));
             points.emplace_back(buffer, fPoint);
         }
