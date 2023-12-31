@@ -437,7 +437,6 @@ namespace Insound
 
     void AudioEngine::loadSound(size_t data, size_t bytelength)
     {
-        assert(track);
         track->loadSound((const char *)data, bytelength);
 
         // set clock
@@ -447,7 +446,6 @@ namespace Insound
 
     void AudioEngine::loadBank(size_t data, size_t bytelength)
     {
-        assert(track);
         track->loadFsb((const char *)data, bytelength);
 
         // set clock
@@ -476,13 +474,11 @@ namespace Insound
 
     void AudioEngine::unloadBank()
     {
-        assert(track);
         track->clear();
     }
 
     void AudioEngine::setPause(bool pause, float seconds)
     {
-        assert(track);
         track->pause(pause, seconds);
 
         if (!pause && isSuspended)
@@ -496,43 +492,36 @@ namespace Insound
 
     double AudioEngine::getPosition() const
     {
-        assert(track);
         return track->position();
     }
 
     double AudioEngine::getLength() const
     {
-        assert(track);
         return track->length();
     }
 
     void AudioEngine::seek(double seconds)
     {
-        assert(track);
         track->position(seconds);
     }
 
     void AudioEngine::setMainVolume(double vol)
     {
-        assert(track);
         track->mainVolume(vol);
     }
 
     double AudioEngine::getMainVolume() const
     {
-        assert(track);
         return track->mainVolume();
     }
 
     void AudioEngine::setChannelVolume(int ch, double vol)
     {
-        assert(track);
         return track->channelVolume(ch, vol);
     }
 
     double AudioEngine::getChannelVolume(int ch) const
     {
-        assert(track);
         return track->channelVolume(ch);
     }
 
@@ -553,25 +542,21 @@ namespace Insound
 
     int AudioEngine::getChannelCount() const
     {
-        assert(track);
         return track->channelCount();
     }
 
     bool AudioEngine::isLooping() const
     {
-        assert(track);
         return track->looping();
     }
 
     void AudioEngine::setLooping(bool looping)
     {
-        assert(track);
         track->looping(looping);
     }
 
     void AudioEngine::fadeTo(float to, float seconds)
     {
-        assert(track);
         track->fadeTo(to, seconds);
     }
 
