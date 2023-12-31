@@ -1,5 +1,5 @@
 import { audioModuleWasInit } from "./emaudio/AudioModule";
-import { EmBuffer } from "./emaudio/EmBuffer";
+import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { Audio } from "./emaudio/AudioModule";
 import { SyncPointMgr } from "./SyncPointMgr";
@@ -42,8 +42,7 @@ class AudioEngine
     readonly engine: InsoundAudioEngine;
 
     // container managing the current track data
-    trackData: EmBuffer;
-    soundsData: EmBuffer[];
+    trackData: EmBufferGroup;
     updateHandler: (() => void) | null;
     params: ParameterMgr;
     points: SyncPointMgr;
@@ -114,7 +113,7 @@ class AudioEngine
             throw new Error("Failed to initialize AudioEngine");
         }
 
-        this.trackData = new EmBuffer();
+        this.trackData = new EmBufferGroup();
         this.updateHandler = null;
 
         registry.register(this, this.engine, this);
@@ -142,10 +141,11 @@ class AudioEngine
         script: ""
     })
     {
+        this.trackData.free();
         this.trackData.alloc(buffer, Audio);
 
         try {
-            this.engine.loadBank(this.trackData.ptr, buffer.byteLength);
+            this.engine.loadBank(this.trackData.data[0].ptr, buffer.byteLength);
             const result = this.engine.loadScript(opts.script || "");
             if (result)
                 console.error("Lua Script error:", result);
@@ -171,37 +171,25 @@ class AudioEngine
         if (this.isTrackLoaded())
             this.unloadTrack();
 
-        const size = buffers.reduce(
-            (accum, buffer) => buffer.byteLength + accum, 0);
-        const buf = new Uint8Array(size);
-
-        let ptrOffset = 0;
+        this.trackData.free();
         for (let i = 0; i < buffers.length; ++i)
         {
-            const curBuf = new Uint8Array(buffers[i]);
-            buf.set(curBuf, ptrOffset);
-            ptrOffset += curBuf.length;
+            this.trackData.alloc(buffers[i], Audio);
         }
-
-        this.trackData.alloc(buf, Audio);
 
         try {
             const problematicSounds: number[] = [];
-            const ptr = this.trackData.ptr;
-            ptrOffset = 0;
-            for (let i = 0; i < buffers.length; ++i)
+            const length = this.trackData.data.length;
+            for (let i = 0; i < length; ++i)
             {
                 try {
-                    this.engine.loadSound(ptr + ptrOffset, buffers[i].byteLength);
+                    this.engine.loadSound(this.trackData.data[i].ptr,
+                        this.trackData.data[i].size);
                 }
                 catch(err)
                 {
                     problematicSounds.push(i);
                     console.log(err);
-                }
-                finally
-                {
-                    ptrOffset += buffers[i].byteLength;
                 }
             }
 
@@ -222,26 +210,10 @@ class AudioEngine
         }
         catch(err)
         {
+            this.unloadTrack();
             this.trackData.free();
             throw err;
         }
-    }
-
-    /**
-     * Reload the bank data that is already loaded.
-     */
-    reload()
-    {
-        const data = this.trackData;
-        if (data.isNull) return false;
-
-        this.engine.loadBank(data.ptr, data.size);
-        this.params.load(this);
-        this.points.update(this);
-        this.m_lastPosition = 0;
-        this.m_position = 0;
-
-        return true;
     }
 
     /**
