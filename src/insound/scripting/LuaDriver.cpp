@@ -98,33 +98,36 @@ namespace Insound
             // Populate the environment with custom engine functionality
             if (m->populateEnv) m->populateEnv(env);
 
-            // Get the load_script function to create sandbox with user script
-            auto loadScript = lua.get<sol::protected_function>("load_script");
-            if (!loadScript.valid())
+            if (!userScript.empty())
             {
-                m->error = "failed to get `load_script` "
-                    "function from the Lua sandbox driver code.";
-                return false;
-            }
+                // Get the load_script function to create sandbox with user script
+                auto loadScript = lua.get<sol::protected_function>("load_script");
+                if (!loadScript.valid())
+                {
+                    m->error = "failed to get `load_script` "
+                        "function from the Lua sandbox driver code.";
+                    return false;
+                }
 
-            // Just check that this function exists which is used as a reducer
-            // to run events.
-            auto processEvent =
-                lua.get<sol::protected_function>("process_event");
-            if (!processEvent.valid())
-            {
-                m->error = "failed to get `process_event` function from the "
-                    "Lua sandbox driver code.";
-                return false;
-            }
+                // Just check that this function exists which is used as a reducer
+                // to run events.
+                auto processEvent =
+                    lua.get<sol::protected_function>("process_event");
+                if (!processEvent.valid())
+                {
+                    m->error = "failed to get `process_event` function from the "
+                        "Lua sandbox driver code.";
+                    return false;
+                }
 
-            // Finally load the script into the sandbox
-            result = loadScript(userScript);
-            if (!result.valid())
-            {
-                sol::error err = result;
-                m->error = err.what();
-                return false;
+                // Finally load the script into the sandbox
+                result = loadScript(userScript);
+                if (!result.valid())
+                {
+                    sol::error err = result;
+                    m->error = err.what();
+                    return false;
+                }
             }
 
             // Done, commit changes
