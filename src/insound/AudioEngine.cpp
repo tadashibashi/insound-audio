@@ -461,13 +461,16 @@ namespace Insound
         if (!result)
             return lua->getError();
 
-        result = lua->doInit();
-        if (!result)
-            return lua->getError();
+        if (!text.empty())
+        {
+            result = lua->doInit();
+            if (!result)
+                return lua->getError();
 
-        result = lua->doLoad(*track);
-        if (!result)
-            return lua->getError();
+            result = lua->doLoad(*track);
+            if (!result)
+                return lua->getError();
+        }
 
         return NoErrors;
     }
