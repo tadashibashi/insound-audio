@@ -8,9 +8,9 @@ export function getAudioModule(): InsoundAudioModule
 /**
  * Check if module was already loaded.
  *
- * @returns {boolean} `true` if it was init, `false` if not.
+ * @returns `true` if it was init, `false` if not.
  */
-export function audioModuleWasInit()
+export function audioModuleWasInit(): boolean
 {
     return !!Audio._free;
 }
@@ -37,7 +37,7 @@ export async function initAudioModule(): Promise<InsoundAudioModule>
     // Discard any previously loaded module
     if (audioModuleWasInit())
     {
-        Audio = {};
+        Audio = {} as InsoundAudioModule;
     }
 
     return new Promise<InsoundAudioModule>( (resolve, reject) => {
@@ -53,9 +53,8 @@ export async function initAudioModule(): Promise<InsoundAudioModule>
         // asynchronously inject the module into the Audio object
         AudioModule(Audio);
     })
-    .catch(err)
-    {
+    .catch(err => {
         console.error(err);
         throw err;
-    }
+    });
 }
