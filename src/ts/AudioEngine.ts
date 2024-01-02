@@ -1,4 +1,4 @@
-import { audioModuleWasInit } from "./emaudio/AudioModule";
+import { audioModuleWasInit, initAudioModule } from "./emaudio/AudioModule";
 import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
 import { getAudioModule } from "./emaudio/AudioModule";
@@ -38,8 +38,8 @@ export class SoundLoadError extends Error {
 export
 class AudioEngine
 {
-    readonly module: InsoundAudioModule;
-    readonly engine: InsoundAudioEngine;
+    private module: InsoundAudioModule;
+    engine: InsoundAudioEngine;
 
     // container managing the current track data
     trackData: EmBufferGroup;
@@ -50,6 +50,7 @@ class AudioEngine
 
     private m_lastPosition: number;
     private m_position: number;
+    private m_isResetting: boolean;
 
     get lastPosition() {
         return this.m_lastPosition;
@@ -60,20 +61,43 @@ class AudioEngine
         return this.m_position;
     }
 
-    constructor()
+    /**
+     * Restart the underlying Emscripten audio module and replace the
+     * underlying AudioEngine with a new one. To be used when encountering
+     * an unrecoverable critical error pertaining to the module.
+     */
+    async reset()
     {
-        // Ensure WebAssembly module was initialized
-        if (!audioModuleWasInit())
-        {
-            throw Error("Cannot instantiate AudioEngine without first " +
-                "initializing AudioModule");
-        }
+        if (this.m_isResetting) return;
 
-        this.module = getAudioModule();
-        this.params = new ParameterMgr;
-        this.points = new SyncPointMgr;
-        this.presets = new MixPresetMgr;
-        this.engine = new this.module.AudioEngine({
+        this.m_isResetting = true;
+        try {
+            registry.unregister(this);
+            this.params.clear();
+            this.points.clear();
+            this.presets.clear();
+            this.trackData.free();
+            this.engine.delete();
+        }
+        finally
+        {
+            try {
+                this.module = await initAudioModule();
+                this.setAudioEngine(this.module);
+                registry.register(this, this.engine, this);
+                this.engine.init();
+            }
+            finally
+            {
+                this.m_isResetting = false;
+            }
+        }
+    }
+
+    private setAudioEngine(module: InsoundAudioModule)
+    {
+        this.m_isResetting = false;
+        this.engine = new module.AudioEngine({
             setParam: this.params.handleParamReceive,
             getParam: (nameOrIndex: string | number) => {
                 return this.params.get(nameOrIndex).value;
@@ -107,6 +131,22 @@ class AudioEngine
                 return this.presets.presets.length;
             }
         });
+    }
+
+    constructor()
+    {
+        // Ensure WebAssembly module was initialized
+        if (!audioModuleWasInit())
+        {
+            throw Error("Cannot instantiate AudioEngine without first " +
+                "initializing AudioModule");
+        }
+
+        this.module = getAudioModule();
+        this.params = new ParameterMgr;
+        this.points = new SyncPointMgr;
+        this.presets = new MixPresetMgr;
+        this.setAudioEngine(this.module);
 
         if (!this.engine.init())
         {
@@ -211,8 +251,7 @@ class AudioEngine
         }
         catch(err)
         {
-            this.unloadTrack();
-            this.trackData.free();
+            this.reset();
             throw err;
         }
     }
@@ -267,6 +306,8 @@ class AudioEngine
 
     update()
     {
+        if (this.m_isResetting) return;
+
         this.engine.update();
         this.m_lastPosition = this.m_position;
         this.m_position = this.engine.getPosition();
