@@ -1,16 +1,15 @@
 import { audioModuleWasInit } from "./emaudio/AudioModule";
 import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { ParameterMgr } from "./params/ParameterMgr";
-import { Audio } from "./emaudio/AudioModule";
+import { getAudioModule } from "./emaudio/AudioModule";
 import { SyncPointMgr } from "./SyncPointMgr";
 import { MixPresetMgr } from "./MixPresetMgr";
 
-const registry = new FinalizationRegistry((heldValue) => {
-    if (heldValue instanceof Audio.AudioEngine) {
+const registry = new FinalizationRegistry((heldValue: any) => {
+    // `heldValue` should be an Emscripten Embind C++ object with its own
+    // delete function, which explicitly frees memory of this object.
+    if (typeof heldValue.delete === "function") {
         heldValue.delete();
-    } else {
-        console.error("Failed to finalize AudioEngine object: Wrong " +
-            "type was passed to the finalization registry.");
     }
 });
 
@@ -39,6 +38,7 @@ export class SoundLoadError extends Error {
 export
 class AudioEngine
 {
+    readonly module: InsoundAudioModule;
     readonly engine: InsoundAudioEngine;
 
     // container managing the current track data
@@ -69,10 +69,11 @@ class AudioEngine
                 "initializing AudioModule");
         }
 
+        this.module = getAudioModule();
         this.params = new ParameterMgr;
         this.points = new SyncPointMgr;
         this.presets = new MixPresetMgr;
-        this.engine = new Audio.AudioEngine({
+        this.engine = new this.module.AudioEngine({
             setParam: this.params.handleParamReceive,
             getParam: (nameOrIndex: string | number) => {
                 return this.params.get(nameOrIndex).value;
@@ -142,7 +143,7 @@ class AudioEngine
     })
     {
         this.trackData.free();
-        this.trackData.alloc(buffer, Audio);
+        this.trackData.alloc(buffer, this.module);
 
         try {
             this.engine.loadBank(this.trackData.data[0].ptr, buffer.byteLength);
@@ -174,7 +175,7 @@ class AudioEngine
         this.trackData.free();
         for (let i = 0; i < buffers.length; ++i)
         {
-            this.trackData.alloc(buffers[i], Audio);
+            this.trackData.alloc(buffers[i], this.module);
         }
 
         try {
