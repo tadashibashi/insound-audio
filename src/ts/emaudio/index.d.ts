@@ -28,14 +28,6 @@ declare interface InsoundAudioEngine {
     init(): boolean;
 
     /**
-     * Close the Audio Engine without deleting the underlying object. May call
-     * `init` again to reinitialize after a successful call to `close`.
-     *
-     * @throws FMODError if there was an error.
-     */
-    close(): void;
-
-    /**
      * Explicitly delete the underlying Audio Engine object.
      * Please call this when done with the object. The browser will attempt to
      * use FinalizationRegistry, but this call is not guaranteed by the
