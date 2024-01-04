@@ -26,10 +26,11 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
         -sEXPORT_NAME=${INSOUND_MODULE_NAME}
         -sASSERTIONS=1 -O0
-        -sFILESYSTEM=0 -fwasm-exceptions
+        -fwasm-exceptions
         -sENVIRONMENT=${INSOUND_ENVIRONMENT}
         -sALLOW_MEMORY_GROWTH=1
         -sINITIAL_MEMORY=536870912
+        -sFORCE_FILESYSTEM=1
     )
     target_compile_options(${PROJECT_NAME} PUBLIC
         -O0 -fwasm-exceptions
@@ -40,10 +41,11 @@ else()
         -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
         -sEXPORT_NAME=${INSOUND_MODULE_NAME}
         -sASSERTIONS=1 -Os
-        -sFILESYSTEM=0 -flto
+        -flto
         -sENVIRONMENT=${INSOUND_ENVIRONMENT}
         -sALLOW_MEMORY_GROWTH=1 -fwasm-exceptions
         -sINITIAL_MEMORY=536870912
+        -sFORCE_FILESYSTEM=1
     )
     target_compile_options(${PROJECT_NAME} PUBLIC
         -flto -Os -fwasm-exceptions
