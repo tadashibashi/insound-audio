@@ -1,4 +1,4 @@
-#include "insound/presets/Preset.h"
+#include <insound/presets/Preset.h>
 #include <insound/AudioEngine.h>
 #include <insound/params/ParamDesc.h>
 #include <insound/LoopInfo.h>
@@ -30,6 +30,7 @@ EMSCRIPTEN_BINDINGS(Params)
 }
 
 EMSCRIPTEN_BINDINGS(AudioEngine) {
+    register_vector<float>("FloatVector");
 
     value_object<Preset>("Preset")
         .field("name", &Preset::name)
@@ -107,5 +108,6 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
 
         .function("getCPUUsageTotal", &T::getCPUUsageTotal)
         .function("getCPUUsageDSP", &T::getCPUUsageDSP)
+        .function("getSampleData", &T::getSampleData)
         ;
 }

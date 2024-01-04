@@ -1,6 +1,7 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
 #include "common.h"
+#include "insound/Uint24.h"
 #include "params/ParamDescMgr.h"
 #include "SyncPointMgr.h"
 
@@ -636,5 +637,106 @@ namespace Insound
     const Channel &MultiTrackAudio::main() const
     {
         return m->main;
+    }
+
+    std::vector<float> MultiTrackAudio::getSampleData(size_t index) const
+    {
+        std::vector<float> res;
+
+        FMOD::Sound *sound;
+        if (m->fsb)
+        {
+            checkResult(m->fsb->getSubSound(index, &sound));
+        }
+        else if (!m->sounds.empty())
+        {
+            sound = m->sounds.at(index);
+        }
+        else
+        {
+            throw std::runtime_error("Tried to get sample data, but no track was loaded");
+        }
+
+        int bits;
+        checkResult(sound->getFormat(nullptr, nullptr, nullptr, &bits));
+
+        unsigned int length;
+        checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCMBYTES));
+
+        if (length == 0xFFFFFFFF)
+        {
+            // TODO: handle if we want to get a portion of this data
+            throw std::runtime_error("Cannot get sample data of endless sound");
+        }
+
+        void *data1, *data2;
+        unsigned int actualLength1, actualLength2;
+        checkResult(sound->lock(0, length, &data1, &data2, &actualLength1, &actualLength2));
+
+        if (actualLength2 > 0 || length != actualLength1)
+        {
+            sound->unlock(data1, data2, actualLength1, actualLength2);
+            throw std::runtime_error("Failed to get full sound data");
+        }
+
+        // TODO: need to parse based on type not bits alone
+        try {
+            switch(bits)
+            {
+            case 8:
+                {
+                    res.reserve(actualLength1);
+                    for (size_t i = 0; i < actualLength1; ++i)
+                    {
+                        auto val = *((uint8_t *)data1 + i);
+                        res.push_back( (double)val / 0xFFu );
+                    }
+                    break;
+                }
+
+            case 16:
+                {
+                    auto len = actualLength1 / 2;
+                    res.reserve(len);
+                    for (size_t i = 0; i < len; ++i)
+                    {
+                        auto val = *((uint16_t *)data1 + i);
+                        res.push_back( (double)val / 0xFFFFu );
+                    }
+                    break;
+                }
+            case 24:
+                {
+                    auto len = actualLength1 / 3;
+                    res.reserve(len);
+                    for (size_t i = 0; i < len; ++i)
+                    {
+                        auto val = ((Uint24 *)data1 + i)->value;
+                        res.push_back( (double)val / 0xFFFFFFu ) ;
+                    }
+                    break;
+                }
+            case 32:
+                {
+                    auto len = actualLength1 / 4;
+                    res.reserve(len);
+                    for (size_t i = 0; i < len; ++i)
+                    {
+                        auto val = *((uint32_t *)data1 + i);
+                        res.push_back( (double)val / 0xFFFFFFFFu );
+                    }
+                }
+            default:
+                throw std::runtime_error("Invalid data byte size");
+            }
+        }
+        catch(...)
+        {
+            sound->unlock(data1, data2, actualLength1, actualLength2);
+        }
+
+        sound->unlock(data1, data2, actualLength1, actualLength2);
+
+        return res;
     }
 }

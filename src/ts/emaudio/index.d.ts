@@ -16,6 +16,15 @@ declare interface NumberParam {
     defaultValue: number;
 }
 
+declare interface Vector<T> {
+    get(index: number): T;
+    resize(size: number): void;
+    push_back(item: T);
+    size(): number;
+
+    delete();
+}
+
 declare interface InsoundAudioEngine {
     // ===== System Controls / Lifetime =======================================
 
@@ -402,6 +411,8 @@ declare interface InsoundAudioEngine {
      * @return floating point number in percent from 0 to 100
      */
     getCPUUsageDSP(): number;
+
+    getSampleData(index: number): Vector<number>;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {
@@ -410,6 +421,8 @@ declare interface InsoundAudioModule extends EmscriptenModule {
     }
 
     ParamType: ParamType;
+
+    FloatVector: Vector<number>;
 }
 
 declare const AudioModule: (module: any) => Promise<void>;

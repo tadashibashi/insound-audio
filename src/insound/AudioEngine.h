@@ -193,6 +193,8 @@ namespace Insound
         [[nodiscard]]
         float getCPUUsageDSP() const;
 
+        [[nodiscard]]
+        std::vector<float> getSampleData(size_t index) const;
 
     private:
         FMOD::System *sys;

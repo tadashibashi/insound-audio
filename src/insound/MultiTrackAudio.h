@@ -161,12 +161,12 @@ namespace Insound {
          * @param callback - callback to set
          */
         void setEndCallback(std::function<void()> callback);
-        [[nodiscard]]
 
         /**
          * Get the callback that fires when current track has ended.
          * May or may not contain a target.
          */
+        [[nodiscard]]
         const std::function<void()> &getEndCallback() const;
 
         void addSyncPointMS(const std::string &name,
@@ -186,7 +186,9 @@ namespace Insound {
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t i) const;
 
+        [[nodiscard]]
         ParamDescMgr &params();
+        [[nodiscard]]
         const ParamDescMgr &params() const;
 
         [[nodiscard]]
@@ -199,15 +201,21 @@ namespace Insound {
 
         void mainReverbLevel(float level);
 
-
         void loopSeconds(double loopstart, double loopend);
         void loopSamples(unsigned loopstart, unsigned loopend);
 
+        [[nodiscard]]
         LoopInfo<double> loopSeconds() const;
+        [[nodiscard]]
         LoopInfo<unsigned> loopSamples() const;
 
+        [[nodiscard]]
         Channel &main();
+        [[nodiscard]]
         const Channel &main() const;
+
+        [[nodiscard]]
+        std::vector<float> getSampleData(size_t index) const;
     private:
         // Pimple idiom
         struct Impl;
