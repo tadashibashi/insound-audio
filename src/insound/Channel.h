@@ -1,7 +1,7 @@
 #pragma once
 
 // Forward declarations
-#include "insound/LoopInfo.h"
+#include <insound/LoopInfo.h>
 namespace FMOD
 {
     class ChannelControl;
@@ -195,12 +195,16 @@ namespace Insound
          * Release or cleanup internals
          */
         void release();
+
+        [[nodiscard]]
+        bool isMaster() const { return m_isMaster; }
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;
         int samplerate;
         bool m_isGroup;
         bool m_isPaused;
+        bool m_isMaster;
 
         // channel number in a track set
         int m_index;

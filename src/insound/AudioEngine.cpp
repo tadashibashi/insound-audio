@@ -651,6 +651,11 @@ namespace Insound
             track = nullptr;
         }
 
+        if (master)
+        {
+            master.reset();
+        }
+
         if (sys)
         {
             sys->release();
@@ -808,6 +813,7 @@ namespace Insound
     {
         track->main().panRight(level);
     }
+
     void AudioEngine::setMainPan(float left, float right)
     {
         track->main().pan(left, right);
@@ -836,5 +842,10 @@ namespace Insound
         FMOD_CPU_USAGE usage;
         checkResult(sys->getCPUUsage(&usage));
         return usage.dsp;
+    }
+
+    std::vector<float> AudioEngine::getSampleData(size_t index) const
+    {
+        return track->getSampleData(index);
     }
 }

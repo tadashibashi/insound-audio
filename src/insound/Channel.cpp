@@ -15,7 +15,8 @@ namespace Insound
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
         FMOD::System *system, int index) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
-            m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f)
+            m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f),
+            m_isMaster(false)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
@@ -33,7 +34,8 @@ namespace Insound
 
     Channel::Channel(std::string_view name, FMOD::System *system, int index) :
         chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f)
+        m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f),
+        m_isMaster(false)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
@@ -51,7 +53,8 @@ namespace Insound
 
     Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
         lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(-1), m_leftPan(1.f), m_rightPan(1.f)
+        m_isPaused(), m_index(-1), m_leftPan(1.f), m_rightPan(1.f),
+        m_isMaster(false)
     {
         FMOD::System *system;
         checkResult( group->getSystemObject(&system) );
@@ -67,7 +70,13 @@ namespace Insound
         FMOD::ChannelGroup *master;
         checkResult(system->getMasterChannelGroup(&master));
         if (group != master)
+        {
             checkResult( group->setReverbProperties(0, 0) );
+        }
+        else
+        {
+            m_isMaster = true;
+        }
         this->samplerate = rate;
         this->chan = group;
     }
@@ -76,7 +85,7 @@ namespace Insound
     Channel::Channel(Channel &&other) : chan(other.chan),
         lastFadePoint(other.lastFadePoint), m_isGroup(other.m_isGroup),
         samplerate(other.samplerate), m_isPaused(other.m_isPaused),
-        m_leftPan(1.f), m_rightPan(1.f)
+        m_leftPan(1.f), m_rightPan(1.f), m_isMaster(other.m_isMaster)
     {
         other.chan = nullptr;
     }
@@ -105,7 +114,7 @@ namespace Insound
                     FMOD_ErrorString(result) << '\n';
             }
 
-            if (m_isGroup)
+            if (m_isGroup && !m_isMaster)
             {
                 result = static_cast<FMOD::ChannelGroup *>(chan)->release();
                 if (result != FMOD_OK)
