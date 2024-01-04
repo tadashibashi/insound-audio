@@ -387,6 +387,21 @@ declare interface InsoundAudioEngine {
     setSyncPointCallback(
         callback: (label: string, offsetSeconds: number, index: number) =>
             void): void;
+
+    /**
+     * Get the total amount of CPU usage used by the audio engine.
+     *
+     * @return floating point number in percent from 0 to 100
+     */
+    getCPUUsageTotal(): number;
+
+    /**
+     * Get the total amount of CPU usage used by the audio engine DSPs.
+     * This is a part of the whole cpu usage as read from `getCPUUsageTotal`.
+     *
+     * @return floating point number in percent from 0 to 100
+     */
+    getCPUUsageDSP(): number;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

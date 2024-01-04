@@ -822,4 +822,19 @@ namespace Insound
     {
         return track->main().panRight();
     }
+
+    float AudioEngine::getCPUUsageTotal() const
+    {
+        FMOD_CPU_USAGE usage;
+        checkResult(sys->getCPUUsage(&usage));
+        return usage.dsp + usage.stream + usage.update + usage.convolution1 +
+            usage.convolution2;
+    }
+
+    float AudioEngine::getCPUUsageDSP() const
+    {
+        FMOD_CPU_USAGE usage;
+        checkResult(sys->getCPUUsage(&usage));
+        return usage.dsp;
+    }
 }

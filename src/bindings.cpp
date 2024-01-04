@@ -104,5 +104,8 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getSyncPointCount", &T::getSyncPointCount)
         .function("getSyncPointOffsetSeconds", &T::getSyncPointOffsetSeconds)
         .function("getSyncPointLabel", &T::getSyncPointLabel)
+
+        .function("getCPUUsageTotal", &T::getCPUUsageTotal)
+        .function("getCPUUsageDSP", &T::getCPUUsageDSP)
         ;
 }

@@ -188,6 +188,12 @@ namespace Insound
         [[nodiscard]]
         float getMainPanRight() const;
 
+        [[nodiscard]]
+        float getCPUUsageTotal() const;
+        [[nodiscard]]
+        float getCPUUsageDSP() const;
+
+
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
