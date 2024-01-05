@@ -4,6 +4,7 @@ import { ParameterMgr } from "./params/ParameterMgr";
 import { getAudioModule } from "./emaudio/AudioModule";
 import { SyncPointMgr } from "./SyncPointMgr";
 import { MixPresetMgr } from "./MixPresetMgr";
+import { SpectrumAnalyzer } from "./SpectrumAnalyzer";
 
 const registry = new FinalizationRegistry((heldValue: any) => {
     // `heldValue` should be an Emscripten Embind C++ object with its own
@@ -13,6 +14,7 @@ const registry = new FinalizationRegistry((heldValue: any) => {
     }
 });
 
+// Get this info from a database to populate a new track with
 export interface LoadOptions
 {
     script?: string;
@@ -20,7 +22,8 @@ export interface LoadOptions
     loopend?: number;
 }
 
-export class SoundLoadError extends Error {
+export class SoundLoadError extends Error
+{
 
     soundIndices: number[];
 
@@ -35,8 +38,7 @@ export class SoundLoadError extends Error {
     }
 }
 
-export
-class AudioEngine
+export class AudioEngine
 {
     private module: InsoundAudioModule;
     engine: InsoundAudioEngine;
@@ -47,6 +49,7 @@ class AudioEngine
     params: ParameterMgr;
     points: SyncPointMgr;
     presets: MixPresetMgr;
+    spectrum: SpectrumAnalyzer;
 
     private m_lastPosition: number;
     private m_position: number;
@@ -77,12 +80,14 @@ class AudioEngine
             this.points.clear();
             this.presets.clear();
             this.trackData.free();
+            this.spectrum.close();
             this.engine.delete();
         }
         finally
         {
             try {
                 this.module = await initAudioModule();
+                this.spectrum.setModule(this.module);
                 this.setAudioEngine(this.module);
                 registry.register(this, this.engine, this);
                 this.engine.init();
@@ -143,6 +148,7 @@ class AudioEngine
         }
 
         this.module = getAudioModule();
+        this.spectrum = new SpectrumAnalyzer(this.module);
         this.params = new ParameterMgr;
         this.points = new SyncPointMgr;
         this.presets = new MixPresetMgr;
@@ -307,7 +313,8 @@ class AudioEngine
     update()
     {
         if (this.m_isResetting) return;
-
+        if (this.updateHandler)
+            this.updateHandler();
         this.engine.update();
         this.m_lastPosition = this.m_position;
         this.m_position = this.engine.getPosition();
@@ -455,7 +462,6 @@ class AudioEngine
      */
     release()
     {
-        this.unloadTrack();
         this.engine.delete();
     }
 }

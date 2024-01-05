@@ -266,6 +266,10 @@ declare interface InsoundAudioEngine {
      */
     getChannelCount(): number;
 
+    setMasterVolume(vol: number): void;
+
+    getMasterVolume(): number;
+
 
     // ----- Looping ----------------------------------------------------------
 
@@ -423,6 +427,10 @@ declare interface InsoundAudioModule extends EmscriptenModule {
     ParamType: ParamType;
 
     FloatVector: Vector<number>;
+
+    mContext?: AudioContext;
+    mWorkletNode?: AudioWorkletNode;
+    audioContext: AudioContext;
 }
 
 declare const AudioModule: (module: any) => Promise<void>;
