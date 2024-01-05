@@ -63,6 +63,8 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getPosition", &T::getPosition)
         .function("getLength", &T::getLength)
         .function("getPause", &T::getPause)
+        .function("setMasterVolume", &T::setMasterVolume)
+        .function("getMasterVolume", &T::getMasterVolume)
         .function("setMainVolume", &T::setMainVolume)
         .function("getMainVolume", &T::getMainVolume)
         .function("getMainReverbLevel", &T::getMainReverbLevel)

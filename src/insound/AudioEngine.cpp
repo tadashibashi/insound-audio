@@ -518,6 +518,16 @@ namespace Insound
         return track->mainVolume();
     }
 
+    void AudioEngine::setMasterVolume(double vol)
+    {
+        master->volume(vol);
+    }
+
+    double AudioEngine::getMasterVolume() const
+    {
+        return master->volume();
+    }
+
     void AudioEngine::setChannelVolume(int ch, double vol)
     {
         return track->channelVolume(ch, vol);

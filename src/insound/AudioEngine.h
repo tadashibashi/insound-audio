@@ -61,6 +61,11 @@ namespace Insound
         [[nodiscard]]
         double getMainVolume() const;
 
+        void setMasterVolume(double vol);
+
+        [[nodiscard]]
+        double getMasterVolume() const;
+
         /**
          * Set the volume of a channel currently playing
          *
