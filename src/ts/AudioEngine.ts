@@ -169,6 +169,12 @@ export class AudioEngine
         this.m_position = 0;
     }
 
+    /** Get the current WebAudio context */
+    get context()
+    {
+        return this.module.mContext;
+    }
+
     /**
      * Set the on update callback, gets called 60fps+ when updating sound engine.
      *
@@ -305,6 +311,13 @@ export class AudioEngine
         this.engine.suspend();
     }
 
+    isSuspended(): boolean
+    {
+        if (!this.module.mContext) return false;
+
+        return this.module.mContext.state === "suspended";
+    }
+
     resume()
     {
         this.engine.resume();
@@ -316,9 +329,9 @@ export class AudioEngine
         if (this.updateHandler)
             this.updateHandler();
         this.engine.update();
+
         this.m_lastPosition = this.m_position;
         this.m_position = this.engine.getPosition();
-
     }
 
     play()
