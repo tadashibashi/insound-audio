@@ -16,6 +16,11 @@ declare interface NumberParam {
     defaultValue: number;
 }
 
+declare interface SampleDataInfo {
+    ptr: number;
+    byteLength: number;
+}
+
 declare interface Vector<T> {
     get(index: number): T;
     resize(size: number): void;
@@ -416,7 +421,7 @@ declare interface InsoundAudioEngine {
      */
     getCPUUsageDSP(): number;
 
-    getSampleData(index: number): Vector<number>;
+    getSampleData(index: number): SampleDataInfo;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

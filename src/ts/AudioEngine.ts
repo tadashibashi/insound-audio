@@ -454,6 +454,14 @@ export class AudioEngine
         this.engine.setEndCallback(callback);
     }
 
+    getSampleData(index: number)
+    {
+        const data = this.engine.getSampleData(index);
+        const begin = data.ptr/4;
+        const end = begin + data.byteLength;
+        return this.module.HEAPF32.subarray(begin, end);
+    }
+
     /**
      * Call this manually when no longer using the AudioEngine to clean
      * up underlying AudioEngine object. A finalization registry is used on

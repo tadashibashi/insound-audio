@@ -1,39 +1,80 @@
 #include "MultiTrackAudio.h"
 #include "Channel.h"
 #include "common.h"
-#include "insound/Uint24.h"
+#include <insound/Int24.h>
+#include "insound/AudioEngine.h"
 #include "params/ParamDescMgr.h"
 #include "SyncPointMgr.h"
 
 #include <fmod.hpp>
 #include <fmod_common.h>
+#include <fmod_dsp.h>
+#include <fmod_dsp_effects.h>
+#include <fmod_errors.h>
 
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <functional>
+#include <limits>
+#include <utility>
 #include <vector>
 
 namespace Insound
 {
+    struct SoundPCMData {
+        SoundPCMData() : sound(), data() { }
+        SoundPCMData(SoundPCMData &&other) : sound(other.sound), data(std::move(other.data))
+        {
+        }
+
+        SoundPCMData &operator=(SoundPCMData &&other)
+        {
+            this->sound = other.sound;
+            this->data = std::move(other.data);
+            return *this;
+        }
+
+        /** Kind of annoying, but automatically moves data instead of copy */
+        SoundPCMData(FMOD::Sound *sound, std::vector<float> &data) :
+            sound(sound), data(std::move(data))
+        {
+        }
+
+        FMOD::Sound *sound;
+        std::vector<float> data;
+    };
+
+
     struct MultiTrackAudio::Impl
     {
     public:
-        Impl(std::string_view name, FMOD::System *sys) : fsb(), chans(),
+        Impl(std::string_view name, FMOD::System *sys) :
+            sounds(), pcmData(), chans(), fsb(),
             main("main", sys), points(), syncpointCallback(), endCallback(),
-            params(), looping(true), sounds()
+            params(), looping(true)
         {
+
         }
 
         ~Impl()
         {
             chans.clear();
+            main.release();
 
             if (fsb)
                 fsb->release();
+
+            // Any left-over sounds (covered in the MainTrackAudio destructor,
+            // but left here for good measure)
+            for (auto &sound : sounds)
+            {
+                sound->release();
+            }
         }
 
         std::vector<FMOD::Sound *> sounds;
+        std::vector<SoundPCMData> pcmData;
         std::vector<Channel> chans;
         FMOD::Sound *fsb;
 
@@ -152,7 +193,12 @@ namespace Insound
         {
             for (auto *sound : m->sounds)
             {
-                sound->release();
+                auto result = sound->release();
+                if (result != FMOD_OK)
+                {
+                    std::cerr << "Error while releasing sound : "
+                        << FMOD_ErrorString(result) << "\n";
+                }
             }
         }
 
@@ -234,102 +280,223 @@ namespace Insound
         return (double)m->points.getOffsetSeconds(i);
     }
 
-    void MultiTrackAudio::loadSound(const char *data, size_t bytelength)
+    void MultiTrackAudio::pushSampleData(FMOD::Sound *sound, std::vector<float> &data)
     {
+        m->pcmData.emplace_back(sound, data);
+    }
+
+    static FMOD_RESULT F_CALL pcmReadCallback(FMOD_SOUND *pSnd, void *data,
+        unsigned int datalen)
+    {
+        // Get callback objects
+        auto sound = (FMOD::Sound *)pSnd;
+
         FMOD::System *sys;
-        checkResult( m->main.raw()->getSystemObject(&sys) );
+        checkResult(sound->getSystemObject(&sys));
 
-        // Set relevant info to load the fsb
-        auto exinfo{FMOD_CREATESOUNDEXINFO()};
-        std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
-        exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
-        exinfo.length = bytelength;
+        AudioEngine *engine;
+        checkResult(sys->getUserData((void **)&engine));
 
-        // add sound to the existing sounds and set its position accordingly
-        FMOD::Sound *sound;
-        checkResult( sys->createSound(data,
-            FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL,
-            &exinfo,
-            &sound)
-        );
+        auto track = engine->getTrack();
 
-        SyncPointMgr points(sound);
+        // Get audio format info
+        FMOD_SOUND_TYPE type;
+        FMOD_SOUND_FORMAT format;
+        int bits;
+        checkResult(sound->getFormat(&type, &format, nullptr, &bits));
 
-        if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
+        std::vector<float> res;
+
+        // parse sample data based on format data
+        switch(bits)
         {
-            // set loop info from markers
-            auto loopStart = points.getOffsetSamples("LoopStart");
-            auto loopEnd = points.getOffsetSamples("LoopEnd");
-            bool didAlterLoop = false;
-
-            if (!loopStart)
+        case 8:
             {
-                loopStart.emplace(0);
-                sound->addSyncPoint(0, FMOD_TIMEUNIT_PCM, "LoopStart",
-                    nullptr);
-                didAlterLoop = true;
+                res.reserve(datalen);
+                for (size_t i = 0; i < datalen; ++i)
+                {
+                    auto val = *((uint8_t *)data + i);
+                    res.push_back( (double)val / std::numeric_limits<uint8_t>::max() * 2.0 - 1.0);
+                }
+                break;
             }
 
-            if (!loopEnd)
+        case 16:
             {
-                unsigned int length;
-                checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCM));
+                auto len = datalen / 2;
+                res.reserve(len);
+                for (size_t i = 0; i < len; ++i)
+                {
+                    auto val = *((int16_t *)data + i);
+                    res.push_back( (float)val / (std::numeric_limits<int16_t>::max()) );
+                }
+                break;
+            }
+        case 24:
+            {
+                auto len = datalen / 3;
+                res.reserve(len);
+                for (size_t i = 0; i < len; ++i)
+                {
+                    auto val = ((Int24 *)data + i)->value;
+                    res.push_back( (float)val / 8'388'607.0 );
+                }
+                break;
+            }
+        case 32:
+            {
+                if (format == FMOD_SOUND_FORMAT_PCMFLOAT)
+                {
+                    auto len = datalen / sizeof(float);
+                    res.reserve(len);
+                    for (size_t i = 0; i < len; ++i)
+                    {
+                        auto val = *((float *)data + i);
+                        res.push_back((double)val / std::numeric_limits<float>::max());
+                    }
+                }
+                else
+                {
+                    auto len = datalen / 4;
+                    res.reserve(len);
+                    for (size_t i = 0; i < len; ++i)
+                    {
+                        auto val = *((int32_t *)data + i);
+                        res.push_back( (double)val / std::numeric_limits<int32_t>::max());
+                    }
+                }
 
-                loopEnd.emplace(length);
-                sound->addSyncPoint(length, FMOD_TIMEUNIT_PCM, "LoopEnd",
-                    nullptr);
+                break;
+            }
+        default:
+            return FMOD_ERR_FORMAT;
+        }
 
-                didAlterLoop = true;
+        // push to track pcm data
+        track->pushSampleData(sound, res);
+        return FMOD_OK;
+    }
+
+    uintptr_t MultiTrackAudio::loadSound(const char *data, size_t bytelength)
+    {
+        try {
+            FMOD::System *sys;
+            checkResult( m->main.raw()->getSystemObject(&sys) );
+
+            // Set relevant info to load the fsb
+            auto exinfo{FMOD_CREATESOUNDEXINFO()};
+            std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
+            exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
+            exinfo.length = bytelength;
+
+            // add sound to the existing sounds and set its position accordingly
+            FMOD::Sound *sound;
+            checkResult( sys->createSound(data,
+                FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
+                    FMOD_CREATECOMPRESSEDSAMPLE | FMOD_ACCURATETIME,
+                &exinfo,
+                &sound)
+            );
+
+            FMOD::Sound *readDataSound;
+            checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT | FMOD_CREATECOMPRESSEDSAMPLE | FMOD_OPENONLY, &exinfo, &readDataSound));
+
+            unsigned int rawByteLength;
+            checkResult(readDataSound->getLength(&rawByteLength, FMOD_TIMEUNIT_RAWBYTES));
+
+            std::vector<unsigned char> bytes(rawByteLength);
+            checkResult(readDataSound->readData(bytes.data(), rawByteLength, nullptr));
+            pcmReadCallback((FMOD_SOUND *)sound, bytes.data(), rawByteLength);
+            bytes.clear();
+
+            checkResult(readDataSound->release());
+
+            SyncPointMgr points(sound);
+
+            if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
+            {
+                // set loop info from markers
+                auto loopStart = points.getOffsetSamples("LoopStart");
+                auto loopEnd = points.getOffsetSamples("LoopEnd");
+                bool didAlterLoop = false;
+
+                if (!loopStart)
+                {
+                    loopStart.emplace(0);
+                    sound->addSyncPoint(0, FMOD_TIMEUNIT_PCM, "LoopStart",
+                        nullptr);
+                    didAlterLoop = true;
+                }
+
+                if (!loopEnd)
+                {
+                    unsigned int length;
+                    checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCM));
+
+                    loopEnd.emplace(length);
+                    sound->addSyncPoint(length, FMOD_TIMEUNIT_PCM, "LoopEnd",
+                        nullptr);
+
+                    didAlterLoop = true;
+                }
+
+                checkResult( sound->setLoopPoints(
+                    loopStart.value(), FMOD_TIMEUNIT_PCM,
+                    loopEnd.value(), FMOD_TIMEUNIT_PCM) );
+
+                if (didAlterLoop)
+                    points.load(sound);
+            }
+            else
+            {
+                // set loop position from other sounds
+                unsigned int loopstart, loopend;
+                checkResult( m->sounds[0]->getLoopPoints(
+                    &loopstart, FMOD_TIMEUNIT_PCM,
+                    &loopend, FMOD_TIMEUNIT_PCM) );
+
+                checkResult( sound->setLoopPoints(
+                    loopstart, FMOD_TIMEUNIT_PCM,
+                    loopend, FMOD_TIMEUNIT_PCM) );
             }
 
-            checkResult( sound->setLoopPoints(
-                loopStart.value(), FMOD_TIMEUNIT_PCM,
-                loopEnd.value(), FMOD_TIMEUNIT_PCM) );
+            // done, commit results
 
-            if (didAlterLoop)
-                points.load(sound);
+            if (m->fsb)
+            {
+                clear();
+            }
+
+            auto chanSize = m->chans.size();
+
+            auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
+                sys, m->chans.size());
+
+            if (chanSize == 0)
+            {
+                m->points.swap(points); // only set points of first track
+
+                checkResult( chan.raw()->setUserData(this));
+                checkResult( chan.raw()->setCallback(channelCallback) );
+            }
+            else
+            {
+                // set channel track position to others' position
+                auto seconds = m->chans[0].ch_position();
+                chan.ch_position(seconds);
+            }
+
+            m->sounds.emplace_back(sound);
+            pause(true, 0); // pause, wait for user to trigger start
+            return (uintptr_t)sound;
         }
-        else
+        catch(...)
         {
-            // set loop position from other sounds
-            unsigned int loopstart, loopend;
-            checkResult( m->sounds[0]->getLoopPoints(
-                &loopstart, FMOD_TIMEUNIT_PCM,
-                &loopend, FMOD_TIMEUNIT_PCM) );
-
-            checkResult( sound->setLoopPoints(
-                loopstart, FMOD_TIMEUNIT_PCM,
-                loopend, FMOD_TIMEUNIT_PCM) );
+            // clear other sounds since it's considered a "failed bank"
+            this->clear();
+            throw;
         }
 
-        // done, commit results
-
-        if (m->fsb)
-        {
-            clear();
-        }
-
-        auto chanSize = m->chans.size();
-
-        auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
-            sys, m->chans.size());
-
-        if (chanSize == 0)
-        {
-            m->points.swap(points); // only set points of first track
-
-            checkResult( chan.raw()->setUserData(this));
-            checkResult( chan.raw()->setCallback(channelCallback) );
-        }
-        else
-        {
-            // set channel track position to others' position
-            auto seconds = m->chans[0].ch_position();
-            chan.ch_position(seconds);
-        }
-
-        m->sounds.emplace_back(sound);
-        pause(true, 0); // pause, wait for user to trigger start
     }
 
     void MultiTrackAudio::loadFsb(const char *data, size_t bytelength,
@@ -340,6 +507,7 @@ namespace Insound
         std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
         exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
         exinfo.length = bytelength;
+        exinfo.pcmreadcallback = pcmReadCallback;
 
         // Load the sound bank via system object
         FMOD::System *sys;
@@ -639,104 +807,21 @@ namespace Insound
         return m->main;
     }
 
-    std::vector<float> MultiTrackAudio::getSampleData(size_t index) const
+    const std::vector<float> &MultiTrackAudio::getSampleData(size_t index) const
     {
-        std::vector<float> res;
+        auto sound = m->sounds.at(index);
 
-        FMOD::Sound *sound;
-        if (m->fsb)
+        auto size = m->pcmData.size();
+        SoundPCMData *data = nullptr;
+        for (int i = 0; i < size; ++i)
         {
-            checkResult(m->fsb->getSubSound(index, &sound));
-        }
-        else if (!m->sounds.empty())
-        {
-            sound = m->sounds.at(index);
-        }
-        else
-        {
-            throw std::runtime_error("Tried to get sample data, but no track was loaded");
-        }
-
-        int bits;
-        checkResult(sound->getFormat(nullptr, nullptr, nullptr, &bits));
-
-        unsigned int length;
-        checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCMBYTES));
-
-        if (length == 0xFFFFFFFF)
-        {
-            // TODO: handle if we want to get a portion of this data
-            throw std::runtime_error("Cannot get sample data of endless sound");
-        }
-
-        void *data1, *data2;
-        unsigned int actualLength1, actualLength2;
-        checkResult(sound->lock(0, length, &data1, &data2, &actualLength1, &actualLength2));
-
-        if (actualLength2 > 0 || length != actualLength1)
-        {
-            sound->unlock(data1, data2, actualLength1, actualLength2);
-            throw std::runtime_error("Failed to get full sound data");
-        }
-
-        // TODO: need to parse based on type not bits alone
-        try {
-            switch(bits)
+            if (m->pcmData[i].sound == sound)
             {
-            case 8:
-                {
-                    res.reserve(actualLength1);
-                    for (size_t i = 0; i < actualLength1; ++i)
-                    {
-                        auto val = *((uint8_t *)data1 + i);
-                        res.push_back( (double)val / 0xFFu );
-                    }
-                    break;
-                }
-
-            case 16:
-                {
-                    auto len = actualLength1 / 2;
-                    res.reserve(len);
-                    for (size_t i = 0; i < len; ++i)
-                    {
-                        auto val = *((uint16_t *)data1 + i);
-                        res.push_back( (double)val / 0xFFFFu );
-                    }
-                    break;
-                }
-            case 24:
-                {
-                    auto len = actualLength1 / 3;
-                    res.reserve(len);
-                    for (size_t i = 0; i < len; ++i)
-                    {
-                        auto val = ((Uint24 *)data1 + i)->value;
-                        res.push_back( (double)val / 0xFFFFFFu ) ;
-                    }
-                    break;
-                }
-            case 32:
-                {
-                    auto len = actualLength1 / 4;
-                    res.reserve(len);
-                    for (size_t i = 0; i < len; ++i)
-                    {
-                        auto val = *((uint32_t *)data1 + i);
-                        res.push_back( (double)val / 0xFFFFFFFFu );
-                    }
-                }
-            default:
-                throw std::runtime_error("Invalid data byte size");
+                return m->pcmData[i].data;
             }
         }
-        catch(...)
-        {
-            sound->unlock(data1, data2, actualLength1, actualLength2);
-        }
 
-        sound->unlock(data1, data2, actualLength1, actualLength2);
-
-        return res;
+        throw std::runtime_error("Sound does not exist in pcmData list, "
+            "cannot get its sample data");
     }
 }

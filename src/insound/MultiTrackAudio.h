@@ -43,7 +43,7 @@ namespace Insound {
          * @param data       - pointer to the data
          * @param bytelength - byte size of the data
          */
-        void loadSound(const char *data, size_t bytelength);
+        uintptr_t loadSound(const char *data, size_t bytelength);
 
         /**
          * Unload fsb file from memory and reset internals
@@ -215,7 +215,9 @@ namespace Insound {
         const Channel &main() const;
 
         [[nodiscard]]
-        std::vector<float> getSampleData(size_t index) const;
+        const std::vector<float> &getSampleData(size_t index) const;
+
+        void pushSampleData(FMOD::Sound *sound, std::vector<float> &data);
     private:
         // Pimple idiom
         struct Impl;

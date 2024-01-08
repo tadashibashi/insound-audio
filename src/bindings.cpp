@@ -32,6 +32,10 @@ EMSCRIPTEN_BINDINGS(Params)
 EMSCRIPTEN_BINDINGS(AudioEngine) {
     register_vector<float>("FloatVector");
 
+    value_object<SampleDataInfo>("SampleDataInfo")
+        .field("ptr", &SampleDataInfo::ptr)
+        .field("byteLength", &SampleDataInfo::byteLength);
+
     value_object<Preset>("Preset")
         .field("name", &Preset::name)
         .field("volumes", &Preset::volumes);

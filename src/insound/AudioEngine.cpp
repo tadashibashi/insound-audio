@@ -636,6 +636,14 @@ namespace Insound
             return false;
         }
 
+        result = sys->setUserData(this);
+        if (result != FMOD_OK)
+        {
+            sys->release();
+            std::cerr << FMOD_ErrorString(result) << '\n';
+            return false;
+        }
+
         if (this->track)
         {
             this->track->clear();
@@ -854,8 +862,12 @@ namespace Insound
         return usage.dsp;
     }
 
-    std::vector<float> AudioEngine::getSampleData(size_t index) const
+    SampleDataInfo AudioEngine::getSampleData(size_t index) const
     {
-        return track->getSampleData(index);
+        auto &data = track->getSampleData(index);
+        return {
+            .ptr = (uintptr_t)data.data(),
+            .byteLength = data.size()
+        };
     }
 }

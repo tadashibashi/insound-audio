@@ -15,6 +15,12 @@ namespace FMOD
     class System;
 }
 
+struct SampleDataInfo
+{
+    uintptr_t ptr;
+    size_t byteLength;
+};
+
 namespace Insound
 {
     class Channel;
@@ -199,7 +205,10 @@ namespace Insound
         float getCPUUsageDSP() const;
 
         [[nodiscard]]
-        std::vector<float> getSampleData(size_t index) const;
+        SampleDataInfo getSampleData(size_t index) const;
+
+        [[nodiscard]]
+        MultiTrackAudio *getTrack() { return track; }
 
     private:
         FMOD::System *sys;
