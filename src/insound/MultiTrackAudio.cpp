@@ -179,8 +179,11 @@ namespace Insound
         return m->main.audibility();
     }
 
+
+
     void MultiTrackAudio::clear()
     {
+        m->pcmData.clear();
         m->params.clear();
         m->chans.clear();
         m->points.clear();
@@ -392,28 +395,28 @@ namespace Insound
             std::memset(&exinfo, 0, sizeof(FMOD_CREATESOUNDEXINFO));
             exinfo.cbsize = sizeof(FMOD_CREATESOUNDEXINFO);
             exinfo.length = bytelength;
+            exinfo.pcmreadcallback = pcmReadCallback;
 
             // add sound to the existing sounds and set its position accordingly
             FMOD::Sound *sound;
             checkResult( sys->createSound(data,
-                FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
-                    FMOD_CREATECOMPRESSEDSAMPLE | FMOD_ACCURATETIME,
+                FMOD_OPENMEMORY | FMOD_LOOP_NORMAL | FMOD_ACCURATETIME | FMOD_CREATESAMPLE,
                 &exinfo,
                 &sound)
             );
 
-            FMOD::Sound *readDataSound;
-            checkResult( sys->createSound(data, FMOD_OPENMEMORY_POINT | FMOD_CREATECOMPRESSEDSAMPLE | FMOD_OPENONLY, &exinfo, &readDataSound));
+            // FMOD::Sound *readDataSound;
+            // checkResult( sys->createSound(data, FMOD_OPENMEMORY  | FMOD_CREATESAMPLE | FMOD_OPENONLY, &exinfo, &readDataSound));
 
-            unsigned int rawByteLength;
-            checkResult(readDataSound->getLength(&rawByteLength, FMOD_TIMEUNIT_RAWBYTES));
+            // unsigned int rawByteLength;
+            // checkResult(readDataSound->getLength(&rawByteLength, FMOD_TIMEUNIT_RAWBYTES));
 
-            std::vector<unsigned char> bytes(rawByteLength);
-            checkResult(readDataSound->readData(bytes.data(), rawByteLength, nullptr));
-            pcmReadCallback((FMOD_SOUND *)sound, bytes.data(), rawByteLength);
-            bytes.clear();
+            // std::vector<unsigned char> bytes(rawByteLength);
+            // checkResult(readDataSound->readData(bytes.data(), rawByteLength, nullptr));
+            // pcmReadCallback((FMOD_SOUND *)sound, bytes.data(), rawByteLength);
+            // bytes.clear();
 
-            checkResult(readDataSound->release());
+            // checkResult(readDataSound->release());
 
             SyncPointMgr points(sound);
 
