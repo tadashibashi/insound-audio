@@ -385,13 +385,11 @@ namespace Insound
     void AudioEngine::resume()
     {
         checkResult(sys->mixerResume());
-        isSuspended = false;
     }
 
     void AudioEngine::suspend()
     {
         checkResult(sys->mixerSuspend());
-        isSuspended = true;
     }
 
     void AudioEngine::update()
@@ -399,35 +397,6 @@ namespace Insound
         auto current = std::chrono::system_clock::now();
         auto delta = current - lastFrame;
         auto total = current - startTime;
-
-        // auto-suspend when there is no activity
-        if (!isSuspended)
-        {
-            if (track->isLoaded())
-            {
-                // Suspend audio engine after 5 seconds of pause
-                if (track->paused())
-                {
-                    downtime += delta.count();
-
-                    if (downtime > 5000000)
-                    {
-                        suspend();
-                        downtime = 0;
-                    }
-                }
-            }
-            else
-            {
-                downtime += delta.count();
-
-                if (downtime > 5000000)
-                {
-                    suspend();
-                    downtime = 0;
-                }
-            }
-        }
 
         checkResult(sys->update());
         lua->doUpdate(delta.count() * .001, total.count() * .001);
@@ -869,5 +838,10 @@ namespace Insound
             .ptr = (uintptr_t)data.data(),
             .byteLength = data.size()
         };
+    }
+
+    float AudioEngine::getAudibility() const
+    {
+        return track->audibility();
     }
 }
