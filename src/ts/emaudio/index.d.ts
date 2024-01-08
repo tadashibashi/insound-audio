@@ -275,6 +275,12 @@ declare interface InsoundAudioEngine {
 
     getMasterVolume(): number;
 
+    /**
+     * Get the current estimated volume output level, taking multiple engine
+     * parameters into account.
+     */
+    getAudibility(): number;
+
 
     // ----- Looping ----------------------------------------------------------
 

@@ -409,4 +409,12 @@ namespace Insound
         return *this;
     }
 
+    float Channel::audibility() const
+    {
+        float level;
+        checkResult(chan->getAudibility(&level));
+
+        return level;
+    }
+
 }

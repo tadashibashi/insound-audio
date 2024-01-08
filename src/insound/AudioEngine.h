@@ -129,6 +129,9 @@ namespace Insound
         bool getPause() const;
 
         [[nodiscard]]
+        float getAudibility() const;
+
+        [[nodiscard]]
         bool isLooping() const;
 
         void setLooping(bool looping);

@@ -174,6 +174,10 @@ namespace Insound
         return (double)maxLength * .001;
     }
 
+    float MultiTrackAudio::audibility() const
+    {
+        return m->main.audibility();
+    }
 
     void MultiTrackAudio::clear()
     {

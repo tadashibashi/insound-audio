@@ -198,6 +198,9 @@ namespace Insound
 
         [[nodiscard]]
         bool isMaster() const { return m_isMaster; }
+
+        [[nodiscard]]
+        float audibility() const;
     private:
         FMOD::ChannelControl *chan;
         float lastFadePoint;

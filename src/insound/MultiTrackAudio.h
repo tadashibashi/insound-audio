@@ -86,7 +86,12 @@ namespace Insound {
         [[nodiscard]]
         bool paused() const;
 
-
+        /**
+         * Get the approximated channel output taking all engine parameters
+         * into account.
+         */
+        [[nodiscard]]
+        float audibility() const;
 
 
         // Fade main volume to a certain level
