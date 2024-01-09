@@ -49,9 +49,9 @@ namespace Insound
     struct MultiTrackAudio::Impl
     {
     public:
-        Impl(std::string_view name, FMOD::System *sys) :
+        Impl(FMOD::System *sys) :
             sounds(), pcmData(), chans(), fsb(),
-            main("main", sys), points(), syncpointCallback(), endCallback(),
+            main(sys), points(), syncpointCallback(), endCallback(),
             params(), looping(true)
         {
 
@@ -87,8 +87,8 @@ namespace Insound
     };
 
 
-    MultiTrackAudio::MultiTrackAudio(std::string_view name, FMOD::System *sys)
-        : m(new Impl(name, sys))
+    MultiTrackAudio::MultiTrackAudio(FMOD::System *sys)
+        : m(new Impl(sys))
     {
 
     }
@@ -174,11 +174,11 @@ namespace Insound
         return (double)maxLength * .001;
     }
 
+
     float MultiTrackAudio::audibility() const
     {
         return m->main.audibility();
     }
-
 
 
     void MultiTrackAudio::clear()
@@ -280,6 +280,11 @@ namespace Insound
     std::string_view MultiTrackAudio::getSyncPointLabel(size_t i) const
     {
         return m->points.getLabel(i);
+    }
+
+    unsigned MultiTrackAudio::getSyncPointOffsetMilliseconds(size_t i) const
+    {
+        return m->points.getOffsetMS(i);
     }
 
     double MultiTrackAudio::getSyncPointOffsetSeconds(size_t i) const
@@ -477,7 +482,7 @@ namespace Insound
             auto chanSize = m->chans.size();
 
             auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
-                sys, m->chans.size());
+                sys);
 
             if (chanSize == 0)
             {
@@ -592,7 +597,7 @@ namespace Insound
 
             // create the channel wrapper object from the subsound
             chans.emplace_back(subsound,
-                (FMOD::ChannelGroup *)m->main.raw(), sys, i);
+                (FMOD::ChannelGroup *)m->main.raw(), sys);
             sounds.emplace_back(subsound);
         }
 
@@ -736,12 +741,12 @@ namespace Insound
         int syncpointCount;
         checkResult(sound->getNumSyncPoints(&syncpointCount));
 
-        char nameBuf[256];
+        char nameBuf[12];
         for (int i = 0; i < syncpointCount;)
         {
             FMOD_SYNCPOINT *point;
             checkResult(sound->getSyncPoint(i, &point));
-            checkResult(sound->getSyncPointInfo(point, nameBuf, 256, nullptr, 0));
+            checkResult(sound->getSyncPointInfo(point, nameBuf, 11, nullptr, 0));
             if (std::strcmp(nameBuf, "LoopStart") == 0 || std::strcmp(nameBuf, "LoopEnd") == 0)
             {
                 checkResult(sound->deleteSyncPoint(point));
@@ -751,6 +756,21 @@ namespace Insound
                 ++i;
             }
         }
+    }
+
+    void MultiTrackAudio::loopMilliseconds(unsigned loopstart, unsigned loopend)
+    {
+        for (auto &ch : m->chans)
+        {
+            ch.ch_loopSamples(loopstart, loopend);
+        }
+
+        // Replace markers indicating loop points
+        FMOD::Sound *firstSound;
+        checkResult(m->fsb->getSubSound(0, &firstSound));
+
+        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_MS,
+            loopend, FMOD_TIMEUNIT_MS);
     }
 
     void MultiTrackAudio::loopSeconds(double loopstart, double loopend)
@@ -779,10 +799,14 @@ namespace Insound
         FMOD::Sound *firstSound;
         checkResult(m->fsb->getSubSound(0, &firstSound));
 
-        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_MS,
+        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_PCM,
             loopend, FMOD_TIMEUNIT_PCM);
     }
 
+    LoopInfo<unsigned> MultiTrackAudio::loopMilliseconds() const
+    {
+        return m->chans.at(0).ch_loopMilliseconds();
+    }
 
     LoopInfo<double> MultiTrackAudio::loopSeconds() const
     {

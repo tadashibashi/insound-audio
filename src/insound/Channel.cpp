@@ -13,9 +13,9 @@ namespace Insound
     static const unsigned int MaxFadePoints = 2;
 
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
-        FMOD::System *system, int index) :
+        FMOD::System *system) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
-            m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f),
+            m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
             m_isMaster(false)
     {
         int rate;
@@ -32,16 +32,16 @@ namespace Insound
     }
 
 
-    Channel::Channel(std::string_view name, FMOD::System *system, int index) :
+    Channel::Channel(FMOD::System *system) :
         chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(index), m_leftPan(1.f), m_rightPan(1.f),
+        m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
         m_isMaster(false)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
 
         FMOD::ChannelGroup *group;
-        checkResult( system->createChannelGroup(name.data(), &group) );
+        checkResult( system->createChannelGroup(nullptr, &group) );
 
         checkResult( group->setUserData(this) );
         checkResult( group->setReverbProperties(0, 0) );
@@ -53,7 +53,7 @@ namespace Insound
 
     Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
         lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_index(-1), m_leftPan(1.f), m_rightPan(1.f),
+        m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
         m_isMaster(false)
     {
         FMOD::System *system;
@@ -244,6 +244,19 @@ namespace Insound
         return *this;
     }
 
+    Channel &Channel::ch_loopMilliseconds(unsigned loopstart, unsigned loopend)
+    {
+        if (m_isGroup)
+            throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
+                "when underlying type is an FMOD::ChannelGroup");
+        checkResult(static_cast<FMOD::Channel *>(chan)->setLoopPoints(
+            loopstart, FMOD_TIMEUNIT_MS,
+            loopend, FMOD_TIMEUNIT_MS)
+        );
+
+        return *this;
+    }
+
     Channel &Channel::ch_loopSeconds(double loopstart, double loopend)
     {
         if (m_isGroup)
@@ -268,6 +281,21 @@ namespace Insound
         );
 
         return *this;
+    }
+
+    LoopInfo<unsigned> Channel::ch_loopMilliseconds() const
+    {
+        if (m_isGroup)
+            throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
+                "when underlying type is an FMOD::ChannelGroup");
+
+        unsigned start, end;
+        checkResult(static_cast<FMOD::Channel *>(chan)->getLoopPoints(
+            &start, FMOD_TIMEUNIT_MS,
+            &end, FMOD_TIMEUNIT_MS)
+        );
+
+        return {.loopstart=start, .loopend=end};
     }
 
     LoopInfo<double> Channel::ch_loopSeconds() const

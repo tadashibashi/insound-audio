@@ -23,8 +23,10 @@ namespace Insound
     class Channel
     {
     public:
-        Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system, int index = -1);
-        Channel(std::string_view name, FMOD::System *system, int index = -1);
+        // Create channel from sound
+        Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group, FMOD::System *system);
+        // Create channel group
+        explicit Channel(FMOD::System *system);
         // Create from channel group
         explicit Channel(FMOD::ChannelGroup *group);
 
@@ -119,9 +121,12 @@ namespace Insound
          */
         Channel &ch_position(float seconds);
 
+        Channel &ch_loopMilliseconds(unsigned loopstart, unsigned loopend);
         Channel &ch_loopSeconds(double loopstart, double loopend);
         Channel &ch_loopSamples(unsigned loopstart, unsigned loopend);
 
+        [[nodiscard]]
+        LoopInfo<unsigned> ch_loopMilliseconds() const;
         [[nodiscard]]
         LoopInfo<double> ch_loopSeconds() const;
         [[nodiscard]]

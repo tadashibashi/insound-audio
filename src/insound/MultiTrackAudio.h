@@ -20,7 +20,7 @@ namespace Insound {
      */
     class MultiTrackAudio {
     public:
-        MultiTrackAudio(std::string_view name, FMOD::System *sys);
+        MultiTrackAudio(FMOD::System *sys);
         ~MultiTrackAudio();
 
         /**
@@ -190,6 +190,8 @@ namespace Insound {
         std::string_view getSyncPointLabel(size_t i) const;
         [[nodiscard]]
         double getSyncPointOffsetSeconds(size_t i) const;
+        [[nodiscard]]
+        unsigned getSyncPointOffsetMilliseconds(size_t i) const;
 
         [[nodiscard]]
         ParamDescMgr &params();
@@ -206,6 +208,7 @@ namespace Insound {
 
         void mainReverbLevel(float level);
 
+        void loopMilliseconds(unsigned loopstart, unsigned loopend);
         void loopSeconds(double loopstart, double loopend);
         void loopSamples(unsigned loopstart, unsigned loopend);
 
@@ -213,6 +216,8 @@ namespace Insound {
         LoopInfo<double> loopSeconds() const;
         [[nodiscard]]
         LoopInfo<unsigned> loopSamples() const;
+        [[nodiscard]]
+        LoopInfo<unsigned> loopMilliseconds() const;
 
         [[nodiscard]]
         Channel &main();
