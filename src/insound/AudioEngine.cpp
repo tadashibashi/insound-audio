@@ -377,6 +377,28 @@ namespace Insound
         lua.emplace(populateEnv);
     }
 
+    uintptr_t AudioEngine::createTrack()
+    {
+        return (uintptr_t)tracks.emplace_back(new MultiTrackAudio(sys));
+    }
+
+    void AudioEngine::deleteTrack(uintptr_t ptr)
+    {
+        auto size = tracks.size();
+        for (int i = 0; i < size; ++i)
+        {
+            auto track = tracks[i];
+            if ((uintptr_t)track == ptr)
+            {
+                track->clear();
+                delete track;
+
+                tracks.erase(tracks.begin() + i);
+                break;
+            }
+        }
+    }
+
     AudioEngine::~AudioEngine()
     {
         close();
@@ -626,7 +648,7 @@ namespace Insound
 
         this->sys = sys;
         this->track = new MultiTrackAudio("main", sys);
-        this->master.emplace(Channel(master));
+        this->master.emplace(master);
         return true;
     }
 
@@ -637,6 +659,13 @@ namespace Insound
             delete track;
             track = nullptr;
         }
+
+        for (auto track : tracks)
+        {
+            track->clear();
+            delete track;
+        }
+        tracks.clear();
 
         if (master)
         {

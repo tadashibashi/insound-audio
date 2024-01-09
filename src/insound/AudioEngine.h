@@ -4,6 +4,7 @@
 #include <insound/scripting/LuaDriver.h>
 #include <insound/MultiTrackAudio.h>
 #include <insound/params/ParamDescMgr.h>
+#include <insound/SampleDataInfo.h>
 
 #include <emscripten/val.h>
 
@@ -15,11 +16,7 @@ namespace FMOD
     class System;
 }
 
-struct SampleDataInfo
-{
-    uintptr_t ptr;
-    size_t byteLength;
-};
+
 
 namespace Insound
 {
@@ -36,6 +33,9 @@ namespace Insound
         void close();
         void resume();
         void suspend();
+
+        uintptr_t createTrack();
+        void deleteTrack(uintptr_t ptr);
 
         /**
          * Load bank from memory pointer. This memory must be available for
@@ -216,6 +216,9 @@ namespace Insound
     private:
         FMOD::System *sys;
         MultiTrackAudio *track;
+
+        std::vector<MultiTrackAudio *> tracks;
+
         std::optional<Channel> master;
         std::optional<LuaDriver> lua;
 
