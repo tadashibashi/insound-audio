@@ -1,3 +1,4 @@
+#include <insound/SyncPointInfo.h>
 #include <insound/presets/Preset.h>
 #include <insound/AudioEngine.h>
 #include <insound/params/ParamDesc.h>
@@ -36,11 +37,15 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .field("ptr", &SampleDataInfo::ptr)
         .field("byteLength", &SampleDataInfo::byteLength);
 
+    value_object<SyncPointInfo>("SyncPointInfo")
+        .field("name", &SyncPointInfo::name)
+        .field("offset", &SyncPointInfo::offset);
+
     value_object<Preset>("Preset")
         .field("name", &Preset::name)
         .field("volumes", &Preset::volumes);
 
-    value_object<LoopInfo<unsigned>>("LoopInfoSamples")
+    value_object<LoopInfo<unsigned>>("LoopInfo")
         .field("loopstart", &LoopInfo<unsigned>::loopstart)
         .field("loopend", &LoopInfo<unsigned>::loopend)
         ;
@@ -57,6 +62,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("resume", &T::resume)
         .function("suspend", &T::suspend)
         .function("update", &T::update)
+        .function("createTrack", &T::createTrack)
         .function("loadBank", &T::loadBank)
         .function("loadSound", &T::loadSound)
         .function("loadScript", &T::loadScript)
