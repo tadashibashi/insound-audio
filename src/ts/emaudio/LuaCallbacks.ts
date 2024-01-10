@@ -1,20 +1,26 @@
 
 export interface LuaCallbacks
 {
-    // Receive parameter through this function from LuaScript to set in on the
-    // JS frontend.
-    setParam(index: number, value: number): void,
-
-    // Requests a parameter from JS to send to Lua.
-    getParam(nameOrIndex: string | number): number
-
     // Called by C++ engine when sync points have been mutated.
     // The audio engine then updates its own local copy of sync opint info
     // to alter the frontend display to match.
-    syncpointUpdated(): void;
+    syncPointsUpdated(): void;
 
-    addPreset(name: string, volumes: number[]): void;
-    applyPreset(indexOrName: number | string, seconds: number): void;
-    getPreset(indexOrName: number | string): {name: string, volumes: number[]};
+    // ----- controls ---------------------------------------------------------
+
+    setPause(pause: boolean, seconds?: number): void;
+
+    // --- mixer parameters ---------------------------------------------------
+
+    setVolume(ch: number, level: number, seconds?: number): void;
+    setPanLeft(ch: number, level: number, seconds?: number): void;
+    setPanRight(ch: number, level: number, seconds?: number): void;
+    setReverbLevel(ch: number, level: number, seconds?: number): void;
+
+    // ----- presets ----------------------------------------------------------
+
+    // Take snapshot of the current engine and add preset with following name
+    getPresetName(index: number): string;
     getPresetCount(): number;
+    applyPreset(indexOrName: number | string, seconds?: number): void;
 }
