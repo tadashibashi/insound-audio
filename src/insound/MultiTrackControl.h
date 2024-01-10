@@ -3,7 +3,6 @@
 #include <insound/SampleDataInfo.h>
 #include <insound/SyncPointInfo.h>
 #include <insound/LoopInfo.h>
-#include <insound/scripting/LuaDriver.h>
 
 #include <emscripten/val.h>
 
@@ -45,6 +44,12 @@ namespace Insound
 
         /** Unload any currently loaded sounds, script - resets state, etc. */
         void unload();
+
+        /**
+         * Calls update on the lua script engine
+         * @param deltaTime - time passed since the last call to `update`
+         */
+        void update(float deltaTime);
 
         [[nodiscard]]
         bool isLoaded() const;
@@ -114,7 +119,7 @@ namespace Insound
         int getChannelCount() const;
 
         [[nodiscard]]
-        float getAudibility() const;
+        float getAudibility(int ch) const;
 
         void setLooping(bool looping);
 
@@ -144,7 +149,10 @@ namespace Insound
         [[nodiscard]]
         SampleDataInfo getSampleData(int index) const;
 
+        void onSyncPoint(emscripten::val callback);
+
     private:
+        void initScriptingEngine();
         MultiTrackAudio *track;
         LuaDriver *lua;
         emscripten::val callbacks;

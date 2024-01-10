@@ -1,11 +1,13 @@
 #include "MultiTrackControl.h"
-#include "insound/MultiTrackAudio.h"
+#include <insound/MultiTrackAudio.h>
+#include <insound/scripting/LuaDriver.h>
 
 namespace Insound
 {
     MultiTrackControl::MultiTrackControl(MultiTrackAudio *track,
         emscripten::val callbacks) : lua(), track(track), callbacks(callbacks)
     {
+        initScriptingEngine();
     }
 
     MultiTrackControl::~MultiTrackControl()
@@ -21,28 +23,6 @@ namespace Insound
     void MultiTrackControl::loadBank(size_t data, size_t bytelength)
     {
         track->loadFsb((const char *)data, bytelength);
-    }
-
-    const std::string &MultiTrackControl::loadScript(const std::string &text)
-    {
-       static const std::string NoErrors{};
-
-        auto result = lua->load(text);
-        if (!result)
-            return lua->getError();
-
-        if (!text.empty())
-        {
-            result = lua->doInit();
-            if (!result)
-                return lua->getError();
-
-            result = lua->doLoad(*track);
-            if (!result)
-                return lua->getError();
-        }
-
-        return NoErrors;
     }
 
     void MultiTrackControl::unload()
@@ -145,9 +125,11 @@ namespace Insound
         return track->channelCount();
     }
 
-    float MultiTrackControl::getAudibility() const
+    float MultiTrackControl::getAudibility(int ch) const
     {
-        return track->audibility();
+        return (ch == 0) ?
+            track->main().audibility() :
+            track->channel(ch-1).audibility();
     }
 
     void MultiTrackControl::setLooping(bool looping)
@@ -190,5 +172,16 @@ namespace Insound
             .ptr=(uintptr_t)data.data(),
             .byteLength=data.size()
         };
+    }
+
+    void MultiTrackControl::onSyncPoint(emscripten::val callback)
+    {
+        track->setSyncPointCallback(
+            [callback, this]
+            (const std::string &name, double offset, int index)
+            {
+                callback(name, offset, index);
+                this->lua->doSyncPoint(name, offset, index);
+            });
     }
 }
