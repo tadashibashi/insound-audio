@@ -63,6 +63,8 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("update", &T::update)
         .function("createTrack", &T::createTrack)
         .function("deleteTrack", &T::deleteTrack)
+        .function("getMasterVolume", &T::getMasterVolume)
+        .function("setMasterVolume", &T::setMasterVolume)
         .function("getAudibility", &T::getAudibility)
         .function("getCPUUsageTotal", &T::getCPUUsageTotal)
         .function("getCPUUsageDSP", &T::getCPUUsageDSP)

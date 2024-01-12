@@ -23,7 +23,6 @@ export interface LoadOptions
 }
 
 
-
 export class AudioEngine
 {
 
@@ -161,6 +160,10 @@ export class AudioEngine
         return false;
     }
 
+    get masterVolume() { return this.m_engine.getMasterVolume(); }
+
+    set masterVolume(level: number) { this.m_engine.setMasterVolume(level); }
+
 
     /** Get the current WebAudio context */
     get context()
@@ -227,12 +230,13 @@ export class AudioEngine
     }
 
 
-
     /**
      * Call this manually when no longer using the AudioEngine to clean
      * up underlying AudioEngine object. A finalization registry is used on
      * this object, but the standard does not guarantee that the finalization
      * callback gets called, so it's recommended to call this manually.
+     *
+     * (All tracks allocated via `createTrack` are freed here)
      */
     release()
     {

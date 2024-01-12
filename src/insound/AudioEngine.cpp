@@ -164,6 +164,16 @@ namespace Insound
         }
     }
 
+    float AudioEngine::getMasterVolume() const
+    {
+        return master->volume();
+    }
+
+    void AudioEngine::setMasterVolume(float level)
+    {
+        master->volume(level);
+    }
+
     float AudioEngine::getCPUUsageTotal() const
     {
         FMOD_CPU_USAGE usage;

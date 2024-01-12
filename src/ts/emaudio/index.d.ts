@@ -79,6 +79,18 @@ declare interface InsoundAudioEngine {
      */
     deleteTrack(ptr: number): void;
 
+    /**
+     * Get volume level of the master bus.
+     * @return volume level where 0: off, 1: 100%
+     */
+    getMasterVolume(): number;
+
+    /**
+     * Set volume level of the master bus.
+     *
+     * @param level - volume level where 0: off, 1: 100%
+     */
+    setMasterVolume(level: number): void;
 
     /**
      * Get the current estimated volume output level, taking multiple engine
