@@ -69,10 +69,11 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         ;
 
     class_<MultiTrackControl>("MultiTrackControl")
-        .constructor<uintptr_t>()
+        .constructor<uintptr_t, emscripten::val>()
         .function("loadSound", &MultiTrackControl::loadSound)
         .function("loadBank", &MultiTrackControl::loadBank)
         .function("loadScript", &MultiTrackControl::loadScript)
+        .function("update", &MultiTrackControl::update)
         .function("unload", &MultiTrackControl::unload)
         .function("isLoaded", &MultiTrackControl::isLoaded)
         .function("setPause", &MultiTrackControl::setPause)
@@ -90,12 +91,11 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getLength", &MultiTrackControl::getLength)
         .function("getChannelCount", &MultiTrackControl::getChannelCount)
         .function("getAudibility", &MultiTrackControl::getAudibility)
-        .function("setLooping", &MultiTrackControl::setLooping)
-        .function("getLooping", &MultiTrackControl::getLooping)
         .function("setLoopPoint", &MultiTrackControl::setLoopPoint)
         .function("getLoopPoint", &MultiTrackControl::getLoopPoint)
         .function("getSyncPointCount", &MultiTrackControl::getSyncPointCount)
         .function("getSyncPoint", &MultiTrackControl::getSyncPoint)
         .function("getSampleData", &MultiTrackControl::getSampleData)
+        .function("onSyncPoint", &MultiTrackControl::onSyncPoint)
         ;
 }

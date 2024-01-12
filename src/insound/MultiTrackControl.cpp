@@ -4,8 +4,9 @@
 
 namespace Insound
 {
-    MultiTrackControl::MultiTrackControl(MultiTrackAudio *track,
-        emscripten::val callbacks) : lua(), track(track), callbacks(callbacks)
+    MultiTrackControl::MultiTrackControl(uintptr_t track,
+        emscripten::val callbacks) : lua(), track((MultiTrackAudio *)track),
+        callbacks(callbacks), totalTime()
     {
         initScriptingEngine();
     }
@@ -18,16 +19,24 @@ namespace Insound
     void MultiTrackControl::loadSound(size_t data, size_t bytelength)
     {
         track->loadSound((const char *)data, bytelength);
+        totalTime = 0;
     }
 
     void MultiTrackControl::loadBank(size_t data, size_t bytelength)
     {
         track->loadFsb((const char *)data, bytelength);
+        totalTime = 0;
     }
 
     void MultiTrackControl::unload()
     {
         track->clear();
+    }
+
+    void MultiTrackControl::update(float deltaTime)
+    {
+        lua->doUpdate(deltaTime, totalTime);
+        totalTime += deltaTime;
     }
 
     bool MultiTrackControl::isLoaded() const
@@ -130,16 +139,6 @@ namespace Insound
         return (ch == 0) ?
             track->main().audibility() :
             track->channel(ch-1).audibility();
-    }
-
-    void MultiTrackControl::setLooping(bool looping)
-    {
-        track->looping(looping);
-    }
-
-    bool MultiTrackControl::getLooping() const
-    {
-        return track->looping();
     }
 
     void MultiTrackControl::setLoopPoint(unsigned loopstart, unsigned loopend)

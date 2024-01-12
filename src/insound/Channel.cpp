@@ -190,8 +190,6 @@ namespace Insound
 
     Channel &Channel::pause(bool value, float seconds)
     {
-        if (this->paused() == value) return *this;
-
         // Get current parent clock to time pause below
         unsigned long long clock;
         checkResult( chan->getDSPClock(nullptr, &clock) );

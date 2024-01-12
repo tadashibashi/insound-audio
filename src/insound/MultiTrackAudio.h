@@ -8,6 +8,7 @@
 // Forward declaration
 namespace FMOD {
     class System;
+    class Sound;
 }
 
 namespace Insound {
@@ -34,7 +35,7 @@ namespace Insound {
          * @throw runtime_error on error, or FMODError, which is a subclass of
          *                      runtime_error.
          */
-        void loadFsb(const char *data, size_t bytelength, bool looping=true);
+        void loadFsb(const char *data, size_t bytelength);
 
         /**
          * Add sounds separately. This is useful for testing audio without
@@ -123,15 +124,6 @@ namespace Insound {
         [[nodiscard]]
         float channelFadeLevel(int ch, bool final=true) const;
 
-        /**
-         * Set whether the track should loop
-         * @param looping - whether track should loop
-         */
-        void looping(bool looping);
-
-        [[nodiscard]]
-        bool looping() const;
-
         [[nodiscard]]
         double mainVolume() const;
 
@@ -166,6 +158,8 @@ namespace Insound {
          * @param callback - callback to set
          */
         void setEndCallback(std::function<void()> callback);
+
+        void setReadyCallback(std::function<void()> &&callback);
 
         /**
          * Get the callback that fires when current track has ended.
@@ -226,9 +220,21 @@ namespace Insound {
 
         [[nodiscard]]
         const std::vector<float> &getSampleData(size_t index) const;
+        [[nodiscard]]
+        const std::vector<FMOD::Sound *> &getSounds() const;
 
-        void pushSampleData(FMOD::Sound *sound, std::vector<float> &data);
+        void _soundLoaded();
+        [[nodiscard]]
+        size_t loadedCount() const;
+
+        [[nodiscard]]
+        bool isReady() const;
+
+        void _doReady();
+        void _postProcessSound(FMOD::Sound *sound);
     private:
+
+        void postProcessFSBank(FMOD::Sound *sound);
         // Pimple idiom
         struct Impl;
         Impl *m;

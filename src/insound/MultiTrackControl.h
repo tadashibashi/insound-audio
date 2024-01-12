@@ -26,7 +26,7 @@ namespace Insound
          * Callbacks:
          *     - syncpoint callback (fires syncpoint as it happens to JS)
          */
-        MultiTrackControl(MultiTrackAudio *track, emscripten::val callbacks);
+        MultiTrackControl(uintptr_t track, emscripten::val callbacks);
 
         ~MultiTrackControl();
 
@@ -121,11 +121,6 @@ namespace Insound
         [[nodiscard]]
         float getAudibility(int ch) const;
 
-        void setLooping(bool looping);
-
-        [[nodiscard]]
-        bool getLooping() const;
-
         /**
          * Set loop points (in milliseconds)
          *
@@ -156,5 +151,6 @@ namespace Insound
         MultiTrackAudio *track;
         LuaDriver *lua;
         emscripten::val callbacks;
+        float totalTime;
     };
 }

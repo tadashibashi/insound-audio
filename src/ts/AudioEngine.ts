@@ -1,10 +1,10 @@
 import { audioModuleWasInit, initAudioModule } from "./emaudio/AudioModule";
-import { EmBufferGroup } from "./emaudio/EmBuffer";
-import { ParameterMgr } from "./params/ParameterMgr";
 import { getAudioModule } from "./emaudio/AudioModule";
-import { SyncPointMgr } from "./SyncPointMgr";
-import { MixPresetMgr } from "./MixPresetMgr";
 import { SpectrumAnalyzer } from "./SpectrumAnalyzer";
+import { MultiTrackControl } from "./MultiTrackControl";
+
+/** Max time in seconds before AudioEngine should suspend itself. */
+const MAX_DOWNTIME = 5;
 
 const registry = new FinalizationRegistry((heldValue: any) => {
     // `heldValue` should be an Emscripten Embind C++ object with its own
@@ -22,47 +22,22 @@ export interface LoadOptions
     loopend?: number;
 }
 
-export class SoundLoadError extends Error
-{
 
-    soundIndices: number[];
-
-    getErrorMessage(names: string[]): string[] {
-        return this.soundIndices.map(index => names[index] || "Unknown File");
-    }
-
-    constructor(indices: number[])
-    {
-        super();
-        this.soundIndices = indices;
-    }
-}
 
 export class AudioEngine
 {
-    private module: InsoundAudioModule;
-    engine: InsoundAudioEngine;
 
-    // container managing the current track data
-    trackData: EmBufferGroup;
-    updateHandler: (() => void) | null;
-    params: ParameterMgr;
-    points: SyncPointMgr;
-    presets: MixPresetMgr;
-    spectrum: SpectrumAnalyzer;
+    get engine() { return this.m_engine; }
 
-    private m_lastPosition: number;
-    private m_position: number;
+    /** Flag used when resetting to prevent updates */
     private m_isResetting: boolean;
 
-    get lastPosition() {
-        return this.m_lastPosition;
-    }
+    private m_module: InsoundAudioModule;
+    private m_engine: InsoundAudioEngine;
+    private m_tracks: MultiTrackControl[];
 
-    get position()
-    {
-        return this.m_position;
-    }
+    private m_lastFrameTime: number;
+    private m_downTime: number;
 
     /**
      * Restart the underlying Emscripten audio module and replace the
@@ -74,68 +49,52 @@ export class AudioEngine
         if (this.m_isResetting) return;
 
         this.m_isResetting = true;
+
+        // Delete old engine object
         try {
-            registry.unregister(this);
-            this.params.clear();
-            this.points.clear();
-            this.presets.clear();
-            this.trackData.free();
-            this.spectrum.close();
             this.engine.delete();
+        }
+        catch(err)
+        {
+            console.error("Error during InsoundAudioEngine#delete:", err);
+        }
+
+        // Reset InsoundAudioModule
+        try {
+            this.m_module = await initAudioModule();
+            SpectrumAnalyzer.setModule(this.m_module);
+        }
+        catch(err)
+        {
+            // Cannot proceed if audio module failed to restart...
+            console.error("Critical error while resetting InsoundAudioModule:",
+                err);
+            this.m_isResetting = false;
+            return;
+        }
+
+        // Reset AudioEngine
+        try {
+            this.m_engine = new (this.m_module.AudioEngine)();
+
+            // Re-register new engine as `heldValue` to finalize
+            registry.unregister(this);
+            registry.register(this, this.m_engine, this);
+
+            this.engine.init();
+        }
+        catch(err)
+        {
+            console.error("Critical error while resetting InsoundAudioEngine:",
+                err);
         }
         finally
         {
-            try {
-                this.module = await initAudioModule();
-                this.spectrum.setModule(this.module);
-                this.setAudioEngine(this.module);
-                registry.register(this, this.engine, this);
-                this.engine.init();
-            }
-            finally
-            {
-                this.m_isResetting = false;
-            }
+            this.m_downTime = 0;
+            this.m_lastFrameTime = performance.now();
+            this.m_isResetting = false;
         }
-    }
 
-    private setAudioEngine(module: InsoundAudioModule)
-    {
-        this.m_isResetting = false;
-        this.engine = new module.AudioEngine({
-            setParam: this.params.handleParamReceive,
-            getParam: (nameOrIndex: string | number) => {
-                return this.params.get(nameOrIndex).value;
-            },
-            syncpointUpdated: () => {
-                this.points.update(this);
-            },
-            addPreset: (name, volumes) => {
-                this.presets.add(name, volumes);
-            },
-            applyPreset: (indexOrName, seconds) => {
-                let preset: {name: string, volumes: number[]};
-
-                if (typeof indexOrName === "string")
-                {
-                    preset = this.presets.getByName(indexOrName);
-                }
-                else
-                {
-                    preset = this.presets.getByIndex(indexOrName);
-                }
-
-                this.setMixPreset(preset.volumes, seconds);
-            },
-            getPreset: (indexOrName) => {
-                return (typeof indexOrName === "string") ?
-                    this.presets.getByName(indexOrName) :
-                    this.presets.getByIndex(indexOrName);
-            },
-            getPresetCount: () => {
-                return this.presets.presets.length;
-            }
-        });
     }
 
     constructor()
@@ -147,163 +106,66 @@ export class AudioEngine
                 "initializing AudioModule");
         }
 
-        this.module = getAudioModule();
-        this.spectrum = new SpectrumAnalyzer(this.module);
-        this.params = new ParameterMgr;
-        this.points = new SyncPointMgr;
-        this.presets = new MixPresetMgr;
-        this.setAudioEngine(this.module);
+        this.m_module = getAudioModule();
+        SpectrumAnalyzer.setModule(this.m_module);
 
-        if (!this.engine.init())
+        this.m_engine = new (this.m_module.AudioEngine)();
+        this.m_tracks = [];
+
+        if (!this.m_engine.init())
         {
-            this.engine.delete();
+            this.m_engine.delete();
             throw new Error("Failed to initialize AudioEngine");
         }
 
-        this.trackData = new EmBufferGroup();
-        this.updateHandler = null;
-
         registry.register(this, this.engine, this);
 
-        this.m_lastPosition = 0;
-        this.m_position = 0;
+        this.m_lastFrameTime = performance.now();
     }
+
+    createTrack(): MultiTrackControl
+    {
+        const trackPtr = this.engine.createTrack();
+        try {
+            const track = new MultiTrackControl(this, trackPtr);
+            this.m_tracks.push(track);
+            return track;
+        }
+        catch(err)
+        {
+            this.engine.deleteTrack(trackPtr);
+            throw err;
+        }
+    }
+
+    /**
+     * Delete a track that was created with `MultiTrackControl#createTrack`.
+     * @param track - track to delete
+     * @returns true if track was deleted, and false otherwise. This means
+     * that the track is not owned by this `AudioEngine`.
+     */
+    deleteTrack(track: MultiTrackControl)
+    {
+        const length = this.m_tracks.length;
+        for (let i = 0; i < length; ++i)
+        {
+            if (this.m_tracks[i] === track)
+            {
+                track.delete();
+
+                this.m_tracks.splice(i, 1);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /** Get the current WebAudio context */
     get context()
     {
-        return this.module.mContext;
-    }
-
-    /**
-     * Set the on update callback, gets called 60fps+ when updating sound engine.
-     *
-     * @param callback - callback to set.
-     */
-    onUpdate(callback: () => void): void {
-        this.updateHandler = callback;
-    }
-
-    /**
-     * Load fsbank data
-     *
-     * @param {ArrayBuffer} buffer - data buffer
-     *
-     */
-    loadTrack(buffer: ArrayBuffer, opts: LoadOptions = {
-        script: ""
-    })
-    {
-        this.trackData.free();
-        this.trackData.alloc(buffer, this.module);
-
-        try {
-            this.engine.loadBank(this.trackData.data[0].ptr, buffer.byteLength);
-            const result = this.engine.loadScript(opts.script || "");
-            if (result)
-                console.error("Lua Script error:", result);
-            if (opts.loopend !== undefined && opts.loopstart !== undefined)
-                this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
-            this.params.load(this);
-            this.points.update(this);
-            this.m_lastPosition = 0;
-            this.m_position = 0;
-        }
-        catch (err)
-        {
-            this.trackData.free();
-
-            throw err;
-        }
-    }
-
-    loadSounds(buffers: ArrayBuffer[], opts: LoadOptions = {
-        script: ""
-    })
-    {
-        if (this.isTrackLoaded())
-            this.unloadTrack();
-
-        this.trackData.free();
-        for (let i = 0; i < buffers.length; ++i)
-        {
-            this.trackData.alloc(buffers[i], this.module);
-        }
-
-        try {
-            const problematicSounds: number[] = [];
-            const length = this.trackData.data.length;
-            for (let i = 0; i < length; ++i)
-            {
-                try {
-                    this.engine.loadSound(this.trackData.data[i].ptr,
-                        this.trackData.data[i].size);
-                }
-                catch(err)
-                {
-                    problematicSounds.push(i);
-                    console.log(err);
-                }
-            }
-
-            if (problematicSounds.length > 0)
-            {
-                throw new SoundLoadError(problematicSounds);
-            }
-
-            const result = this.engine.loadScript(opts.script || "");
-            if (result)
-                console.error("Lua Script error:", result);
-            if (opts.loopend !== undefined && opts.loopstart !== undefined)
-                this.engine.setLoopSeconds(opts.loopstart, opts.loopend);
-            this.params.load(this);
-            this.points.update(this);
-            this.m_lastPosition = 0;
-            this.m_position = 0;
-        }
-        catch(err)
-        {
-            this.reset();
-            throw err;
-        }
-    }
-
-    /**
-     * Set a mix preset on the current track
-     *
-     * @param volumes - list of volumes to set each channel with
-     * @param seconds - transition time in seconds
-     */
-    setMixPreset(volumes: number[], seconds: number)
-    {
-        const length = Math.min(this.channelCount, volumes.length);
-
-        for (let i = 0; i < length; ++i)
-        {
-
-            this.engine.fadeChannelTo(i, volumes[i], seconds);
-        }
-    }
-
-    /**
-     * Unload the currently loaded track data. Safe to call if already unloaded.
-     */
-    unloadTrack()
-    {
-        this.engine.unloadBank();
-        this.trackData.free();
-
-        this.params.clear();
-        this.points.points.length = 0;
-        this.presets.presets.length = 0;
-    }
-
-    /**
-     * Check if bank is loaded
-     */
-    isTrackLoaded()
-    {
-        return this.engine.isBankLoaded();
+        return this.m_module.mContext;
     }
 
     suspend()
@@ -313,9 +175,9 @@ export class AudioEngine
 
     isSuspended(): boolean
     {
-        if (!this.module.mContext) return false;
+        if (!this.m_module.mContext) return false;
 
-        return this.module.mContext.state === "suspended";
+        return this.m_module.mContext.state === "suspended";
     }
 
     resume()
@@ -325,155 +187,46 @@ export class AudioEngine
 
     update()
     {
+        // Do not update while resetting since tracks and engine are invalid
         if (this.m_isResetting) return;
-        if (this.updateHandler)
-            this.updateHandler();
+
+        // Calculate time
+        const now = performance.now();
+        const deltaSeconds = (now - this.m_lastFrameTime) * .001;
+
+        // Update audio engine and tracks
+        let allPaused = true;
+        for (const track of this.m_tracks)
+        {
+            track.update(deltaSeconds);
+            if (allPaused && !track.isPaused || track.track.getAudibility(0))
+            {
+                allPaused = false;
+            }
+        }
+
+        // Check downtime to auto-suspend
+        if (!this.isSuspended() && allPaused)
+        {
+            this.m_downTime += deltaSeconds;
+            if (this.m_downTime >= MAX_DOWNTIME)
+            {
+                this.suspend();
+                this.m_downTime = 0;
+            }
+        }
+        else
+        {
+            this.m_downTime = 0;
+        }
+
         this.engine.update();
 
-        this.m_lastPosition = this.m_position;
-        this.m_position = this.engine.getPosition();
+        // Update last frame time
+        this.m_lastFrameTime = now;
     }
 
-    play()
-    {
-        this.engine.seek(0);
-        this.engine.setPause(false, 0);
-    }
 
-    stop()
-    {
-        this.engine.seek(0);
-        this.engine.setPause(true, .1);
-    }
-
-    setPause(pause: boolean, seconds: number=.1)
-    {
-        this.engine.setPause(pause, seconds);
-    }
-
-    seek(seconds: number)
-    {
-        // Wrap seconds about the track length
-        const length = this.length;
-
-        while (seconds < 0)
-            seconds += length;
-        while (seconds > length)
-            seconds -= length;
-
-        this.engine.seek(seconds);
-    }
-
-    get paused()
-    {
-        return this.engine.getPause();
-    }
-
-    get length(): number
-    {
-        return this.engine.getLength();
-    }
-
-    getMainVolume()
-    {
-        return this.engine.getMainVolume();
-    }
-
-    setMainVolume(volume: number)
-    {
-        this.engine.setMainVolume(volume);
-        return this;
-    }
-
-    setMainReverbLevel(level: number)
-    {
-        this.engine.setMainReverbLevel(level);
-        return this;
-    }
-
-    getMainReverbLevel(): number
-    {
-        return this.engine.getMainReverbLevel();
-    }
-
-    getChannelVolume(ch: number): number
-    {
-        return this.engine.getChannelVolume(ch);
-    }
-
-    setChannelVolume(ch: number, volume: number)
-    {
-        this.engine.setChannelVolume(ch, volume);
-        return this;
-    }
-
-    getChannelReverbLevel(ch: number)
-    {
-        return this.engine.getChannelReverbLevel(ch);
-    }
-
-    setChannelReverbLevel(ch: number, level: number)
-    {
-        this.engine.setChannelReverbLevel(ch, level);
-        return this;
-    }
-
-    fadeChannelTo(ch: number, volume: number, seconds: number)
-    {
-        this.engine.fadeChannelTo(ch, volume, seconds);
-    }
-
-    getChannelFadeLevel(ch: number, final: boolean = true)
-    {
-        this.engine.getChannelFadeLevel(ch, final);
-    }
-
-    get channelCount(): number
-    {
-        return this.engine.getChannelCount();
-    }
-
-    get looping(): boolean
-    {
-        return this.engine.isLooping();
-    }
-
-    setLooping(looping: boolean)
-    {
-        this.engine.setLooping(looping);
-        return this;
-    }
-
-    fadeTo(to: number, seconds: number): AudioEngine
-    {
-        this.engine.fadeTo(to, seconds);
-        return this;
-    }
-
-    getFadeLevel(final: boolean = true): number
-    {
-        return this.engine.getFadeLevel(final);
-    }
-
-    setSyncPointCallback(
-        callback: (label: string, seconds: number, index: number) => void)
-        : void
-    {
-        this.engine.setSyncPointCallback(callback);
-    }
-
-    setEndCallback(callback: () => void): void
-    {
-        this.engine.setEndCallback(callback);
-    }
-
-    getSampleData(index: number)
-    {
-        const data = this.engine.getSampleData(index);
-        const begin = data.ptr/4;
-        const end = begin + data.byteLength;
-        return this.module.HEAPF32.subarray(begin, end);
-    }
 
     /**
      * Call this manually when no longer using the AudioEngine to clean
@@ -483,6 +236,12 @@ export class AudioEngine
      */
     release()
     {
+        for (const track of this.m_tracks)
+        {
+            track.delete();
+        }
+
+        this.m_tracks.length = 0;
         this.engine.delete();
     }
 }

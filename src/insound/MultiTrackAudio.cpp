@@ -22,37 +22,15 @@
 
 namespace Insound
 {
-    struct SoundPCMData {
-        SoundPCMData() : sound(), data() { }
-        SoundPCMData(SoundPCMData &&other) : sound(other.sound), data(std::move(other.data))
-        {
-        }
-
-        SoundPCMData &operator=(SoundPCMData &&other)
-        {
-            this->sound = other.sound;
-            this->data = std::move(other.data);
-            return *this;
-        }
-
-        /** Kind of annoying, but automatically moves data instead of copy */
-        SoundPCMData(FMOD::Sound *sound, std::vector<float> &data) :
-            sound(sound), data(std::move(data))
-        {
-        }
-
-        FMOD::Sound *sound;
-        std::vector<float> data;
-    };
-
+    static std::map<FMOD::Sound *, std::vector<float>> pcmData;
 
     struct MultiTrackAudio::Impl
     {
     public:
         Impl(FMOD::System *sys) :
-            sounds(), pcmData(), chans(), fsb(),
+            sounds(), chans(), fsb(),
             main(sys), points(), syncpointCallback(), endCallback(),
-            params(), looping(true)
+            params()
         {
 
         }
@@ -74,7 +52,6 @@ namespace Insound
         }
 
         std::vector<FMOD::Sound *> sounds;
-        std::vector<SoundPCMData> pcmData;
         std::vector<Channel> chans;
         FMOD::Sound *fsb;
 
@@ -83,7 +60,6 @@ namespace Insound
         std::function<void(const std::string &, double, int)> syncpointCallback;
         std::function<void()> endCallback;
         ParamDescMgr params;
-        bool looping;
     };
 
 
@@ -127,7 +103,7 @@ namespace Insound
 
     void MultiTrackAudio::pause(bool value, float seconds)
     {
-        if (!isLoaded() || paused() == value) return;
+        if (!isLoaded()) return;
 
         m->main.pause(value, seconds);
     }
@@ -180,15 +156,19 @@ namespace Insound
         return m->main.audibility();
     }
 
-
     void MultiTrackAudio::clear()
     {
-        m->pcmData.clear();
         m->params.clear();
         m->chans.clear();
         m->points.clear();
         m->syncpointCallback =
             std::function<void(const std::string &, double, int)>{};
+
+        // Free pcm data
+        for (auto *sound : m->sounds)
+        {
+            pcmData.erase(sound);
+        }
 
         // Release bank
         if (m->fsb)
@@ -292,24 +272,12 @@ namespace Insound
         return (double)m->points.getOffsetSeconds(i);
     }
 
-    void MultiTrackAudio::pushSampleData(FMOD::Sound *sound, std::vector<float> &data)
-    {
-        m->pcmData.emplace_back(sound, data);
-    }
 
     static FMOD_RESULT F_CALL pcmReadCallback(FMOD_SOUND *pSnd, void *data,
         unsigned int datalen)
     {
         // Get callback objects
         auto sound = (FMOD::Sound *)pSnd;
-
-        FMOD::System *sys;
-        checkResult(sound->getSystemObject(&sys));
-
-        AudioEngine *engine;
-        checkResult(sys->getUserData((void **)&engine));
-
-        auto track = engine->getTrack();
 
         // Get audio format info
         FMOD_SOUND_TYPE type;
@@ -385,7 +353,7 @@ namespace Insound
         }
 
         // push to track pcm data
-        track->pushSampleData(sound, res);
+        pcmData.emplace(sound, res);
         return FMOD_OK;
     }
 
@@ -425,6 +393,7 @@ namespace Insound
 
             SyncPointMgr points(sound);
 
+            // Check if this is to be the first sound
             if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
             {
                 // set loop info from markers
@@ -473,7 +442,6 @@ namespace Insound
             }
 
             // done, commit results
-
             if (m->fsb)
             {
                 clear();
@@ -499,6 +467,7 @@ namespace Insound
             }
 
             m->sounds.emplace_back(sound);
+
             pause(true, 0); // pause, wait for user to trigger start
             return (uintptr_t)sound;
         }
@@ -508,11 +477,9 @@ namespace Insound
             this->clear();
             throw;
         }
-
     }
 
-    void MultiTrackAudio::loadFsb(const char *data, size_t bytelength,
-        bool looping)
+    void MultiTrackAudio::loadFsb(const char *data, size_t bytelength)
     {
         // Set relevant info to load the fsb
         auto exinfo{FMOD_CREATESOUNDEXINFO()};
@@ -527,9 +494,8 @@ namespace Insound
 
         FMOD::Sound *snd;
         checkResult( sys->createSound(data,
-            FMOD_OPENMEMORY_POINT |
-                (looping ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF) |
-                FMOD_CREATECOMPRESSEDSAMPLE,
+            FMOD_OPENMEMORY_POINT | FMOD_LOOP_NORMAL |
+                FMOD_CREATESAMPLE | FMOD_NONBLOCKING,
             &exinfo, &snd)
         );
 
@@ -614,6 +580,7 @@ namespace Insound
         m->fsb = snd;
         m->sounds.swap(sounds);
         std::swap(m->points, syncPoints);
+
         pause(true, 0); // pause, wait for user to trigger start
     }
 
@@ -645,25 +612,6 @@ namespace Insound
     int MultiTrackAudio::channelCount() const
     {
         return m->chans.size();
-    }
-
-
-    bool MultiTrackAudio::looping() const
-    {
-        // only need to check first channel, since all should be uniform
-        //return m->chans.at(0).looping();
-
-        return m->looping;
-    }
-
-
-    void MultiTrackAudio::looping(bool looping)
-    {
-        // for (auto &chan : m->chans)
-        // {
-        //     chan.looping(looping);
-        // }
-        m->looping = looping;
     }
 
 
@@ -842,17 +790,13 @@ namespace Insound
     {
         auto sound = m->sounds.at(index);
 
-        auto size = m->pcmData.size();
-        SoundPCMData *data = nullptr;
-        for (int i = 0; i < size; ++i)
+        auto it = pcmData.find(sound);
+        if (it == pcmData.end())
         {
-            if (m->pcmData[i].sound == sound)
-            {
-                return m->pcmData[i].data;
-            }
+            throw std::runtime_error("Sound does not exist in pcmData list, "
+                "cannot get its sample data");
         }
 
-        throw std::runtime_error("Sound does not exist in pcmData list, "
-            "cannot get its sample data");
+        return it->second;
     }
 }

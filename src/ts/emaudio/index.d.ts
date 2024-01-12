@@ -108,6 +108,7 @@ declare interface InsoundMultiTrackControl
     loadSound(data: number, bytelength: number): void;
     loadBank(data: number, bytelength: number): void;
     loadScript(scriptText: string): string;
+    update(deltaTime: number): void;
     unload(): void;
     isLoaded(): boolean;
 
@@ -131,13 +132,14 @@ declare interface InsoundMultiTrackControl
     getLength(): number;
     getChannelCount(): number;
     getAudibility(ch: number): number;
-    setLooping(looping: boolean): void;
-    getLooping(): boolean;
     setLoopPoint(startMs: number, endMs: number): void; // in ms
     getLoopPoint(): {loopstart: number, loopend: number}; // in ms
     getSyncPointCount(): number;
     getSyncPoint(index: number): {name: string, offset: number}; //offset in ms
-    getSampleData(index: number): {ptr: number, bytelength: number};
+    getSampleData(index: number): {ptr: number, byteLength: number};
+
+    onSyncPoint(
+        callback: (name: string, offset: number, index: number) => void): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

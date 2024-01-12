@@ -1,7 +1,7 @@
-import { AudioEngine } from "./AudioEngine";
+import { MultiTrackControl } from "./MultiTrackControl";
 
 export interface SyncPoint {
-    text: string;
+    name: string;
     offset: number;
 }
 
@@ -12,6 +12,8 @@ export class SyncPointMgr
     // Do not modify from the outside - readonly!
     get points() { return this.m_points; }
 
+    get length() { return this.m_points.length; }
+
     constructor()
     {
         this.m_points = [];
@@ -21,19 +23,15 @@ export class SyncPointMgr
      * Update sync points from AudioEngine.
      * Exception unsafe for efficiency...
      */
-    update(audio: AudioEngine)
+    update(ctrl: MultiTrackControl)
     {
         const points = this.m_points;
         points.length = 0;
 
-        const count = audio.engine.getSyncPointCount();
+        const count = ctrl.track.getSyncPointCount();
         for (let i = 0; i < count; ++i)
         {
-            const offset = audio.engine.getSyncPointOffsetSeconds(i);
-            points.push({
-                text: audio.engine.getSyncPointLabel(i),
-                offset: offset
-            });
+            points.push(ctrl.track.getSyncPoint(i));
         }
     }
 
