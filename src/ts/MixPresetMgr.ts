@@ -5,45 +5,59 @@ export interface MixPreset {
     mix: AudioChannelSettings[];
 }
 
-// export class MixPresetMgr
-// {
-//     private m_presets: MixPreset[];
+export class MixPresetMgr
+{
+    private m_presets: MixPreset[];
 
-//     // Do not modify from the outside - readonly!
-//     get presets() { return this.m_presets; }
+    /** Do not modify from the outside - readonly! */
+    presets() { return this.m_presets; }
 
-//     constructor()
-//     {
-//         this.m_presets = [];
-//     }
+    /** Makes a copy of each preset's name in order */
+    getNames() { return this.m_presets.map(mp => mp.name)}
 
-//     getByIndex(index: number)
-//     {
-//         return this.m_presets.at(index);
-//     }
+    dragAndDrop(from: number, to: number)
+    {
+        const temp = [...this.m_presets];
+        const splicedPreset = temp[from];
+        temp.splice(from, 1);
+        temp.splice(to, 0, splicedPreset);
 
-//     getByName(name: string)
-//     {
-//         const presets = this.m_presets;
-//         const length = presets.length;
-//         for (let i = 0; i < length; ++i)
-//         {
-//             if (presets[i].name === name)
-//                 return presets[i];
-//         }
+        // for svelte to indicate updated status
+        this.m_presets = this.m_presets;
+    }
 
-//         throw Error("Could not find a preset with name \"" + name + "\"");
-//     }
+    constructor()
+    {
+        this.m_presets = [];
+    }
 
-//     add(name: string, volumes: number[])
-//     {
-//         this.m_presets.push({
-//             name, volumes
-//         });
-//     }
+    getByIndex(index: number)
+    {
+        return this.m_presets.at(index);
+    }
 
-//     clear()
-//     {
-//         this.m_presets.length = 0;
-//     }
-// }
+    getByName(name: string)
+    {
+        const presets = this.m_presets;
+        const length = presets.length;
+        for (let i = 0; i < length; ++i)
+        {
+            if (presets[i].name === name)
+                return presets[i];
+        }
+
+        throw Error("Could not find a preset with name \"" + name + "\"");
+    }
+
+    push(name: string, volumes: number[])
+    {
+        this.m_presets.push({
+            name, volumes
+        });
+    }
+
+    clear()
+    {
+        this.m_presets.length = 0;
+    }
+}
