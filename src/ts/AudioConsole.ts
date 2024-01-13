@@ -83,6 +83,8 @@ export class AudioConsole
      */
     applySettings(settings: Partial<AudioChannelSettings>[], transitionTime: number = 0)
     {
+        if (!this.track || !this.track.isLoaded) return;
+        
         const length = Math.min(settings.length, this.channels.length);
 
         for (let i = 0; i < length; ++i)
@@ -130,6 +132,19 @@ export class AudioConsole
                 reverb: chan.reverb.value,
                 panLeft: chan.panLeft.value,
                 panRight: chan.panRight.value,
+            };
+        });
+    }
+
+    getDefaultSettings(): AudioChannelSettings[]
+    {
+        return this.channels.map(chan => {
+            return {
+                name: chan.name,
+                volume: chan.volume.defaultValue,
+                reverb: chan.reverb.defaultValue,
+                panLeft: chan.panLeft.defaultValue,
+                panRight: chan.panRight.defaultValue,
             };
         });
     }
