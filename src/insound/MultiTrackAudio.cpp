@@ -117,6 +117,11 @@ namespace Insound
 
     void MultiTrackAudio::position(double seconds)
     {
+        auto len = length();
+
+        if (seconds >= len)
+            seconds = len-.001;
+
         for (auto &chan : m->chans)
             chan.ch_position(seconds);
     }

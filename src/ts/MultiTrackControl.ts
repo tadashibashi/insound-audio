@@ -42,8 +42,9 @@ export class MultiTrackControl
     readonly onpause: Callback<[boolean]>;
     readonly onupdate: Callback<[number]>;
     readonly onsyncpoint: Callback<[string, number, number]>;
+    readonly onload: Callback<[]>;
 
-    /** Called when position is set */
+    /** Called when position is set from lua */
     readonly onseek: Callback<[number]>;
 
     constructor(engine: AudioEngine, ptr: number)
@@ -59,6 +60,7 @@ export class MultiTrackControl
         this.onupdate = new Callback;
         this.onsyncpoint = new Callback;
         this.onseek = new Callback;
+        this.onload = new Callback;
 
         this.m_console = new AudioConsole(this);
         this.m_mixPresets = [];
@@ -170,6 +172,7 @@ export class MultiTrackControl
                 this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
             }
             this.m_track.setPause(true, 0);
+            this.onload.invoke();
         }
         finally
         {
@@ -242,6 +245,7 @@ export class MultiTrackControl
                 this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
             }
             this.m_track.setPause(true, 0);
+            this.onload.invoke();
         }
         catch(err)
         {
