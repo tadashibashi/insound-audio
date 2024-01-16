@@ -43,6 +43,9 @@ export class MultiTrackControl
     readonly onupdate: Callback<[number]>;
     readonly onsyncpoint: Callback<[string, number, number]>;
 
+    /** Called when position is set */
+    readonly onseek: Callback<[number]>;
+
     constructor(engine: AudioEngine, ptr: number)
     {
         this.m_engine = engine;
@@ -55,6 +58,7 @@ export class MultiTrackControl
         this.onpause = new Callback;
         this.onupdate = new Callback;
         this.onsyncpoint = new Callback;
+        this.onseek = new Callback;
 
         this.m_console = new AudioConsole(this);
         this.m_mixPresets = [];
@@ -67,6 +71,11 @@ export class MultiTrackControl
             },
             setPause: (pause: boolean, seconds: number) => {
                 this.m_track.setPause(pause, seconds);
+                this.onpause.invoke(pause);
+            },
+            setPosition: (seconds: number) => {
+                this.m_track.setPosition(seconds);
+                this.onseek.invoke(seconds);
             },
             setVolume: (ch: number, level: number, seconds: number = 0) => {
                 this.m_console.channels.at(ch).volume.transitionTo(level, seconds);
@@ -245,6 +254,22 @@ export class MultiTrackControl
         }
     }
 
+    /**
+     * To be called when editing a track and wanting to reset state, and
+     * and update the script.
+     */
+    updateScript(updatedScript: string)
+    {
+        this.m_track.setPosition(0);
+        this.m_track.setPause(true, 0);
+
+        const scriptErr = this.m_track.loadScript(updatedScript);
+        if (scriptErr)
+        {
+            throw Error("Lua script load error: " + scriptErr);
+        }
+    }
+
     unload()
     {
         this.m_track.unload();
@@ -287,7 +312,11 @@ export class MultiTrackControl
 
     get isPaused() { return this.m_track.getPause(); }
 
-    set position(seconds: number) { this.m_track.setPosition(seconds); }
+    set position(seconds: number) {
+        this.m_track.setPosition(seconds);
+        this.onseek.invoke(this.m_track.getPosition());
+    }
+
     get position() { return this.m_track.getPosition(); }
 
     set looping(val: boolean) { this.m_looping = val; }

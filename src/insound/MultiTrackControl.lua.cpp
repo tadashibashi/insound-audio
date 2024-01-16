@@ -37,6 +37,7 @@ namespace Insound
             // Javascript callbacks to directly go through the UI
             emscripten::val syncPointsUpdated = callbacks["syncPointsUpdated"];
             emscripten::val setPause = callbacks["setPause"];
+            emscripten::val setPosition = callbacks["setPosition"];
             emscripten::val setVolume = callbacks["setVolume"];
             emscripten::val setPanLeft = callbacks["setPanLeft"];
             emscripten::val setPanRight = callbacks["setPanRight"];
@@ -76,7 +77,7 @@ namespace Insound
             // doesn't need a callback, because the interface polls for value
             // on update
             snd.set_function("position",
-            [this](std::optional<double> seconds = {})
+            [this, setPosition](std::optional<double> seconds = {})
             {
                 double pos;
                 if (seconds)

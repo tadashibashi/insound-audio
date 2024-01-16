@@ -9,6 +9,7 @@ export interface LuaCallbacks
     // ----- controls ---------------------------------------------------------
 
     setPause(pause: boolean, seconds?: number): void;
+    setPosition(seconds: number): void;
 
     // --- mixer parameters ---------------------------------------------------
 
