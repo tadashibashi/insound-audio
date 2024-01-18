@@ -220,21 +220,11 @@ namespace Insound {
 
         [[nodiscard]]
         const std::vector<float> &getSampleData(size_t index) const;
-        [[nodiscard]]
-        const std::vector<FMOD::Sound *> &getSounds() const;
 
-        void _soundLoaded();
-        [[nodiscard]]
-        size_t loadedCount() const;
+        
 
-        [[nodiscard]]
-        bool isReady() const;
-
-        void _doReady();
-        void _postProcessSound(FMOD::Sound *sound);
     private:
 
-        void postProcessFSBank(FMOD::Sound *sound);
         // Pimple idiom
         struct Impl;
         Impl *m;
