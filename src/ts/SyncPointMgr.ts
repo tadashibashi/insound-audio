@@ -35,9 +35,21 @@ export class SyncPointMgr
         }
     }
 
-    get(index: number)
+    get(index: number): SyncPoint | undefined
     {
         return this.m_points.at(index);
+    }
+
+    getByName(name: string): SyncPoint | undefined
+    {
+        const length = this.m_points.length;
+        for (let i = 0; i < length; ++i)
+        {
+            if (this.m_points[i].name === name)
+                return this.m_points[i];
+        }
+
+        return undefined; // for clarity of intention
     }
 
     clear()

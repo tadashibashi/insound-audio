@@ -38,7 +38,7 @@ export class AudioConsole
      * @param settings Settings to set on each channel. Remember that index 0
      *                 is the main channel bus that the others are bussed to.
      */
-    load(settings: Partial<AudioChannelSettings>[])
+    load(settings: AudioChannelSettings[])
     {
         const track = this.track;
         if (!track)
@@ -81,7 +81,7 @@ export class AudioConsole
      *                 is the main channel bus that the others are bussed to.
      * @param transitionTime Time to transition to the new setting in seconds.
      */
-    applySettings(settings: Partial<AudioChannelSettings>[], transitionTime: number = 0)
+    applySettings(settings: AudioChannelSettings[], transitionTime: number = 0)
     {
         if (!this.track || !this.track.isLoaded) return;
         
@@ -125,28 +125,12 @@ export class AudioConsole
 
     getCurrentSettings(): AudioChannelSettings[]
     {
-        return this.channels.map(chan => {
-            return {
-                name: chan.name,
-                volume: chan.volume.value,
-                reverb: chan.reverb.value,
-                panLeft: chan.panLeft.value,
-                panRight: chan.panRight.value,
-            };
-        });
+        return this.channels.map(chan => chan.getCurrentSettings());
     }
 
     getDefaultSettings(): AudioChannelSettings[]
     {
-        return this.channels.map(chan => {
-            return {
-                name: chan.name,
-                volume: chan.volume.defaultValue,
-                reverb: chan.reverb.defaultValue,
-                panLeft: chan.panLeft.defaultValue,
-                panRight: chan.panRight.defaultValue,
-            };
-        });
+        return this.channels.map(chan => chan.getDefaultSettings());
     }
 
     /**

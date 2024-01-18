@@ -1,50 +1,96 @@
-import type { ParameterBase } from "./params/types/ParameterBase";
+import { ParameterBase } from "./params/types/ParameterBase";
 import { NumberParameter } from "./params/types/NumberParameter";
 import { MultiTrackControl } from "./MultiTrackControl";
+import { ParamType } from "./params/ParamType";
+import { BoolParameter } from "./params/types/BoolParameter";
+import { StringsParameter } from "./params/types/StringsParameter";
 
-/** Audio channel settings */
+interface AudioChannelParameters {
+    readonly volume: NumberParameter;
+    readonly panLeft: NumberParameter;
+    readonly panRight: NumberParameter;
+    readonly reverb: NumberParameter;
+};
+
+type ExtractParamType<T extends ParameterBase> =
+    T extends NumberParameter ? number  :
+    T extends StringsParameter ? string :
+    T extends BoolParameter ? boolean   : never;
+
+type AudioChannelPTypes = {
+    [key in keyof AudioChannelParameters]: ExtractParamType<AudioChannelParameters[key]>;
+};
+
+/**
+ * Set up channel parameter defaults
+ *
+ * @param {MultiTrackControl} ctrl    track controller
+ * @param {number}            channel channel number
+ */
+function createDefaultParameters(ctrl: MultiTrackControl, channel: number)
+{
+    return {
+        volume: new NumberParameter("Volume", channel, 0, 1.25, .01, 1, false,
+            (i, val) => ctrl.track.setVolume(channel, val)),
+
+        reverb: new NumberParameter("Reverb", channel, 0, 2, .01, 0, false,
+            (i, val) => ctrl.track.setReverbLevel(channel, val)),
+
+        panLeft: new NumberParameter("L", channel, 100, 0, 1, 100, true,
+        (i, val) => ctrl.track.setPanLeft(channel, val * .01)),
+
+        panRight: new NumberParameter("R", channel, 0, 100, 1, 100, true,
+            (i, val) => ctrl.track.setPanRight(channel, val * .01)),
+    };
+}
+
+/** Audio channel settings, aligns with AudioChannel members to be set */
 export interface AudioChannelSettings
 {
     /** Channel name */
     name: string;
-    /** Channel volume level where 0 is off and 1 is 100% */
-    volume: number;
-    /** Pan for left channel where 100 is hard left, and 0 is hard right */
-    panLeft: number;
-    /** Pan for right channel where 100 is hard right and 0 is hard left */
-    panRight: number;
-    /** Reverb level where 0 is off and 1 is 100% */
-    reverb: number;
+    params: Partial<AudioChannelPTypes>;
 }
 
 export class AudioChannel
 {
     name: string;
-    readonly volume: NumberParameter;
-    readonly panLeft: NumberParameter;
-    readonly panRight: NumberParameter;
-    readonly reverb: NumberParameter;
-
-    /** All params accessible through this array. Make sure to set in ctor */
-    private readonly params: ParameterBase[];
+    readonly params: AudioChannelParameters;
 
     constructor(ctrl: MultiTrackControl, name: string, channel: number)
     {
         this.name = name;
+        this.params = createDefaultParameters(ctrl, channel);
+    }
 
-        this.volume = new NumberParameter("Volume", channel, 0, 1.25, .01, 1, false,
-            (i, val) => ctrl.track.setVolume(channel, val));
+    getCurrentSettings(): AudioChannelSettings
+    {
+        const params: Partial<AudioChannelPTypes> = {};
 
-        this.reverb = new NumberParameter("Reverb", channel, 0, 2, .01, 0, false,
-            (i, val) => ctrl.track.setReverbLevel(channel, val));
+        for (const [key, value] of Object.entries(this.params))
+        {
+            params[key] = value.value;
+        }
 
-        this.panLeft = new NumberParameter("L", channel, 100, 0, 1, 100, true,
-            (i, val) => ctrl.track.setPanLeft(channel, val * .01));
+        return {
+            name: this.name,
+            params,
+        };
+    }
 
-        this.panRight = new NumberParameter("R", channel, 0, 100, 1, 100, true,
-            (i, val) => ctrl.track.setPanRight(channel, val * .01));
+    getDefaultSettings(): AudioChannelSettings
+    {
+        const params: Partial<AudioChannelPTypes> = {};
 
-        this.params = [this.volume, this.reverb, this.panLeft, this.panRight];
+        for (const [key, value] of Object.entries(this.params))
+        {
+            params[key] = value.defaultValue;
+        }
+
+        return {
+            name: this.name,
+            params,
+        }
     }
 
     /**
@@ -53,31 +99,77 @@ export class AudioChannel
      * @param settings - values to set
      * @param seconds  - time to transition to settings values in seconds
      */
-    applySettings(settings: Partial<AudioChannelSettings>, seconds: number = 0)
+    applySettings(settings: AudioChannelSettings, seconds: number = 0)
     {
-        if (settings.volume !== undefined)
-        {
-            this.volume.transitionTo(settings.volume, seconds);
-        }
+        const keys = Object.keys(settings.params) as (keyof AudioChannel["params"])[];
 
-        if (settings.reverb !== undefined)
-        {
-            this.reverb.transitionTo(settings.reverb, seconds);
-        }
+        this.name = settings.name;
 
-        if (settings.panLeft !== undefined)
+        for (const key of keys)
         {
-            this.panLeft.transitionTo(settings.panLeft, seconds);
-        }
+            const member = this.params[key];
+            const value = settings.params[key];
 
-        if (settings.panRight !== undefined)
-        {
-            this.panRight.transitionTo(settings.panRight, seconds);
-        }
+            if (member instanceof ParameterBase)
+            {
+                switch(member.type)
+                {
+                case ParamType.Bool:
+                    {
+                        if (typeof value !== "boolean")
+                        {
+                            throw Error(`AudioChannelSettings member "${key}" must be a boolean, but got ${typeof value} instead.`);
+                        }
 
-        if (settings.name !== undefined)
-        {
-            this.name = settings.name;
+                        member.transitionTo(value ? 1 : 0, seconds);
+                    }
+                    break;
+
+                case ParamType.Integer:
+                case ParamType.Float:
+                    {
+                        if (typeof value !== "number")
+                        {
+                            throw Error(`AudioChannelSettings member "${key}" must be a number, but got ${typeof value} instead.`);
+                        }
+
+                        member.transitionTo(value, seconds);
+                    }
+                    break;
+
+                case ParamType.Strings:
+                    {
+                        if (typeof value !== "string")
+                        {
+                            throw Error(`AudioChannelSettings member "${key}" must be a number, but got ${typeof value} instead.`);
+                        }
+
+                        // Immediately set regardless of transitionTime
+                        (member as unknown as StringsParameter).label = value;
+                    }
+                    break;
+                }
+            }
+            else // check for primitive types, set instantly
+            {
+                switch(typeof member)
+                {
+                case "number":
+                    if (typeof value !== "number")
+                        throw Error(`AudioChannelSettings member "${key}" must be a number, but got ${typeof value} instead.`);
+                    (this[key] as unknown as number) = value;
+                    break;
+
+                case "string":
+                    if (typeof value !== "string")
+                        throw Error(`AudioChannelSettings member "${key}" must be a string, but got ${typeof value} instead.`);
+                    (this[key] as unknown as string) = value;
+                    break;
+
+                default:
+                    throw Error(`AudioChannelSettings member "${key}" type ${typeof member} is not supported.`);
+                }
+            }
         }
     }
 
@@ -88,7 +180,7 @@ export class AudioChannel
      */
     reset(seconds: number = 0)
     {
-        for (const param of this.params)
+        for (const param of Object.values(this.params))
         {
             param.reset(seconds);
         }
@@ -100,7 +192,7 @@ export class AudioChannel
      */
     clear()
     {
-        for (const param of this.params)
+        for (const param of Object.values(this.params))
         {
             param.clear();
         }
