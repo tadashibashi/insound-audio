@@ -188,11 +188,6 @@ namespace Insound {
         unsigned getSyncPointOffsetMilliseconds(size_t i) const;
 
         [[nodiscard]]
-        ParamDescMgr &params();
-        [[nodiscard]]
-        const ParamDescMgr &params() const;
-
-        [[nodiscard]]
         float channelReverbLevel(int ch) const;
 
         void channelReverbLevel(int ch, float level);

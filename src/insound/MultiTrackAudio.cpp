@@ -3,7 +3,6 @@
 #include "common.h"
 #include <insound/Int24.h>
 #include "insound/AudioEngine.h"
-#include "params/ParamDescMgr.h"
 #include "SyncPointMgr.h"
 
 #include <fmod.hpp>
@@ -29,8 +28,7 @@ namespace Insound
     public:
         Impl(FMOD::System *sys) :
             sounds(), chans(), fsb(),
-            main(sys), points(), syncpointCallback(), endCallback(),
-            params()
+            main(sys), points(), syncpointCallback(), endCallback()
         {
 
         }
@@ -59,7 +57,6 @@ namespace Insound
         SyncPointMgr points;
         std::function<void(const std::string &, double, int)> syncpointCallback;
         std::function<void()> endCallback;
-        ParamDescMgr params;
     };
 
 
@@ -163,7 +160,6 @@ namespace Insound
 
     void MultiTrackAudio::clear()
     {
-        m->params.clear();
         m->chans.clear();
         m->points.clear();
         m->syncpointCallback =
@@ -652,18 +648,6 @@ namespace Insound
     MultiTrackAudio::getEndCallback() const
     {
         return m->endCallback;
-    }
-
-
-    ParamDescMgr &MultiTrackAudio::params()
-    {
-        return m->params;
-    }
-
-
-    const ParamDescMgr &MultiTrackAudio::params() const
-    {
-        return m->params;
     }
 
 
