@@ -15,14 +15,14 @@ namespace Insound
     Channel::Channel(FMOD::Sound *sound, FMOD::ChannelGroup *group,
         FMOD::System *system) :
             chan(), lastFadePoint(1.f), m_isGroup(false), samplerate(),
-            m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
+            m_isPaused(true), m_leftPan(1.f), m_rightPan(1.f),
             m_isMaster(false)
     {
         int rate;
         checkResult( system->getSoftwareFormat(&rate, nullptr, nullptr) );
 
         FMOD::Channel *tempChan;
-        checkResult( system->playSound(sound, group, false, &tempChan) );
+        checkResult( system->playSound(sound, group, true, &tempChan) );
 
         checkResult( tempChan->setUserData(this) );
         checkResult( tempChan->setReverbProperties(0, 0) );
@@ -34,7 +34,7 @@ namespace Insound
 
     Channel::Channel(FMOD::System *system) :
         chan(), lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
+        m_isPaused(false), m_leftPan(1.f), m_rightPan(1.f),
         m_isMaster(false)
     {
         int rate;
@@ -53,7 +53,7 @@ namespace Insound
 
     Channel::Channel(FMOD::ChannelGroup *group) : chan(group),
         lastFadePoint(1.f), m_isGroup(true), samplerate(),
-        m_isPaused(), m_leftPan(1.f), m_rightPan(1.f),
+        m_isPaused(false), m_leftPan(1.f), m_rightPan(1.f),
         m_isMaster(false)
     {
         FMOD::System *system;
@@ -205,6 +205,14 @@ namespace Insound
         }
         else       // unpause
         {
+            // Unset main pause mechanism if set
+            bool chanPaused;
+            checkResult( chan->getPaused(&chanPaused) );
+            if (chanPaused)
+            {
+                checkResult( chan->setPaused(false) );
+            }
+
             // unpause right now
             checkResult( chan->setDelay(clock, 0, false) );
 
@@ -229,6 +237,18 @@ namespace Insound
     }
 
 
+    unsigned int Channel::ch_positionSamples() const
+    {
+        if (m_isGroup)
+            throw std::runtime_error("Cannot call Channel::position when "
+                "underlying type is an FMOD::ChannelGroup");
+        unsigned int position;
+        checkResult( static_cast<FMOD::Channel *>(chan)->getPosition(&position,
+            FMOD_TIMEUNIT_PCM) );
+        return position;
+    }
+
+
     Channel &Channel::ch_position(float seconds)
     {
         if (m_isGroup)
@@ -238,6 +258,18 @@ namespace Insound
         unsigned int pos = seconds * 1000;
         checkResult( static_cast<FMOD::Channel *>(chan)->setPosition(pos,
             FMOD_TIMEUNIT_MS) );
+
+        return *this;
+    }
+
+    Channel &Channel::ch_positionSamples(float samples)
+    {
+        if (m_isGroup)
+            throw std::runtime_error("Cannot call Channel::position when "
+                "underlying type is an FMOD::ChannelGroup");
+
+        checkResult( static_cast<FMOD::Channel *>(chan)->setPosition(samples,
+            FMOD_TIMEUNIT_PCM) );
 
         return *this;
     }
@@ -273,6 +305,7 @@ namespace Insound
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::ch_loopSamples "
                 "when underlying type is an FMOD::ChannelGroup");
+
         checkResult(static_cast<FMOD::Channel *>(chan)->setLoopPoints(
             loopstart, FMOD_TIMEUNIT_PCM,
             loopend, FMOD_TIMEUNIT_PCM)
@@ -370,7 +403,10 @@ namespace Insound
 
     bool Channel::paused() const
     {
-        return m_isPaused;
+        bool chanPaused;
+        checkResult(chan->getPaused(&chanPaused));
+
+        return m_isPaused || chanPaused;
     }
 
 

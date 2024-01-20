@@ -100,15 +100,18 @@ namespace Insound
 
     void MultiTrackAudio::pause(bool value, float seconds)
     {
-        if (!isLoaded()) return;
-
-        m->main.pause(value, seconds);
+        for (auto &chan : m->chans)
+        {
+            chan.pause(value, seconds);
+        }
     }
 
 
     bool MultiTrackAudio::paused() const
     {
-        return m->main.paused();
+        if (!isLoaded()) return false;
+        
+        return m->chans.at(0).paused();
     }
 
 
