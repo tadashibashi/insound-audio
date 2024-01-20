@@ -141,14 +141,35 @@ namespace Insound
             track->channel(ch-1).audibility();
     }
 
-    void MultiTrackControl::setLoopPoint(unsigned loopstart, unsigned loopend)
+    void MultiTrackControl::setLoopPoint(double loopstart, double loopend)
     {
         track->loopMilliseconds(loopstart, loopend);
     }
 
-    LoopInfo<unsigned> MultiTrackControl::getLoopPoint() const
+    LoopInfo<double> MultiTrackControl::getLoopPoint() const
     {
-        return track->loopMilliseconds();
+        auto loopInfo = track->loopSamples();
+        double samplerate = track->samplerate();
+
+        return {
+            .loopstart = loopInfo.loopstart / samplerate * 1000.0,
+            .loopend = loopInfo.loopend / samplerate * 1000.0
+        };
+    }
+
+    bool MultiTrackControl::addSyncPoint(const std::string &label, unsigned ms)
+    {
+        return track->addSyncPointMS(label, ms);
+    }
+
+    bool MultiTrackControl::deleteSyncPoint(int i)
+    {
+        return track->deleteSyncPoint(i);
+    }
+
+    bool MultiTrackControl::editSyncPoint(int i, const std::string &label, unsigned ms)
+    {
+        return track->editSyncPointMS(i, label, ms);
     }
 
     size_t MultiTrackControl::getSyncPointCount() const
@@ -180,7 +201,12 @@ namespace Insound
             (const std::string &name, double offset, int index)
             {
                 callback(name, offset, index);
-                this->lua->doSyncPoint(name, offset, index);
+                this->lua->doSyncPoint(name, offset);
             });
+    }
+
+    void MultiTrackControl::doMarker(const std::string &name, double ms)
+    {
+        this->lua->doSyncPoint(name, ms * .001);
     }
 }

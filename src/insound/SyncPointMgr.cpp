@@ -122,24 +122,59 @@ namespace Insound
         return m_points.empty();
     }
 
+    int SyncPointMgr::findIndex(std::string_view label)
+    {
+        int i = 0;
+        for (auto &point : m_points)
+        {
+            if (point.label() == label)
+            {
+                return i;
+            }
+
+            ++i;
+        }
+
+        return -1;
+    }
+
+    void SyncPointMgr::replace(size_t i, std::string_view label, unsigned offset, int fmodTimeUnit)
+    {
+        checkResult(m_sound->deleteSyncPoint(m_points[i].point()));
+        m_points.erase(m_points.begin() + i);
+
+        emplace(label, offset, fmodTimeUnit);
+    }
+
+    void SyncPointMgr::deleteSyncPoint(size_t i)
+    {
+        checkResult(m_sound->deleteSyncPoint(m_points.at(i).point()));
+        m_points.erase(m_points.begin() + i);
+    }
+
     SyncPoint &SyncPointMgr::emplace(std::string_view label,
         unsigned int offset, int unit)
     {
-        FMOD_SYNCPOINT *point;
-        checkResult(m_sound->addSyncPoint(offset, unit, label.data(), &point));
-
+        FMOD_SYNCPOINT *point = nullptr;
         for (size_t i = 0, size=m_points.size(); i < size; ++i)
         {
             unsigned int currentOffset;
             checkResult(m_sound->getSyncPointInfo(m_points[i].point(), nullptr,
                 0, &currentOffset, unit));
+
+            // Don't add duplicates
+            if (currentOffset == offset && m_points[i].label() == label)
+                throw std::runtime_error("Duplicate sync point cannot be added");
+
             if (currentOffset > offset)
             {
+                checkResult(m_sound->addSyncPoint(offset, unit, label.data(), &point));
                 return *m_points.insert(m_points.begin() + i,
                     SyncPoint{label, point});
             }
         }
 
+        checkResult(m_sound->addSyncPoint(offset, unit, label.data(), &point));
         return m_points.emplace_back(label, point);
     }
 

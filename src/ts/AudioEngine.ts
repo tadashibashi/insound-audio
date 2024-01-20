@@ -9,7 +9,8 @@ const MAX_DOWNTIME = 5;
 const registry = new FinalizationRegistry((heldValue: any) => {
     // `heldValue` should be an Emscripten Embind C++ object with its own
     // delete function, which explicitly frees memory of this object.
-    if (typeof heldValue.delete === "function") {
+    if (typeof heldValue.delete === "function")
+    {
         heldValue.delete();
     }
 });
@@ -22,7 +23,9 @@ export interface LoadOptions
     loopend?: number;
 }
 
-
+/**
+ * Main interface abstraction between audio engine and client-side code
+ */
 export class AudioEngine
 {
 
@@ -37,6 +40,32 @@ export class AudioEngine
 
     private m_lastFrameTime: number;
     private m_downTime: number;
+
+    constructor()
+    {
+        // Ensure WebAssembly module was initialized
+        if (!audioModuleWasInit())
+        {
+            throw Error("Cannot instantiate AudioEngine without first " +
+                "initializing AudioModule");
+        }
+
+        this.m_module = getAudioModule();
+        SpectrumAnalyzer.setModule(this.m_module);
+
+        this.m_engine = new (this.m_module.AudioEngine)();
+        this.m_tracks = [];
+
+        if (!this.m_engine.init())
+        {
+            this.m_engine.delete();
+            throw new Error("Failed to initialize AudioEngine");
+        }
+
+        registry.register(this, this.engine, this);
+
+        this.m_lastFrameTime = performance.now();
+    }
 
     /**
      * Restart the underlying Emscripten audio module and replace the
@@ -94,32 +123,6 @@ export class AudioEngine
             this.m_isResetting = false;
         }
 
-    }
-
-    constructor()
-    {
-        // Ensure WebAssembly module was initialized
-        if (!audioModuleWasInit())
-        {
-            throw Error("Cannot instantiate AudioEngine without first " +
-                "initializing AudioModule");
-        }
-
-        this.m_module = getAudioModule();
-        SpectrumAnalyzer.setModule(this.m_module);
-
-        this.m_engine = new (this.m_module.AudioEngine)();
-        this.m_tracks = [];
-
-        if (!this.m_engine.init())
-        {
-            this.m_engine.delete();
-            throw new Error("Failed to initialize AudioEngine");
-        }
-
-        registry.register(this, this.engine, this);
-
-        this.m_lastFrameTime = performance.now();
     }
 
     createTrack(): MultiTrackControl

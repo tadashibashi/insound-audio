@@ -95,9 +95,13 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getAudibility", &MultiTrackControl::getAudibility)
         .function("setLoopPoint", &MultiTrackControl::setLoopPoint)
         .function("getLoopPoint", &MultiTrackControl::getLoopPoint)
+        .function("addSyncPoint", &MultiTrackControl::addSyncPoint)
+        .function("deleteSyncPoint", &MultiTrackControl::deleteSyncPoint)
+        .function("editSyncPoint", &MultiTrackControl::editSyncPoint)
         .function("getSyncPointCount", &MultiTrackControl::getSyncPointCount)
         .function("getSyncPoint", &MultiTrackControl::getSyncPoint)
         .function("getSampleData", &MultiTrackControl::getSampleData)
         .function("onSyncPoint", &MultiTrackControl::onSyncPoint)
+        .function("doMarker", &MultiTrackControl::doMarker)
         ;
 }

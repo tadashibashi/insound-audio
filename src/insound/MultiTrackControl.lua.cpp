@@ -185,8 +185,18 @@ namespace Insound
             marker.set_function("add",
             [this, syncPointsUpdated](std::string name, double seconds)
             {
-                this->track->addSyncPointMS(name, seconds * 1000);
-                syncPointsUpdated(); // alert JS that syncpoints have been updated
+                if (this->track->addSyncPointMS(name, seconds * 1000))
+                {
+                    syncPointsUpdated(); // alert JS that syncpoints have been updated
+                }
+            });
+            marker.set_function("edit",
+            [this, syncPointsUpdated](size_t index, std::string name, double seconds)
+            {
+                if (this->track->editSyncPointMS(index, name, seconds))
+                {
+                    syncPointsUpdated();
+                }
             });
 
             auto preset = snd["preset"].get_or_create<sol::table>();

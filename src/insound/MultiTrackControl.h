@@ -127,13 +127,17 @@ namespace Insound
          * @param loopstart - loop start point in milliseconds
          * @param loopend - loop end point in milliseconds
          */
-        void setLoopPoint(unsigned loopstart, unsigned loopend);
+        void setLoopPoint(double loopstart, double loopend);
 
         /**
-         * Get loop points in milliseconds
+         * Get loop points in milliseconds (fine-grained from samples)
          */
         [[nodiscard]]
-        LoopInfo<unsigned> getLoopPoint() const;
+        LoopInfo<double> getLoopPoint() const;
+
+        bool addSyncPoint(const std::string &label, unsigned ms);
+        bool deleteSyncPoint(int i);
+        bool editSyncPoint(int i, const std::string &label, unsigned ms);
 
         [[nodiscard]]
         size_t getSyncPointCount() const;
@@ -145,6 +149,8 @@ namespace Insound
         SampleDataInfo getSampleData(int index) const;
 
         void onSyncPoint(emscripten::val callback);
+
+        void doMarker(const std::string &name, double ms);
 
     private:
         void initScriptingEngine();

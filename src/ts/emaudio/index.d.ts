@@ -146,12 +146,17 @@ declare interface InsoundMultiTrackControl
     getAudibility(ch: number): number;
     setLoopPoint(startMs: number, endMs: number): void; // in ms
     getLoopPoint(): {loopstart: number, loopend: number}; // in ms
+
+    addSyncPoint(label: string, ms: number): boolean;
+    deleteSyncPoint(index: number): boolean;
+    editSyncPoint(index: number, label: string, ms: number): boolean;
     getSyncPointCount(): number;
     getSyncPoint(index: number): {name: string, offset: number}; //offset in ms
     getSampleData(index: number): {ptr: number, byteLength: number};
 
     onSyncPoint(
         callback: (name: string, offset: number, index: number) => void): void;
+    doMarker(name: string, ms: number): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

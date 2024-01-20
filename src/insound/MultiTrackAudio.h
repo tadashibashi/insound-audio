@@ -143,9 +143,6 @@ namespace Insound {
         [[nodiscard]]
         int channelCount() const;
 
-        [[nodiscard]]
-        int samplerate() const;
-
         void setSyncPointCallback(
             std::function<void(const std::string &, double, int)> callback);
         [[nodiscard]]
@@ -168,8 +165,14 @@ namespace Insound {
         [[nodiscard]]
         const std::function<void()> &getEndCallback() const;
 
-        void addSyncPointMS(const std::string &name,
+        bool addSyncPointMS(const std::string &name,
             unsigned int offset);
+
+        bool editSyncPointMS(size_t i, const std::string &name,
+            unsigned int offset);
+
+        bool deleteSyncPoint(size_t i);
+
         /**
          * Get the number of sync points in the current track.
          * Only checks the first track.
@@ -197,7 +200,7 @@ namespace Insound {
 
         void mainReverbLevel(float level);
 
-        void loopMilliseconds(unsigned loopstart, unsigned loopend);
+        void loopMilliseconds(double loopstart, double loopend);
         void loopSeconds(double loopstart, double loopend);
         void loopSamples(unsigned loopstart, unsigned loopend);
 
@@ -215,6 +218,9 @@ namespace Insound {
 
         [[nodiscard]]
         const std::vector<float> &getSampleData(size_t index) const;
+
+        [[nodiscard]]
+        float samplerate() const;
 
         
 

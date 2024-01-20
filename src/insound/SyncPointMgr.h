@@ -67,6 +67,17 @@ namespace Insound
         [[nodiscard]]
         std::optional<double> getOffsetSeconds(std::string_view label) const;
 
+        void replace(size_t i, std::string_view label, unsigned offset, int fmodTimeUnit);
+
+        void deleteSyncPoint(size_t i);
+
+        /**
+         * Find index of a sync point with the provided label
+         * @param  label - label of syncpoint to find the index of
+         * @return       index of label or -1 if not found
+         */
+        int findIndex(std::string_view label);
+
         /**
          * Emplace a new sync point to the manager
          * @param  label        name of the sync point

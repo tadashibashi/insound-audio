@@ -8,31 +8,65 @@ export interface SyncPoint {
 export class SyncPointMgr
 {
     private m_points: SyncPoint[];
+    private m_track: MultiTrackControl;
 
     // Do not modify from the outside - readonly!
     get points() { return this.m_points; }
 
     get length() { return this.m_points.length; }
 
-    constructor()
+    constructor(ctrl: MultiTrackControl)
     {
         this.m_points = [];
+        this.m_track = ctrl;
     }
 
     /**
-     * Update sync points from AudioEngine.
+     * Fully update sync points from AudioEngine.
      * Exception unsafe for efficiency...
      */
-    update(ctrl: MultiTrackControl)
+    update()
     {
-        const points = this.m_points;
-        points.length = 0;
+        this.m_points = [];
 
-        const count = ctrl.track.getSyncPointCount();
+        const count = this.m_track.track.getSyncPointCount();
         for (let i = 0; i < count; ++i)
         {
-            points.push(ctrl.track.getSyncPoint(i));
+            this.m_points.push(this.m_track.track.getSyncPoint(i));
         }
+    }
+
+    addSyncPoint(name: string, offsetMS: number)
+    {
+        if (this.m_track.track.addSyncPoint(name, offsetMS))
+        {
+            //this.update();
+            return true;
+        }
+
+        return false;
+    }
+
+    deleteSyncPoint(index: number)
+    {
+        if (this.m_track.track.deleteSyncPoint(index))
+        {
+            //this.update();
+            return true;
+        }
+
+        return false;
+    }
+
+    editSyncPoint(index: number, newName: string, newOffsetMS: number)
+    {
+        if (this.m_track.track.editSyncPoint(index, newName, newOffsetMS))
+        {
+            //this.update();
+            return true;
+        }
+
+        return false;
     }
 
     get(index: number): SyncPoint | undefined

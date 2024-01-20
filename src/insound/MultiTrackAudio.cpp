@@ -120,10 +120,12 @@ namespace Insound
         auto len = length();
 
         if (seconds >= len)
-            seconds = len-.001;
+            seconds = len-.00001;
+
+        const auto samplerate = this->samplerate();
 
         for (auto &chan : m->chans)
-            chan.ch_position(seconds);
+            chan.ch_positionSamples(seconds * samplerate);
     }
 
 
@@ -132,7 +134,7 @@ namespace Insound
         if (m->chans.empty()) return 0;
 
         // get first channel, assuming each is synced
-        return m->chans.at(0).ch_position();
+        return m->chans[0].ch_positionSamples() / samplerate();
     }
 
 
@@ -140,19 +142,21 @@ namespace Insound
     {
         auto numSounds = m->sounds.size();
 
+        if (numSounds == 0) return 0;
+
         unsigned int maxLength = 0;
         for (int i = 0; i < numSounds; ++i)
         {
             const auto sound = m->sounds[i];
 
             unsigned int length;
-            checkResult( sound->getLength(&length, FMOD_TIMEUNIT_MS) );
+            checkResult( sound->getLength(&length, FMOD_TIMEUNIT_PCM) );
 
             if (length > maxLength)
                 maxLength = length;
         }
 
-        return (double)maxLength * .001;
+        return maxLength / samplerate();
     }
 
 
@@ -160,6 +164,7 @@ namespace Insound
     {
         return m->main.audibility();
     }
+
 
     void MultiTrackAudio::clear()
     {
@@ -473,6 +478,7 @@ namespace Insound
             m->sounds.emplace_back(sound);
 
             pause(true, 0); // pause, wait for user to trigger start
+
             return (uintptr_t)sound;
         }
         catch(...)
@@ -633,10 +639,43 @@ namespace Insound
     }
 
 
-    void MultiTrackAudio::addSyncPointMS(const std::string &name,
+    bool MultiTrackAudio::addSyncPointMS(const std::string &name,
         unsigned int offset)
     {
-        m->points.emplace(name.data(), offset, FMOD_TIMEUNIT_MS);
+        try {
+            m->points.emplace(name.data(), offset, FMOD_TIMEUNIT_MS);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+    bool MultiTrackAudio::editSyncPointMS(size_t i, const std::string &name,
+        unsigned int offset)
+    {
+        try {
+            m->points.replace(i, name, offset, FMOD_TIMEUNIT_MS);
+            return true;
+        }
+        catch(...)
+        {
+            return false;
+        }
+    }
+
+
+    bool MultiTrackAudio::deleteSyncPoint(size_t i)
+    {
+        try {
+            m->points.deleteSyncPoint(i);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
     }
 
 
@@ -674,72 +713,69 @@ namespace Insound
         return m->main.reverbLevel();
     }
 
-    static void replaceLoopSyncPoints(FMOD::Sound *sound,
-        unsigned loopstart, FMOD_TIMEUNIT loopstarttype,
-        unsigned loopend, FMOD_TIMEUNIT loopendtype)
+    static void replaceLoopSyncPoints(SyncPointMgr &points,
+        unsigned loopstart, FMOD_TIMEUNIT loopstartUnits,
+        unsigned loopend, FMOD_TIMEUNIT loopendUnits)
     {
-        int syncpointCount;
-        checkResult(sound->getNumSyncPoints(&syncpointCount));
+        // Replace or emplace sync points for frontend use
+        int loopStartIdx = points.findIndex("LoopStart");
+        int loopEndIdx = points.findIndex("LoopEnd");
 
-        char nameBuf[12];
-        for (int i = 0; i < syncpointCount;)
-        {
-            FMOD_SYNCPOINT *point;
-            checkResult(sound->getSyncPoint(i, &point));
-            checkResult(sound->getSyncPointInfo(point, nameBuf, 11, nullptr, 0));
-            if (std::strcmp(nameBuf, "LoopStart") == 0 || std::strcmp(nameBuf, "LoopEnd") == 0)
-            {
-                checkResult(sound->deleteSyncPoint(point));
-            }
-            else
-            {
-                ++i;
-            }
-        }
+        if (loopStartIdx == -1)
+            points.emplace("LoopStart", loopstart, loopstartUnits);
+        else
+            points.replace(loopStartIdx, "LoopStart", loopstart, loopstartUnits);
+
+        if (loopEndIdx == -1)
+            points.emplace("LoopEnd", loopend, loopendUnits);
+        else
+            points.replace(loopEndIdx, "LoopEnd", loopend, loopendUnits);
     }
 
-    void MultiTrackAudio::loopMilliseconds(unsigned loopstart, unsigned loopend)
+    void MultiTrackAudio::loopMilliseconds(double loopstart, double loopend)
     {
-        for (auto &ch : m->chans)
-        {
-            ch.ch_loopSamples(loopstart, loopend);
-        }
-
-        // Replace markers indicating loop points
-        FMOD::Sound *firstSound;
-        checkResult(m->fsb->getSubSound(0, &firstSound));
-
-        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_MS,
-            loopend, FMOD_TIMEUNIT_MS);
+        loopSeconds(loopstart * .001, loopend * .001);
     }
 
     void MultiTrackAudio::loopSeconds(double loopstart, double loopend)
     {
-        for (auto &ch : m->chans)
-        {
-            ch.ch_loopSeconds(loopstart, loopend);
-        }
+        if (m->sounds.empty()) return;
 
-        // Replace markers indicating loop points
-        FMOD::Sound *firstSound;
-        checkResult(m->fsb->getSubSound(0, &firstSound));
+        float samplerate;
+        checkResult(m->sounds[0]->getDefaults(&samplerate, nullptr));
 
-        replaceLoopSyncPoints(firstSound, loopstart * 1000, FMOD_TIMEUNIT_MS,
-            loopend * 1000, FMOD_TIMEUNIT_MS);
+        unsigned startpcm = samplerate * loopstart;
+        unsigned endpcm = samplerate * loopend;
+
+        loopSamples(startpcm, endpcm);
     }
 
     void MultiTrackAudio::loopSamples(unsigned loopstart, unsigned loopend)
     {
+        if (m->sounds.empty()) return;
+
+        // Clamp loop points
+        unsigned lengthpcm;
+        checkResult(m->sounds[0]->getLength(&lengthpcm, FMOD_TIMEUNIT_PCM));
+
+        if (loopend >= lengthpcm)
+            loopend = lengthpcm - 1;
+        if (loopend == 0)
+            loopend = 1;
+        if (loopstart > loopend)
+            loopstart = loopend - 1;
+
+        std::cout << "startpcm: " << loopstart << ", endpcm: " << loopend << '\n';
+        std::cout << "length: " << lengthpcm << '\n';
+
+        // Set points
         for (auto &ch : m->chans)
         {
             ch.ch_loopSamples(loopstart, loopend);
         }
 
-        // Replace markers indicating loop points
-        FMOD::Sound *firstSound;
-        checkResult(m->fsb->getSubSound(0, &firstSound));
-
-        replaceLoopSyncPoints(firstSound, loopstart, FMOD_TIMEUNIT_PCM,
+        // Update sync point manager
+        replaceLoopSyncPoints(m->points, loopstart, FMOD_TIMEUNIT_PCM,
             loopend, FMOD_TIMEUNIT_PCM);
     }
 
@@ -790,5 +826,12 @@ namespace Insound
         }
 
         return it->second;
+    }
+
+    float MultiTrackAudio::samplerate() const
+    {
+        float freq;
+        checkResult(m->sounds.at(0)->getDefaults(&freq, nullptr));
+        return freq;
     }
 }
