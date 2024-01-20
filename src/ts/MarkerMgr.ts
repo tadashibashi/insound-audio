@@ -23,8 +23,15 @@ export class MarkerMgr
 {
     /** Audio position in seconds from last call to update */
     private lastPosition: number;
+    /** Internal list of markers */
     private markers: AudioMarker[];
+    /** Current index of marker to check */
     private cursor: number;
+    /**
+     * Flag indicating if `markers` array was modified, thus indicating that
+     * the cursor position has been invalidated. During the update loop, the
+     * cursor position will be readjusted when `isDirty` was set to `true`.
+     */
     private isDirty: boolean;
 
     /**
@@ -38,7 +45,10 @@ export class MarkerMgr
     /** Read-only, mutating results in unwanted and undefined behavior */
     get array() { return this.markers; }
 
+    /** Get the number of markers contained by the manager */
     get length() { return this.markers.length; }
+
+    /** The markers are directly iterable */
     [Symbol.iterator]() { return this.markers[Symbol.iterator](); }
 
     constructor(track: MultiTrackControl)
@@ -58,9 +68,15 @@ export class MarkerMgr
         track.onupdate.addListener(this.handleUpdate);
     }
 
+    /**
+     * Add a marker to the container/manager. Automatically inserts it in order
+     * of position.
+     *
+     * @param marker - marker to insert
+     */
     push(marker: AudioMarker)
     {
-        // find the index to insert to
+        // find the insertion index (by order of position)
         const length = this.markers.length;
         let index = -1;
         for (let i = 0; i < length; ++i)
@@ -72,6 +88,7 @@ export class MarkerMgr
             }
         }
 
+        // insert the marker
         if (index === -1)
         {
             this.markers.push(marker);
@@ -85,16 +102,40 @@ export class MarkerMgr
         return marker;
     }
 
+    /** Find marker by name (only the first occurrence) */
     findByName(name: string): AudioMarker | undefined
     {
         return this.markers.find(m => m.name === name);
     }
 
+    /** Find a marker's index with name (only gets the first occurrence) */
     findIndexByName(name: string)
     {
         return this.markers.findIndex(m => m.name === name);
     }
 
+    /**
+     * Update the position of a provided marker.
+     * Marker position should not be set directly - only through this function.
+     *
+     * @param marker      - marker to update position of
+     * @param newPosition - position in milliseconds
+     */
+    updatePosition(marker: AudioMarker, newPosition: number)
+    {
+        const index = this.markers.findIndex(m => m === marker);
+        if (index === -1) return;
+
+        this.updatePositionByIndex(index, newPosition);
+    }
+
+    /**
+     * Update the position of a marker at the specified index.
+     * Marker position should not be set directly - only through this function.
+     *
+     * @param index       - index of marker to modify
+     * @param newPosition - position in milliseconds
+     */
     updatePositionByIndex(index: number, newPosition: number)
     {
         const marker = this.markers[index];
@@ -140,20 +181,23 @@ export class MarkerMgr
     erase(marker: AudioMarker)
     {
         const index = this.markers.findIndex(m => m === marker);
-
         if (index !== -1)
         {
-            this.markers.splice(index, 1);
-            this.isDirty = true;
+            this.eraseByIndex(index);
         }
     }
 
+    /** Erase marker at the specified index */
     eraseByIndex(index: number)
     {
         this.markers.splice(index, 1);
         this.isDirty = true;
     }
 
+    /**
+     * Bring marker manager to a clean slate, removing all markers, resetting
+     * position to 0
+     */
     clear()
     {
         this.markers.length = 0;
