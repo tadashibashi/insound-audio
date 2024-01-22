@@ -21,6 +21,7 @@ export interface AudioMarker
  */
 export class MarkerMgr
 {
+    private track: MultiTrackControl;
     /** Audio position in seconds from last call to update */
     private lastPosition: number;
     /** Internal list of markers */
@@ -42,11 +43,28 @@ export class MarkerMgr
      */
     readonly onmarker: Callback<[AudioMarker]>;
 
+    /**
+     * Notifies when markers container has been modified (new markers pushed or
+     * deleted)
+     */
+    readonly onmarkersupdated: Callback<[]>;
+
+    /**
+     * Notifies when cursor index changes. This happens when the marker has
+     * been crossed, or when container is modified.
+     *
+     * Param1: new cursor position
+     * Param2: old cursor position
+     */
+    readonly oncursorchanged: Callback<[number, number]>;
+
     /** Read-only, mutating results in unwanted and undefined behavior */
     get array() { return this.markers; }
 
     /** Get the number of markers contained by the manager */
     get length() { return this.markers.length; }
+
+    get current() { return this.cursor; }
 
     /** The markers are directly iterable */
     [Symbol.iterator]() { return this.markers[Symbol.iterator](); }
@@ -59,6 +77,11 @@ export class MarkerMgr
 
         this.markers = [];
         this.onmarker = new Callback;
+        this.onmarkersupdated = new Callback;
+        this.oncursorchanged = new Callback;
+
+        this.m_loopStart = null;
+        this.m_loopEnd = null;
 
         // Hook up callbacks to track
         this.handleSeek = this.handleSeek.bind(this);
@@ -66,7 +89,15 @@ export class MarkerMgr
 
         track.onseek.addListener(this.handleSeek);
         track.onupdate.addListener(this.handleUpdate);
+
+        this.track = track;
     }
+
+    private m_loopStart: AudioMarker | null;
+    private m_loopEnd: AudioMarker | null;
+
+    get loopStart() { return this.m_loopStart; }
+    get loopEnd() { return this.m_loopEnd; }
 
     /**
      * Add a marker to the container/manager. Automatically inserts it in order
@@ -76,6 +107,9 @@ export class MarkerMgr
      */
     push(marker: AudioMarker)
     {
+        // clamp marker position within valid range
+        marker.position = this.clampTimePosition(marker.position);
+
         // find the insertion index (by order of position)
         const length = this.markers.length;
         let index = -1;
@@ -88,6 +122,15 @@ export class MarkerMgr
             }
         }
 
+        if (marker.name === "LoopStart" && !this.m_loopStart)
+        {
+            this.m_loopStart = marker;
+        }
+        else if (marker.name === "LoopEnd" && !this.m_loopEnd)
+        {
+            this.m_loopEnd = marker;
+        }
+
         // insert the marker
         if (index === -1)
         {
@@ -97,6 +140,8 @@ export class MarkerMgr
         {
             this.markers.splice(index, 0, marker);
         }
+
+
 
         this.isDirty = true;
         return marker;
@@ -112,6 +157,11 @@ export class MarkerMgr
     findIndexByName(name: string)
     {
         return this.markers.findIndex(m => m.name === name);
+    }
+
+    findIndex(marker: AudioMarker)
+    {
+        return this.markers.findIndex(m => m === marker);
     }
 
     /**
@@ -139,6 +189,9 @@ export class MarkerMgr
     updatePositionByIndex(index: number, newPosition: number)
     {
         const marker = this.markers[index];
+
+        // clamp new position within range
+        newPosition = this.clampTimePosition(newPosition);
 
         // Find new index
         let newIndex = 0;
@@ -204,35 +257,60 @@ export class MarkerMgr
         this.cursor = 0;
         this.lastPosition = 0;
         this.isDirty = true;
+
+        this.m_loopStart = null;
+        this.m_loopEnd = null;
     }
 
     private handleSeek(time: number)
     {
         this.lastPosition = time * 1000;
-        this.isDirty = true;
+
+        const oldCursor = this.cursor;
+        this.calibrateCursor(this.lastPosition);
+
+        if (this.cursor !== oldCursor)
+        {
+            this.oncursorchanged.invoke(this.cursor, oldCursor);
+        }
+    }
+
+    private clampTimePosition(position: number)
+    {
+        return Math.max(Math.min(position, this.track.length * 1000), 0);
+    }
+
+    /** Calibrate cursor to a position in the track (in ms) */
+    private calibrateCursor(position: number)
+    {
+        const length = this.markers.length;
+        let newCursor = length - 1;
+        for (let i = 0; i < length; ++i)
+        {
+            if (position <= this.markers[i].position)
+            {
+                newCursor = i;
+                break;
+            }
+        }
+
+        this.cursor = newCursor;
     }
 
     private handleUpdate(delta: number, position: number)
     {
         position *= 1000;
 
+        const oldCursor = this.cursor;
+
         if (position !== this.lastPosition) // make sure non-seek, player not paused
         {
             const length = this.markers.length;
             if (this.isDirty) // if dirty, we need to recalibrate cursor
             {
+                this.calibrateCursor(this.lastPosition);
 
-                let newCursor = length - 1;
-                for (let i = 0; i < length; ++i)
-                {
-                    if (this.lastPosition <= this.markers[i].position)
-                    {
-                        newCursor = i;
-                        break;
-                    }
-                }
-
-                this.cursor = newCursor;
+                this.onmarkersupdated.invoke();
                 this.isDirty = false;
             }
 
@@ -243,6 +321,8 @@ export class MarkerMgr
                 {
                     this.onmarker.invoke(this.markers[this.cursor++]);
                 }
+
+                const oldCursor = this.cursor;
 
                 this.cursor = 0;
             }
@@ -261,6 +341,11 @@ export class MarkerMgr
         }
 
         this.lastPosition = position;
+
+        if (oldCursor !== this.cursor)
+        {
+            this.oncursorchanged.invoke(this.cursor, oldCursor);
+        }
     }
 
     load(markers: AudioMarker[])

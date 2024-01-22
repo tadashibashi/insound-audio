@@ -6,7 +6,7 @@ namespace Insound::Scripting {
     struct Marker
     {
         std::string name;
-        double seconds;
+        double position;
 
         /**
          * Inject the class definition into a Lua table.

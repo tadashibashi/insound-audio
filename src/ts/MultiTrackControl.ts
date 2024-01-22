@@ -79,8 +79,37 @@ export class MultiTrackControl
 
         const MultiTrackControl = getAudioModule().MultiTrackControl;
         this.m_track = new MultiTrackControl(this.m_ptr, {
-            syncPointsUpdated: () => {
-                // TODO: change to addSyncPoint or addMarker
+            addMarker: (name: string, ms: number) => {
+                this.m_markers.push({
+                    name: name, position: ms
+                });
+            },
+            editMarker: (index, name, ms) => {
+                if (typeof index === "number")
+                {
+                    --index; // lua indices are 1-based
+                    const marker = this.m_markers.array[index];
+                    marker.name = name;
+                    this.m_markers.updatePositionByIndex(index, ms);
+                }
+                else
+                {
+                    const markerIndex = this.m_markers.findIndexByName(index);
+
+                    if (markerIndex !== -1)
+                    {
+                        this.m_markers.array[markerIndex].name = name;
+                        this.m_markers.updatePositionByIndex(markerIndex, ms);
+                    }
+                }
+            },
+            getMarker: (index) => {
+                return (typeof index === "number") ?
+                    this.m_markers.array[index-1] :
+                    this.m_markers.findByName(index);
+            },
+            getMarkerCount: () => {
+                return this.m_markers.length;
             },
             setPause: (pause: boolean, seconds: number) => {
                 this.m_track.setPause(pause, seconds);

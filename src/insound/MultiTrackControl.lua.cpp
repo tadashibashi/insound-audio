@@ -35,7 +35,10 @@ namespace Insound
         auto populateEnv = [this](sol::table &env)
         {
             // Javascript callbacks to directly go through the UI
-            emscripten::val syncPointsUpdated = callbacks["syncPointsUpdated"];
+            emscripten::val addMarker = callbacks["addMarker"];
+            emscripten::val editMarker = callbacks["editMarker"];
+            emscripten::val getMarker = callbacks["getMarker"];
+            emscripten::val getMarkerCount = callbacks["getMarkerCount"];
             emscripten::val setPause = callbacks["setPause"];
             emscripten::val setPosition = callbacks["setPosition"];
             emscripten::val setVolume = callbacks["setVolume"];
@@ -50,18 +53,18 @@ namespace Insound
 
             auto snd = env["track"].get_or_create<sol::table>();
 
-            snd.set_function("play", [this, setPause](float seconds=0) -> void
+            snd.set_function("play", [this, setPause](std::optional<float> seconds={}) -> void
             {
-                setPause(false, seconds);
+                setPause(false, seconds.value_or(0));
             });
 
-            snd.set_function("pause", [this, setPause](float seconds=0) -> void
+            snd.set_function("pause", [this, setPause](std::optional<float> seconds={}) -> void
             {
-                setPause(true, seconds);
+                setPause(true, seconds.value_or(0));
             });
 
             snd.set_function("paused",
-            [this](std::optional<bool> pause={}, float seconds=0) -> bool
+            [this](std::optional<bool> pause={}, std::optional<float> seconds={}) -> bool
             {
                 if (!pause)
                 {
@@ -69,7 +72,7 @@ namespace Insound
                 }
                 else
                 {
-                    this->setPause(pause.value(), seconds);
+                    this->setPause(pause.value(), seconds.value_or(0));
                     return pause.value();
                 }
             });
@@ -159,43 +162,53 @@ namespace Insound
                     setLoopPoint(loopstart.value(), loopend.value_or(getLength()));
                 }
 
-                return track->loopMilliseconds();
+                return this->getLoopPoint();
             });
 
             // marker namespace
             auto marker = snd["marker"].get_or_create<sol::table>();
             marker.set_function("count",
-                [this]()
+                [this, getMarkerCount]()
                 {
-                    return this->track->getSyncPointCount();
-                });
-            marker.set_function("empty",
-                [this]()
-                {
-                    return this->track->getSyncPointsEmpty();
+                    return getMarkerCount().as<int>();
                 });
             marker.set_function("get",
-                [this](size_t index)
+                [this, getMarker](std::variant<int, std::string> indexOrName)
                 {
-                    --index; // offset index since lua indexes from 1
-                    auto label = track->getSyncPointLabel(index);
-                    auto offset = track->getSyncPointOffsetSeconds(index);
-                    return Scripting::Marker{.name=label.data(), .seconds=offset};
+                    emscripten::val marker;
+                    if (indexOrName.index() == 0)
+                    {   // index
+                        auto index = std::get<int>(indexOrName) - 1; // offset index since lua indexes from 1
+                        marker = getMarker(index);
+                    }
+                    else // string name
+                    {
+                        auto name = std::get<std::string>(indexOrName);
+                        marker = getMarker(name);
+                    }
+
+                    return Scripting::Marker{
+                        .name=marker["name"].as<std::string>(),
+                        .position=marker["position"].as<double>(),
+                    };
                 });
             marker.set_function("add",
-            [this, syncPointsUpdated](std::string name, double seconds)
+            [this, addMarker](std::string name, double ms)
             {
-                if (this->track->addSyncPointMS(name, seconds * 1000))
-                {
-                    syncPointsUpdated(); // alert JS that syncpoints have been updated
-                }
+                addMarker(name, ms);
             });
             marker.set_function("edit",
-            [this, syncPointsUpdated](size_t index, std::string name, double seconds)
+            [this, editMarker](std::variant<int, std::string> indexOrName, std::string name, double ms)
             {
-                if (this->track->editSyncPointMS(index, name, seconds))
+                if (indexOrName.index() == 0)
                 {
-                    syncPointsUpdated();
+                    auto index = std::get<int>(indexOrName) - 1; // offset since lua indexes from 1
+                    editMarker(index, name, ms);
+                }
+                else
+                {
+                    auto markerName = std::get<std::string>(indexOrName);
+                    editMarker(markerName, name, ms);
                 }
             });
 

@@ -4,7 +4,10 @@ export interface LuaCallbacks
     // Called by C++ engine when sync points have been mutated.
     // The audio engine then updates its own local copy of sync opint info
     // to alter the frontend display to match.
-    syncPointsUpdated(): void;
+    addMarker(name: string, ms: number): void;
+    editMarker(index: number | string, name: string, ms: number): void;
+    getMarker(index: number | string): {name: string, position: number};
+    getMarkerCount(): number;
 
     // ----- controls ---------------------------------------------------------
 
