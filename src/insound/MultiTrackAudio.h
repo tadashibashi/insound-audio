@@ -84,6 +84,11 @@ namespace Insound {
          */
         void pause(bool pause, float seconds);
 
+        /**
+         * Get the paused status of the track
+         *
+         * @returns true if paused, false if not.
+         */
         [[nodiscard]]
         bool paused() const;
 
@@ -107,7 +112,7 @@ namespace Insound {
          *                value targeted by the last call to a fade function
          *                `true` (default behavior)
          *
-         * @return - current fade level (0=no sound, 1=full sound)
+         * @returns - current fade level (0=no sound, 1=full sound)
          */
         [[nodiscard]]
         float fadeLevel(bool final=true) const;
@@ -119,14 +124,26 @@ namespace Insound {
          *                value targeted by the last call to a fade function
          *                `true` (default behavior)
          *
-         * @return - current fade level of channel (0=no sound, 1=full sound)
+         * @returns - current fade level of channel (0=no sound, 1=full sound)
          */
         [[nodiscard]]
         float channelFadeLevel(int ch, bool final=true) const;
 
+        /**
+         * Get the volume level of the track's main bus
+         *
+         * @returns - current volume level where 0 = 0%, 1 = 100%; values over
+         *            1 are allowed, and negative values mean reversed polarity
+         */
         [[nodiscard]]
         double mainVolume() const;
 
+        /**
+         * Set the volume level of the track's main bus
+         *
+         * @param vol - volume level to set where 0 = 0%, 1 = 100%; values over
+         *            1 are allowed, and negative values mean reversed polarity
+         */
         void mainVolume(double vol);
 
         [[nodiscard]]
@@ -138,7 +155,6 @@ namespace Insound {
         Channel &channel(int ch);
         [[nodiscard]]
         const Channel &channel(int ch) const;
-
 
         [[nodiscard]]
         int channelCount() const;

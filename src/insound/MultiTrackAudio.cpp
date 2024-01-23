@@ -387,19 +387,6 @@ namespace Insound
                 &sound)
             );
 
-            // FMOD::Sound *readDataSound;
-            // checkResult( sys->createSound(data, FMOD_OPENMEMORY  | FMOD_CREATESAMPLE | FMOD_OPENONLY, &exinfo, &readDataSound));
-
-            // unsigned int rawByteLength;
-            // checkResult(readDataSound->getLength(&rawByteLength, FMOD_TIMEUNIT_RAWBYTES));
-
-            // std::vector<unsigned char> bytes(rawByteLength);
-            // checkResult(readDataSound->readData(bytes.data(), rawByteLength, nullptr));
-            // pcmReadCallback((FMOD_SOUND *)sound, bytes.data(), rawByteLength);
-            // bytes.clear();
-
-            // checkResult(readDataSound->release());
-
             SyncPointMgr points(sound);
 
             // Check if this is to be the first sound
