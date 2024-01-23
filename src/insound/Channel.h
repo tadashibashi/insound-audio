@@ -125,16 +125,13 @@ namespace Insound
         [[nodiscard]]
         unsigned int ch_positionSamples() const;
 
-        Channel &ch_loopMilliseconds(unsigned loopstart, unsigned loopend);
-        Channel &ch_loopSeconds(double loopstart, double loopend);
-        Channel &ch_loopSamples(unsigned loopstart, unsigned loopend);
+        Channel &ch_loopMS(unsigned loopstart, unsigned loopend);
+        Channel &ch_loopPCM(unsigned loopstart, unsigned loopend);
 
         [[nodiscard]]
-        LoopInfo<unsigned> ch_loopMilliseconds() const;
+        LoopInfo<unsigned> ch_loopMS() const;
         [[nodiscard]]
-        LoopInfo<double> ch_loopSeconds() const;
-        [[nodiscard]]
-        LoopInfo<unsigned> ch_loopSamples() const;
+        LoopInfo<unsigned> ch_loopPCM() const;
 
         /**
          * Set the reverb send level.

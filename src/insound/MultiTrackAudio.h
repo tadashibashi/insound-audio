@@ -166,10 +166,10 @@ namespace Insound {
         const std::function<void()> &getEndCallback() const;
 
         bool addSyncPointMS(const std::string &name,
-            unsigned int offset);
+            double offset);
 
         bool editSyncPointMS(size_t i, const std::string &name,
-            unsigned int offset);
+            double offset);
 
         bool deleteSyncPoint(size_t i);
 
@@ -209,7 +209,7 @@ namespace Insound {
         [[nodiscard]]
         LoopInfo<unsigned> loopSamples() const;
         [[nodiscard]]
-        LoopInfo<unsigned> loopMilliseconds() const;
+        LoopInfo<double> loopMilliseconds() const;
 
         [[nodiscard]]
         Channel &main();

@@ -45,12 +45,12 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .field("volumes", &Preset::volumes);
 
     value_object<LoopInfo<unsigned>>("LoopInfo")
-        .field("loopstart", &LoopInfo<unsigned>::loopstart)
-        .field("loopend", &LoopInfo<unsigned>::loopend)
+        .field("loopstart", &LoopInfo<unsigned>::start)
+        .field("loopend", &LoopInfo<unsigned>::end)
         ;
     value_object<LoopInfo<double>>("LoopInfoSeconds")
-        .field("loopstart", &LoopInfo<double>::loopstart)
-        .field("loopend", &LoopInfo<double>::loopend)
+        .field("start", &LoopInfo<double>::start)
+        .field("end", &LoopInfo<double>::end)
         ;
 
     using T = AudioEngine;

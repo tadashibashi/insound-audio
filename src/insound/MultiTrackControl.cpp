@@ -152,8 +152,8 @@ namespace Insound
         double samplerate = track->samplerate();
 
         return {
-            .loopstart = loopInfo.loopstart / samplerate * 1000.0,
-            .loopend = loopInfo.loopend / samplerate * 1000.0
+            .start = loopInfo.start / samplerate * 1000.0,
+            .end = loopInfo.end / samplerate * 1000.0
         };
     }
 

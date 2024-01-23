@@ -643,7 +643,8 @@ namespace Insound
         double offset)
     {
         try {
-            m->points.emplace(name.data(), offset, FMOD_TIMEUNIT_PCM);
+            m->points.emplace(name.data(), offset * .001 * samplerate(),
+                FMOD_TIMEUNIT_PCM);
             return true;
         }
         catch (...)
@@ -654,10 +655,11 @@ namespace Insound
 
 
     bool MultiTrackAudio::editSyncPointMS(size_t i, const std::string &name,
-        unsigned int offset)
+        double offset)
     {
         try {
-            m->points.replace(i, name, offset, FMOD_TIMEUNIT_MS);
+            m->points.replace(i, name, offset * .001 * samplerate(),
+                FMOD_TIMEUNIT_PCM);
             return true;
         }
         catch(...)
@@ -750,23 +752,35 @@ namespace Insound
         // Set points
         for (auto &ch : m->chans)
         {
-            ch.ch_loopSamples(loopstart, loopend);
+            ch.ch_loopPCM(loopstart, loopend);
         }
     }
 
-    LoopInfo<unsigned> MultiTrackAudio::loopMilliseconds() const
+    LoopInfo<double> MultiTrackAudio::loopMilliseconds() const
     {
-        return m->chans.at(0).ch_loopMilliseconds();
+        const auto loop =  m->chans.at(0).ch_loopPCM();
+        const double rate = samplerate();
+
+        return {
+            .start=loop.start / rate * 1000.0,
+            .end=loop.end / rate * 1000.0,
+        };
     }
 
     LoopInfo<double> MultiTrackAudio::loopSeconds() const
     {
-        return m->chans.at(0).ch_loopSeconds();
+        const auto loop =  m->chans.at(0).ch_loopPCM();
+        const double rate = samplerate();
+
+        return {
+            .start=loop.start / rate,
+            .end=loop.end / rate,
+        };
     }
 
     LoopInfo<unsigned> MultiTrackAudio::loopSamples() const
     {
-        return m->chans.at(0).ch_loopSamples();
+        return m->chans.at(0).ch_loopPCM();
     }
 
     Channel &MultiTrackAudio::channel(int ch)

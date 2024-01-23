@@ -274,7 +274,7 @@ namespace Insound
         return *this;
     }
 
-    Channel &Channel::ch_loopMilliseconds(unsigned loopstart, unsigned loopend)
+    Channel &Channel::ch_loopMS(unsigned loopstart, unsigned loopend)
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
@@ -287,20 +287,7 @@ namespace Insound
         return *this;
     }
 
-    Channel &Channel::ch_loopSeconds(double loopstart, double loopend)
-    {
-        if (m_isGroup)
-            throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
-                "when underlying type is an FMOD::ChannelGroup");
-        checkResult(static_cast<FMOD::Channel *>(chan)->setLoopPoints(
-            loopstart * 1000, FMOD_TIMEUNIT_MS,
-            loopend * 1000, FMOD_TIMEUNIT_MS)
-        );
-
-        return *this;
-    }
-
-    Channel &Channel::ch_loopSamples(unsigned loopstart, unsigned loopend)
+    Channel &Channel::ch_loopPCM(unsigned loopstart, unsigned loopend)
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::ch_loopSamples "
@@ -314,7 +301,7 @@ namespace Insound
         return *this;
     }
 
-    LoopInfo<unsigned> Channel::ch_loopMilliseconds() const
+    LoopInfo<unsigned> Channel::ch_loopMS() const
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
@@ -326,25 +313,10 @@ namespace Insound
             &end, FMOD_TIMEUNIT_MS)
         );
 
-        return {.loopstart=start, .loopend=end};
+        return {.start=start, .end=end};
     }
 
-    LoopInfo<double> Channel::ch_loopSeconds() const
-    {
-        if (m_isGroup)
-            throw std::runtime_error("Cannot call Channel::ch_loopSeconds "
-                "when underlying type is an FMOD::ChannelGroup");
-
-        unsigned start, end;
-        checkResult(static_cast<FMOD::Channel *>(chan)->getLoopPoints(
-            &start, FMOD_TIMEUNIT_MS,
-            &end, FMOD_TIMEUNIT_MS)
-        );
-
-        return {.loopstart=(double)start * 0.001, .loopend=(double)end * 0.001};
-    }
-
-    LoopInfo<unsigned> Channel::ch_loopSamples() const
+    LoopInfo<unsigned> Channel::ch_loopPCM() const
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::ch_loopSamples "
@@ -356,7 +328,7 @@ namespace Insound
             &end, FMOD_TIMEUNIT_PCM)
         );
 
-        return {.loopstart=start, .loopend=end};
+        return {.start=start, .end=end};
     }
 
     Channel *Channel::group() const

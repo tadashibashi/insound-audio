@@ -145,6 +145,11 @@ namespace Insound
         [[nodiscard]]
         SyncPointInfo getSyncPoint(int index) const;
 
+        /**
+         * Get pointer information about channel sample data
+         *
+         * @param index - channel index, 0-based
+         */
         [[nodiscard]]
         SampleDataInfo getSampleData(int index) const;
 
