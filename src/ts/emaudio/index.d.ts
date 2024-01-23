@@ -145,7 +145,7 @@ declare interface InsoundMultiTrackControl
     getChannelCount(): number;
     getAudibility(ch: number): number;
     setLoopPoint(startMs: number, endMs: number): void; // in ms
-    getLoopPoint(): {loopstart: number, loopend: number}; // in ms
+    getLoopPoint(): {start: number, end: number}; // in ms
 
     addSyncPoint(label: string, ms: number): boolean;
     deleteSyncPoint(index: number): boolean;

@@ -1,6 +1,9 @@
 import { Callback } from "./Callback";
 import { MultiTrackControl } from "./MultiTrackControl";
 
+const LOOPSTART_NAME = "LoopStart";
+const LOOPEND_NAME = "LoopEnd";
+
 export interface AudioMarker
 {
     /**
@@ -99,14 +102,81 @@ export class MarkerMgr
     get loopStart() { return this.m_loopStart; }
     get loopEnd() { return this.m_loopEnd; }
 
+    set loopStart(marker: AudioMarker)
+    {
+        if (marker.name !== LOOPSTART_NAME) return;
+
+        const minPosition = 0;
+        const maxPosition = Math.min(this.track.length * 1000 - .001,
+            this.m_loopEnd ? this.m_loopEnd.position - .001 : Infinity);
+        marker.position = Math.max(Math.min(marker.position, maxPosition), minPosition);
+
+        this.m_loopStart = marker;
+
+        this.track.setLoopPoint(marker.position,
+            this.m_loopEnd ? this.m_loopEnd.position : this.track.length * .001);
+    }
+
+    set loopEnd(marker: AudioMarker)
+    {
+        if (marker.name !== LOOPEND_NAME) return;
+
+        const minPosition = Math.max(.001, this.m_loopStart ? this.m_loopStart.position + .001 : -Infinity);
+        const maxPosition = this.track.length * 1000 - .001;
+        marker.position = Math.max(Math.min(marker.position, maxPosition), minPosition);
+
+        this.m_loopEnd = marker;
+
+        this.track.setLoopPoint(this.m_loopStart ? this.m_loopStart.position : 0,
+            marker.position);
+    }
+
+    loadFromTrack()
+    {
+        const pointCount = this.track.track.getSyncPointCount();
+        for (let i = 0; i < pointCount; ++i)
+        {
+            const point = this.track.track.getSyncPoint(i);
+
+            // Ignore special markers, use loop points instead
+            if (point.name === LOOPSTART_NAME || point.name === LOOPEND_NAME)
+            {
+                continue;
+            }
+
+            this.push({
+                name: point.name,
+                position: point.offset,
+            });
+        }
+
+        // load loop points
+        const loop = this.track.track.getLoopPoint();
+
+        this.m_loopStart = {
+            name: LOOPSTART_NAME,
+            position: loop.start
+        };
+
+        this.m_loopEnd = {
+            name: LOOPEND_NAME,
+            position: loop.end
+        };
+    }
+
     /**
      * Add a marker to the container/manager. Automatically inserts it in order
      * of position.
+     *
+     * Special markers "LoopStart" or "LoopEnd" get added as loop points
+     * instead of to the main container.
      *
      * @param marker - marker to insert
      */
     push(marker: AudioMarker)
     {
+
+
         // clamp marker position within valid range
         marker.position = this.clampTimePosition(marker.position);
 
@@ -120,15 +190,6 @@ export class MarkerMgr
                 index = i;
                 break;
             }
-        }
-
-        if (marker.name === "LoopStart" && !this.m_loopStart)
-        {
-            this.m_loopStart = marker;
-        }
-        else if (marker.name === "LoopEnd" && !this.m_loopEnd)
-        {
-            this.m_loopEnd = marker;
         }
 
         // insert the marker
@@ -284,7 +345,7 @@ export class MarkerMgr
     private calibrateCursor(position: number)
     {
         const length = this.markers.length;
-        let newCursor = length - 1;
+        let newCursor = length;
         for (let i = 0; i < length; ++i)
         {
             if (position <= this.markers[i].position)
@@ -321,23 +382,25 @@ export class MarkerMgr
                 {
                     this.onmarker.invoke(this.markers[this.cursor++]);
                 }
-
-                const oldCursor = this.cursor;
-
                 this.cursor = 0;
             }
 
-            // Invoke markers up until cursor reaches position
-            while (this.markers[this.cursor].position <= position)
+            if (this.cursor < length)
             {
-                this.onmarker.invoke(this.markers[this.cursor++]);
-
-                if (this.cursor >= length)
+                // Invoke markers up until cursor reaches position
+                while (this.markers[this.cursor].position <= position)
                 {
-                    this.cursor = 0;
-                    break;
+                    this.onmarker.invoke(this.markers[this.cursor++]);
+                    console.log(position, this.lastPosition);
+
+                    if (this.cursor >= length)
+                    {
+                        break;
+                    }
                 }
             }
+
+
         }
 
         this.lastPosition = position;

@@ -175,7 +175,7 @@ export class MultiTrackControl
             if (this.position < this.m_lastPosition)
             {
                 const loop = this.loopPoints;
-                this.position = (loop.loopend - .001) * .001;
+                this.position = (loop.end - .001) * .001;
                 this.setPause(true, 0);
                 this.m_engine.suspend();
             }
@@ -215,14 +215,20 @@ export class MultiTrackControl
             }
             else // otherwise get them from the track
             {
-                collectMarkers(this).forEach(
-                    marker => this.m_markers.push(marker));
+                this.m_markers.loadFromTrack();
             }
 
             if (opts.loopPoints)
             {
-                this.m_track.setLoopPoint(opts.loopPoints.start,
-                    opts.loopPoints.end);
+                // loop points will be set to track automatically via markers
+                this.m_markers.loopStart = {
+                    name: "LoopStart",
+                    position: opts.loopPoints.start,
+                };
+                this.m_markers.loopEnd = {
+                    name: "Loopend",
+                    position: opts.loopPoints.end,
+                };
             }
 
 
@@ -298,22 +304,26 @@ export class MultiTrackControl
 
             // Load markers
             this.m_markers.clear();
-            if (opts.markers) // if markers provided from db use these
+            if (opts.markers) // if markers provided use these
             {
                 opts.markers.forEach(marker => this.m_markers.push(marker));
             }
             else // otherwise get them from the track
             {
-                collectMarkers(this).forEach(
-                    marker => this.m_markers.push(marker));
+                this.m_markers.loadFromTrack();
             }
 
-            // Load loop points
             if (opts.loopPoints)
             {
-                // override loop defaults with custom loop point from db
-                this.m_track.setLoopPoint(opts.loopPoints.start, opts.
-                    loopPoints.end);
+                // loop points will be set to track automatically via markers
+                this.m_markers.loopStart = {
+                    name: "LoopStart",
+                    position: opts.loopPoints.start,
+                };
+                this.m_markers.loopEnd = {
+                    name: "Loopend",
+                    position: opts.loopPoints.end,
+                };
             }
 
             const channelCount = this.m_track.getChannelCount();
@@ -389,7 +399,7 @@ export class MultiTrackControl
         if (!pause && this.m_engine.isSuspended())
         {
             this.m_engine.resume();
-            if (this.position > (this.loopPoints.loopend * .001) - .01)
+            if (this.position > (this.loopPoints.end * .001) - .01)
                 this.position = 0;
         }
 
@@ -438,20 +448,4 @@ export class MultiTrackControl
         const end = begin + data.byteLength;
         return getAudioModule().HEAPF32.subarray(begin, end);
     }
-}
-
-function collectMarkers(track: MultiTrackControl)
-{
-    const markers: AudioMarker[] = [];
-    const count = track.track.getSyncPointCount();
-    for (let i = 0; i < count; ++i)
-    {
-        const curPoint = track.track.getSyncPoint(i);
-        markers.push({
-            name: curPoint.name,
-            position: curPoint.offset
-        });
-    }
-
-    return markers;
 }
