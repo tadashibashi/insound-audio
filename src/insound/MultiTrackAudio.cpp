@@ -271,7 +271,7 @@ namespace Insound
         return m->points.getLabel(i);
     }
 
-    unsigned MultiTrackAudio::getSyncPointOffsetMilliseconds(size_t i) const
+    double MultiTrackAudio::getSyncPointOffsetMS(size_t i) const
     {
         return m->points.getOffsetMS(i);
     }
@@ -406,8 +406,8 @@ namespace Insound
             if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
             {
                 // set loop info from markers
-                auto loopStart = points.getOffsetSamples("LoopStart");
-                auto loopEnd = points.getOffsetSamples("LoopEnd");
+                auto loopStart = points.getOffsetPCM("LoopStart");
+                auto loopEnd = points.getOffsetPCM("LoopEnd");
                 bool didAlterLoop = false;
 
                 if (!loopStart)
@@ -527,8 +527,8 @@ namespace Insound
             throw std::runtime_error("Invalid subsound, 0 length.");
 
         // Find loop start / end points if they exist
-        auto loopstart = syncPoints.getOffsetSamples("LoopStart");
-        auto loopend = syncPoints.getOffsetSamples("LoopEnd");
+        auto loopstart = syncPoints.getOffsetPCM("LoopStart");
+        auto loopend = syncPoints.getOffsetPCM("LoopEnd");
 
         // If loop start or loop end were not found, add it automatically
         bool didSetLoop = false;
@@ -640,10 +640,10 @@ namespace Insound
 
 
     bool MultiTrackAudio::addSyncPointMS(const std::string &name,
-        unsigned int offset)
+        double offset)
     {
         try {
-            m->points.emplace(name.data(), offset, FMOD_TIMEUNIT_MS);
+            m->points.emplace(name.data(), offset, FMOD_TIMEUNIT_PCM);
             return true;
         }
         catch (...)
@@ -651,6 +651,7 @@ namespace Insound
             return false;
         }
     }
+
 
     bool MultiTrackAudio::editSyncPointMS(size_t i, const std::string &name,
         unsigned int offset)
@@ -713,25 +714,6 @@ namespace Insound
         return m->main.reverbLevel();
     }
 
-    static void replaceLoopSyncPoints(SyncPointMgr &points,
-        unsigned loopstart, FMOD_TIMEUNIT loopstartUnits,
-        unsigned loopend, FMOD_TIMEUNIT loopendUnits)
-    {
-        // Replace or emplace sync points for frontend use
-        int loopStartIdx = points.findIndex("LoopStart");
-        int loopEndIdx = points.findIndex("LoopEnd");
-
-        if (loopStartIdx == -1)
-            points.emplace("LoopStart", loopstart, loopstartUnits);
-        else
-            points.replace(loopStartIdx, "LoopStart", loopstart, loopstartUnits);
-
-        if (loopEndIdx == -1)
-            points.emplace("LoopEnd", loopend, loopendUnits);
-        else
-            points.replace(loopEndIdx, "LoopEnd", loopend, loopendUnits);
-    }
-
     void MultiTrackAudio::loopMilliseconds(double loopstart, double loopend)
     {
         loopSeconds(loopstart * .001, loopend * .001);
@@ -765,18 +747,11 @@ namespace Insound
         if (loopstart > loopend)
             loopstart = loopend - 1;
 
-        std::cout << "startpcm: " << loopstart << ", endpcm: " << loopend << '\n';
-        std::cout << "length: " << lengthpcm << '\n';
-
         // Set points
         for (auto &ch : m->chans)
         {
             ch.ch_loopSamples(loopstart, loopend);
         }
-
-        // Update sync point manager
-        replaceLoopSyncPoints(m->points, loopstart, FMOD_TIMEUNIT_PCM,
-            loopend, FMOD_TIMEUNIT_PCM);
     }
 
     LoopInfo<unsigned> MultiTrackAudio::loopMilliseconds() const

@@ -181,7 +181,7 @@ namespace Insound
     {
         return {
             .name=track->getSyncPointLabel(index).data(),
-            .offset=track->getSyncPointOffsetMilliseconds(index)
+            .offset=track->getSyncPointOffsetMS(index)
         };
     }
 

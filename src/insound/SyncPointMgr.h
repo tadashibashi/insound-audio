@@ -55,13 +55,13 @@ namespace Insound
         bool empty() const;
 
         [[nodiscard]]
-        unsigned int getOffsetSamples(size_t i) const;
+        unsigned int getOffsetPCM(size_t i) const;
         [[nodiscard]]
-        std::optional<unsigned int> getOffsetSamples(std::string_view label) const;
+        std::optional<unsigned int> getOffsetPCM(std::string_view label) const;
         [[nodiscard]]
-        unsigned int getOffsetMS(size_t i) const;
+        double getOffsetMS(size_t i) const;
         [[nodiscard]]
-        std::optional<unsigned int> getOffsetMS(std::string_view label) const;
+        std::optional<double> getOffsetMS(std::string_view label) const;
         [[nodiscard]]
         double getOffsetSeconds(size_t i) const;
         [[nodiscard]]
@@ -90,6 +90,9 @@ namespace Insound
 
         void swap(SyncPointMgr &other);
     private:
+        [[nodiscard]]
+        float getSampleRate() const;
+
         // Sync point data
         std::vector<SyncPoint> m_points;
 

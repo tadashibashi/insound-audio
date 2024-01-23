@@ -46,7 +46,7 @@ namespace Insound
         return m_points.at(i).label();
     }
 
-    unsigned int SyncPointMgr::getOffsetSamples(size_t i) const
+    unsigned int SyncPointMgr::getOffsetPCM(size_t i) const
     {
         unsigned int offset;
         checkResult( m_sound->getSyncPointInfo(m_points.at(i).point(),
@@ -55,13 +55,13 @@ namespace Insound
     }
 
     std::optional<unsigned int>
-    SyncPointMgr::getOffsetSamples(std::string_view label) const
+    SyncPointMgr::getOffsetPCM(std::string_view label) const
     {
         size_t index = 0;
         for (auto &point : m_points)
         {
             if (compareCaseInsensitive(point.label(), label))
-                return getOffsetSamples(index);
+                return getOffsetPCM(index);
 
             ++index;
         }
@@ -69,17 +69,15 @@ namespace Insound
         return {};
     }
 
-    unsigned int SyncPointMgr::getOffsetMS(size_t i) const
+    double SyncPointMgr::getOffsetMS(size_t i) const
     {
-        unsigned int offset;
-        checkResult( m_sound->getSyncPointInfo(m_points.at(i).point(),
-            nullptr, 0, &offset, FMOD_TIMEUNIT_MS));
-        return offset;
+        return getOffsetSeconds(i) * 1000.0;
     }
 
-    std::optional<unsigned int>
+    std::optional<double>
     SyncPointMgr::getOffsetMS(std::string_view label) const
     {
+        // find index of point with label
         size_t index = 0;
         for (auto &point : m_points)
         {
@@ -89,12 +87,13 @@ namespace Insound
             ++index;
         }
 
+        // label could not be found
         return {};
     }
 
     double SyncPointMgr::getOffsetSeconds(size_t i) const
     {
-        return (double)getOffsetMS(i) * .001;
+        return (double)getOffsetPCM(i) / (double)getSampleRate();
     }
 
     std::optional<double>
@@ -158,17 +157,20 @@ namespace Insound
         FMOD_SYNCPOINT *point = nullptr;
         for (size_t i = 0, size=m_points.size(); i < size; ++i)
         {
-            unsigned int currentOffset;
+            unsigned int checkOffset;
             checkResult(m_sound->getSyncPointInfo(m_points[i].point(), nullptr,
-                0, &currentOffset, unit));
+                0, &checkOffset, unit));
 
-            // Don't add duplicates
-            if (currentOffset == offset && m_points[i].label() == label)
-                throw std::runtime_error("Duplicate sync point cannot be added");
+            // Don't add duplicates, just return the point found
+            // This functionality covers case where user adds multiple sounds
+            // with the same syncpoint marker info
+            if (checkOffset == offset && m_points[i].label() == label)
+                return m_points[i];
 
-            if (currentOffset > offset)
+            if (checkOffset > offset)
             {
-                checkResult(m_sound->addSyncPoint(offset, unit, label.data(), &point));
+                checkResult(m_sound->addSyncPoint(offset, unit, label.data(),
+                    &point));
                 return *m_points.insert(m_points.begin() + i,
                     SyncPoint{label, point});
             }
@@ -186,5 +188,13 @@ namespace Insound
         auto tempSound = other.m_sound;
         other.m_sound = m_sound;
         m_sound = tempSound;
+    }
+
+    float SyncPointMgr::getSampleRate() const
+    {
+        float samplerate;
+        checkResult(m_sound->getDefaults(&samplerate, nullptr));
+
+        return samplerate;
     }
 }
