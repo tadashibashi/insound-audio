@@ -1,14 +1,10 @@
 export class SoundLoadError extends Error
 {
-    soundIndices: number[];
+    info: {index: number, reason: string}[];
 
-    getErrorMessage(names: string[]): string[] {
-        return this.soundIndices.map(index => names[index] || "Unknown File");
-    }
-
-    constructor(indices: number[])
+    constructor(info: {index: number, reason: string}[])
     {
         super();
-        this.soundIndices = indices;
+        this.info = info;
     }
 }

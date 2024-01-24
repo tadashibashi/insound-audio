@@ -190,6 +190,55 @@ export class MultiTrackControl
 
     // ----- Loading / Unloading ----------------------------------------------
 
+    /** Load audio internals after the main file buffer loading */
+    private postLoadAudio(opts: LoadOptions)
+    {
+        // Load script
+        const scriptErr = this.m_track.loadScript(opts.script || "");
+        if (scriptErr)
+        {
+            console.error("Lua script load error:", scriptErr);
+        }
+
+        // Load markers
+        this.m_markers.clear();
+        if (opts.markers) // if markers provided use these
+        {
+            opts.markers.forEach(marker => this.m_markers.push(marker));
+        }
+        else // otherwise get them from the track
+        {
+            this.m_markers.loadFromTrack();
+        }
+
+        // Set custom loop points
+        if (opts.loopPoints)
+        {
+            // loop points will be set to track automatically via markers
+            this.m_markers.loopStart = {
+                name: "LoopStart",
+                position: opts.loopPoints.start,
+            };
+            this.m_markers.loopEnd = {
+                name: "Loopend",
+                position: opts.loopPoints.end,
+            };
+        }
+
+        // Create audio console channels
+        const channelCount = this.m_track.getChannelCount();
+        const nameCount = opts.channelNames?.length || 0;
+        for (let i = 0; i < channelCount; ++i)
+        {
+            this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
+        }
+
+        this.m_track.setPause(true, 0);
+        this.m_track.setPosition(0);
+        this.m_lastPosition = 0;
+        this.onload.invoke(this);
+    }
+
     loadFSBank(buffer: ArrayBuffer, opts: LoadOptions = defaultLoadOps)
     {
         if (this.m_track.isLoaded())
@@ -200,50 +249,13 @@ export class MultiTrackControl
         try {
             this.m_track.loadBank(
                 this.m_trackData.data[0].ptr, buffer.byteLength);
-            const scriptErr = this.m_track.loadScript(opts.script || "");
-            if (scriptErr)
-            {
-                console.error("Lua script load error:", scriptErr);
-            }
 
-
-            // Load markers
-            this.m_markers.clear();
-            if (opts.markers) // if markers provided use these
-            {
-                opts.markers.forEach(marker => this.m_markers.push(marker));
-            }
-            else // otherwise get them from the track
-            {
-                this.m_markers.loadFromTrack();
-            }
-
-            if (opts.loopPoints)
-            {
-                // loop points will be set to track automatically via markers
-                this.m_markers.loopStart = {
-                    name: "LoopStart",
-                    position: opts.loopPoints.start,
-                };
-                this.m_markers.loopEnd = {
-                    name: "Loopend",
-                    position: opts.loopPoints.end,
-                };
-            }
-
-
-
-            this.m_console.channels.length = 0;
-
-            const channelCount = this.m_track.getChannelCount();
-            const nameCount = opts.channelNames?.length || 0;
-            for (let i = 0; i < channelCount; ++i)
-            {
-                this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
-            }
-            this.m_track.setPause(true, 0);
-            this.m_lastPosition = 0;
-            this.onload.invoke(this);
+            this.postLoadAudio(opts);
+        }
+        catch(err)
+        {
+            this.unload();
+            throw err;
         }
         finally
         {
@@ -274,7 +286,7 @@ export class MultiTrackControl
         }
 
         try {
-            const failedSounds: number[] = [];
+            const failedSounds: {index: number, reason: string}[] = [];
 
             for (let i = 0, length = buffers.length; i < length; ++i)
             {
@@ -284,9 +296,10 @@ export class MultiTrackControl
                 }
                 catch(err)
                 {
-                    failedSounds.push(i);
-                    console.warn("Sound at index " + i + " failed to load:",
-                        err);
+                    failedSounds.push({
+                        index: i,
+                        reason: processErrorMessage(err),
+                    });
                 }
             }
 
@@ -295,48 +308,7 @@ export class MultiTrackControl
                 throw new SoundLoadError(failedSounds);
             }
 
-            // Load script
-            const scriptErr = this.m_track.loadScript(opts.script || "");
-            if (scriptErr)
-            {
-                console.error("Lua script load error:", scriptErr);
-            }
-
-            // Load markers
-            this.m_markers.clear();
-            if (opts.markers) // if markers provided use these
-            {
-                opts.markers.forEach(marker => this.m_markers.push(marker));
-            }
-            else // otherwise get them from the track
-            {
-                this.m_markers.loadFromTrack();
-            }
-
-            if (opts.loopPoints)
-            {
-                // loop points will be set to track automatically via markers
-                this.m_markers.loopStart = {
-                    name: "LoopStart",
-                    position: opts.loopPoints.start,
-                };
-                this.m_markers.loopEnd = {
-                    name: "Loopend",
-                    position: opts.loopPoints.end,
-                };
-            }
-
-            const channelCount = this.m_track.getChannelCount();
-            const nameCount = opts.channelNames?.length || 0;
-            for (let i = 0; i < channelCount; ++i)
-            {
-                this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
-            }
-
-            this.m_track.setPause(true, 0);
-            this.m_track.setPosition(0);
-            this.m_lastPosition = 0;
-            this.onload.invoke(this);
+            this.postLoadAudio(opts);
         }
         catch(err)
         {
@@ -448,4 +420,44 @@ export class MultiTrackControl
         const end = begin + data.byteLength;
         return getAudioModule().HEAPF32.subarray(begin, end);
     }
+}
+
+/**
+ * Processes error message from audio loading error object
+ * @param  err - error object retrieved from catch statement from loadFSBank or
+ *               loadSound functions
+ * @return error message string
+ */
+function processErrorMessage(err: any): string
+{
+    let reason: string = "";
+
+     // WebAssembly errors should be emitted from Emscripten, make sure flag is set
+    if (err instanceof WebAssembly["Exception"])
+    {
+        const type: string = err.message[0];
+        const message: string = err.message[1];
+
+        switch(type)
+        {
+        case "Insound::SoundLengthMismatch":
+            reason = "track length does not match";
+            break;
+        case "Insound::FMODError":
+            reason = "this file format is not supported";
+            break;
+        case "std::runtime_error":
+            reason = message || "unknown error";
+            break;
+        default:
+            reason = "unknown error";
+            break;
+        }
+    }
+    else
+    {
+        reason = "unknown error";
+    }
+
+    return reason;
 }

@@ -2,8 +2,9 @@
 #include "Channel.h"
 #include "common.h"
 #include <insound/Int24.h>
-#include "insound/AudioEngine.h"
+#include <insound/AudioEngine.h>
 #include "SyncPointMgr.h"
+#include <insound/errors/SoundLengthMismatch.h>
 
 #include <fmod.hpp>
 #include <fmod_common.h>
@@ -435,6 +436,17 @@ namespace Insound
                 checkResult( sound->setLoopPoints(
                     loopstart, FMOD_TIMEUNIT_PCM,
                     loopend, FMOD_TIMEUNIT_PCM) );
+
+                // check if length is equal to the first track, if not, throw
+                unsigned soundLength;
+                checkResult(sound->getLength(&soundLength, FMOD_TIMEUNIT_PCM));
+                unsigned firstLength;
+                checkResult(m->sounds[0]->getLength(&firstLength, FMOD_TIMEUNIT_PCM));
+
+                if (soundLength != firstLength)
+                {
+                    throw SoundLengthMismatch();
+                }
             }
 
             // done, commit results
@@ -512,6 +524,19 @@ namespace Insound
         checkResult( firstSound->getLength(&length, FMOD_TIMEUNIT_PCM) );
         if (length == 0)
             throw std::runtime_error("Invalid subsound, 0 length.");
+
+        // check if lengths are equal for all sounds
+        for (int i = 1; i < numSubSounds; ++i)
+        {
+            FMOD::Sound *curSound;
+            unsigned curLength;
+            checkResult( snd->getSubSound(i, &curSound) );
+            checkResult( curSound->getLength(&curLength, FMOD_TIMEUNIT_PCM) );
+            if (curLength != length)
+            {
+                throw SoundLengthMismatch();
+            }
+        }
 
         // Find loop start / end points if they exist
         auto loopstart = syncPoints.getOffsetPCM("LoopStart");
