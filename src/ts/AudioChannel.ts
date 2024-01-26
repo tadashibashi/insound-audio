@@ -31,16 +31,16 @@ function createDefaultParameters(ctrl: MultiTrackControl, channel: number)
 {
     return {
         volume: new NumberParameter("Volume", channel, 0, 1.25, .01, 1, false,
-            (i, val) => ctrl.track.setVolume(channel, val)),
+            (i, val) => ctrl.track.setVolume(i, val)),
 
         reverb: new NumberParameter("Reverb", channel, 0, 2, .01, 0, false,
-            (i, val) => ctrl.track.setReverbLevel(channel, val)),
+            (i, val) => ctrl.track.setReverbLevel(i, val)),
 
         panLeft: new NumberParameter("L", channel, 100, 0, 1, 100, true,
-        (i, val) => ctrl.track.setPanLeft(channel, val * .01)),
+        (i, val) => ctrl.track.setPanLeft(i, val * .01)),
 
         panRight: new NumberParameter("R", channel, 0, 100, 1, 100, true,
-            (i, val) => ctrl.track.setPanRight(channel, val * .01)),
+            (i, val) => ctrl.track.setPanRight(i, val * .01)),
     };
 }
 
@@ -50,17 +50,31 @@ export interface AudioChannelSettings
     /** Channel name */
     name: string;
     params: Partial<AudioChannelPTypes>;
+    channel: AudioChannel;
 }
 
 export class AudioChannel
 {
     name: string;
+    private m_index: number;
     readonly params: AudioChannelParameters;
+
+    get index() { return this.m_index; }
+    set index(ch: number)
+    {
+        this.m_index = ch;
+
+        for (const param of Object.values(this.params))
+        {
+            param.index = ch;
+        }
+    }
 
     constructor(ctrl: MultiTrackControl, name: string, channel: number)
     {
         this.name = name;
         this.params = createDefaultParameters(ctrl, channel);
+        this.m_index = channel;
     }
 
     getCurrentSettings(): AudioChannelSettings
@@ -75,6 +89,7 @@ export class AudioChannel
         return {
             name: this.name,
             params,
+            channel: this,
         };
     }
 
@@ -90,7 +105,8 @@ export class AudioChannel
         return {
             name: this.name,
             params,
-        }
+            channel: this,
+        };
     }
 
     /**

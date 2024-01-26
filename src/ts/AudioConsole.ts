@@ -9,15 +9,18 @@ export class AudioConsole
     private track: MultiTrackControl | undefined;
 
     /**
-     * Audio channels: 0 is the main channel
+     * Audio sub-channels. Main bus is found at `AudioConsole#main`.
      */
     readonly channels: AudioChannel[];
+
+    readonly main: AudioChannel;
 
     constructor(track?: MultiTrackControl)
     {
         if (track)
             this.track = track;
         this.channels = [];
+        this.main = new AudioChannel(track, "Main", 0);
     }
 
     provideTrack(track: MultiTrackControl)
@@ -31,48 +34,6 @@ export class AudioConsole
     }
 
     /**
-     * Repopulate the console with new channels, applying the following
-     * settings to each channel. Channel 0 is the main channel, while the
-     * other channels are bussed to it as separate channels.
-     *
-     * @param settings Settings to set on each channel. Remember that index 0
-     *                 is the main channel bus that the others are bussed to.
-     */
-    load(settings: AudioChannelSettings[])
-    {
-        const track = this.track;
-        if (!track)
-        {
-            throw Error("AudioConsole failed to load: AudioEngine was not " +
-                "emplaced into AudioConsole.");
-        }
-
-        if (settings.length === 0) return;
-
-        const chans: AudioChannel[] = [];
-
-        // main channel
-        const main = new AudioChannel(track, "Main", 0);
-        main.applySettings(settings[0]);
-
-        // other channels
-        for (let i = 1; i < settings.length; ++i)
-        {
-            const setting = settings[i];
-            const chan = new AudioChannel(track, "", i);
-            chan.applySettings(settings[i]);
-        }
-
-        // done, apply changes
-        this.channels.length = 0;
-        this.channels.push(main);
-        for (const chan of chans)
-        {
-            this.channels.push(chan);
-        }
-    }
-
-    /**
      * Applying the following settings to each channel.
      * Channel 0 is the main channel, while the other channels are bussed to it
      * as separate channels.
@@ -81,17 +42,19 @@ export class AudioConsole
      *                 is the main channel bus that the others are bussed to.
      * @param transitionTime Time to transition to the new setting in seconds.
      */
-    applySettings(settings: AudioChannelSettings[], transitionTime: number = 0)
+    applySettings(settings: {main: AudioChannelSettings, channels: AudioChannelSettings[]},
+        transitionTime: number = 0)
     {
         if (!this.track || !this.track.isLoaded) return;
-        
-        const length = Math.min(settings.length, this.channels.length);
 
-        for (let i = 0; i < length; ++i)
+        for (let i = 0; i < settings.channels.length; ++i)
         {
-            this.channels[i].applySettings(settings[i], transitionTime);
+            settings.channels[i].channel.applySettings(settings.channels[i], transitionTime);
         }
+
+        settings.main.channel.applySettings(settings.main, transitionTime);
     }
+
 
     /**
      * Add a channel to the console.
@@ -107,7 +70,7 @@ export class AudioConsole
         }
 
         this.channels.push(
-            new AudioChannel(this.track, name, this.channels.length));
+            new AudioChannel(this.track, name, this.channels.length + 1));
     }
 
     /**
@@ -123,14 +86,20 @@ export class AudioConsole
         }
     }
 
-    getCurrentSettings(): AudioChannelSettings[]
+    getCurrentSettings(): {main: AudioChannelSettings, channels: AudioChannelSettings[]}
     {
-        return this.channels.map(chan => chan.getCurrentSettings());
+        return {
+            main: this.main.getCurrentSettings(),
+            channels: this.channels.map(chan => chan.getCurrentSettings()),
+        };
     }
 
-    getDefaultSettings(): AudioChannelSettings[]
+    getDefaultSettings(): {main: AudioChannelSettings, channels: AudioChannelSettings[]}
     {
-        return this.channels.map(chan => chan.getDefaultSettings());
+        return {
+            main: this.main.getDefaultSettings(),
+            channels: this.channels.map(chan => chan.getDefaultSettings()),
+        };
     }
 
     /**
@@ -140,6 +109,7 @@ export class AudioConsole
     {
         this.channels.forEach(chan => chan.clear());
         this.channels.length = 0;
+        this.main.clear();
     }
 
     /**

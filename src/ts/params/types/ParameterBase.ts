@@ -26,7 +26,7 @@ class ParameterBase
     private onSetCallback: ((index: number, value: number) => void)[];
 
     readonly defaultValue: number;
-    readonly index: number;
+    index: number;
 
     private lastValue: number;
     private transitionInterval: { interval: number | null };
@@ -99,7 +99,9 @@ class ParameterBase
             const length = cbs.length;
             const index = this.index;
             for (let i = 0; i < length; ++i)
+            {
                 cbs[i](index, value);
+            }
         }
     }
 

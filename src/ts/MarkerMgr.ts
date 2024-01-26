@@ -131,6 +131,10 @@ export class MarkerMgr
             marker.position);
     }
 
+    /**
+     * Populate the marker manager from the current sync points in the track
+     * set in the constructor
+     */
     loadFromTrack()
     {
         const pointCount = this.track.track.getSyncPointCount();

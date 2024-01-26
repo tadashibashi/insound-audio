@@ -7,6 +7,7 @@ import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { SoundLoadError } from "./SoundLoadError";
 import { AudioEngine } from "./AudioEngine";
 import { AudioMarker, MarkerMgr } from "./MarkerMgr";
+import { AudioChannel } from "./AudioChannel";
 
 // Get this info from a database to populate a new track with
 export interface LoadOptions
@@ -15,6 +16,9 @@ export interface LoadOptions
     loopPoints?: {start: number, end: number};
     channelNames?: string[];
     markers?: AudioMarker[];
+
+    /** Provide newly ordered channel array, on reloads */
+    channels?: AudioChannel[];
 }
 
 const defaultLoadOps = {
@@ -225,13 +229,71 @@ export class MultiTrackControl
             };
         }
 
-        // Create audio console channels
-        const channelCount = this.m_track.getChannelCount();
-        const nameCount = opts.channelNames?.length || 0;
-        for (let i = 0; i < channelCount; ++i)
+
+
+        // Populate channels from list
+        if (opts.channels)
         {
-            this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
+            this.m_console.channels.length = 0;
+            const mainCh = this.m_console.main;
+
+            this.m_console.channels.push(...opts.channels);
+
+            const channels = this.m_console.channels;
+            console.log(channels);
+
+
+            // update presets if any chans deleted, remove, if any created, add default preset
+            // TODO: would be nice if there was a mix presets manager that encapsulates this logic
+            this.m_mixPresets.forEach(preset => {
+                // check for deleted, splice out
+                for (let i = 0; i < preset.mix.channels.length;)
+                {
+                    const setting = preset.mix.channels[i];
+                    if (setting.channel === mainCh)
+                    {
+                        ++i;
+                        continue;
+                    }
+
+                    const found = channels.find(ch => ch === setting.channel);
+                    if (!found)
+                    {
+                        console.log("splicing", setting.channel.name);
+                        preset.mix.channels.splice(i, 1);
+                    }
+                    else
+                    {
+                        ++i;
+                    }
+                }
+
+                // check for new, add default mix if so
+                for (let i = 1; i < channels.length; ++i) // start at one since 0 is guaranteed to be the main bus
+                {
+                    if (!preset.mix.channels.find(setting => setting.channel === channels[i]))
+                    {
+                        preset.mix.channels.push(
+                            channels[i].getDefaultSettings()
+                        );
+                    }
+                }
+            });
+
         }
+        else // populate default channels for each track
+        {
+            this.m_console.clear();
+
+            // Create audio console channels
+            const channelCount = this.m_track.getChannelCount();
+            const nameCount = opts.channelNames?.length || 0;
+            for (let i = 0; i < channelCount; ++i)
+            {
+                this.m_console.addChannel(i < nameCount ? opts.channelNames[i] : "");
+            }
+        }
+
 
         this.m_track.setPause(true, 0);
         this.m_track.setPosition(0);
@@ -341,7 +403,6 @@ export class MultiTrackControl
     {
         this.m_track.unload();
         this.m_trackData.free();
-        this.m_console.clear();
     }
 
     get isLoaded() { return this.m_track.isLoaded(); }
