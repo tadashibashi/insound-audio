@@ -1,7 +1,7 @@
 import { getAudioModule } from "./emaudio/AudioModule";
 import { AudioConsole } from "./AudioConsole";
 import { Callback } from "./Callback";
-import { MixPreset } from "./MixPresetMgr";
+import { MixPreset, MixPresetMgr } from "./MixPresetMgr";
 import { SpectrumAnalyzer } from "./SpectrumAnalyzer";
 import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { SoundLoadError } from "./SoundLoadError";
@@ -35,13 +35,15 @@ export class MultiTrackControl
     private m_spectrum: SpectrumAnalyzer;
     private m_trackData: EmBufferGroup;
     private m_console: AudioConsole;
-    private m_mixPresets: MixPreset[];
+    private m_mixPresets: MixPresetMgr;
     private m_looping: boolean;
 
     private m_lastPosition: number;
 
     get track() { return this.m_track; }
-    get mixPresets() { return this.m_mixPresets; }
+
+    /** Read-only list of mix presets, do not modify directly */
+    get mixPresets() { return this.m_mixPresets.presets; }
     get console() { return this.m_console; }
     get spectrum() { return this.m_spectrum; }
     get markers() { return this.m_markers; }
@@ -82,7 +84,7 @@ export class MultiTrackControl
         this.doprint = new Callback;
 
         this.m_console = new AudioConsole(this);
-        this.m_mixPresets = [];
+        this.m_mixPresets = new MixPresetMgr();
         this.m_looping = true;
         this.m_lastPosition = 0;
 
@@ -172,6 +174,7 @@ export class MultiTrackControl
             {
                 this.printSolError(err);
             }
+
             // Local callbacks
             this.onmarker.invoke(marker);
         });

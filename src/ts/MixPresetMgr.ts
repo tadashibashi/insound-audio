@@ -1,5 +1,8 @@
 import { AudioChannel, AudioChannelSettings } from "./AudioChannel";
 
+/**
+ * Mix preset data
+ */
 export interface MixPreset {
     name: string;
     mix: {
@@ -8,14 +11,9 @@ export interface MixPreset {
     };
 }
 
-// create function to translate mix preset into db-savable
-// put mix in order of channels provided by function
-function toDatabase(channels: AudioChannel)
-{
-    throw Error("Not implemented!");
-}
-
-
+/**
+ * Manages caching and handling of mix presets
+ */
 export class MixPresetMgr
 {
     private m_presets: MixPreset[];
@@ -31,22 +29,29 @@ export class MixPresetMgr
      */
     get names() { return this.m_presets.map(mp => mp.name)}
 
+    get length() { return this.m_presets.length; }
+
     constructor()
     {
         this.m_presets = [];
     }
 
     /**
-     * Update presets to account for channel removals and additions
-     * @param channels - array of updated channels minus the main bus
+     * Update presets to account for channel removals and additions enacted
+     * by the user.
+     *
+     * @param channels - array of updated channels minus the main bus, which
+     *                   should come from the current `AudioConsole#channels`
+     *                   array, or equivalent.
      */
-    update(channels: AudioChannel[])
+    update(channels: AudioChannel[]): void
     {
         this.m_presets.forEach(preset => {
+
             // splice channel settings that have been removed
             for (let i = 0; i < preset.mix.channels.length; )
             {
-                const settingCh = preset.mix[i].channel;
+                const settingCh = preset.mix.channels[i].channel;
 
                 if (!channels.find(ch => ch === settingCh))
                 {
@@ -71,26 +76,48 @@ export class MixPresetMgr
         });
     }
 
-    getByIndex(index: number)
+    /** Find the index of a preset, or -1 if it was not found. */
+    findIndex(preset: MixPreset): number
+    {
+        return this.m_presets.findIndex(p => p === preset);
+    }
+
+    /**
+     * Get preset at an index, negative indices begin with length-1 and count
+     * backward from there. Anything exceeding index range results in undefined
+     */
+    at(index: number): MixPreset
     {
         return this.m_presets.at(index);
     }
 
-    getByName(name: string)
+    /** Find a preset based on a predicate, or undefined if it doesn't exist */
+    find(predicate: (preset: MixPreset, index: number, obj: MixPreset[]) => boolean)
     {
-        const presets = this.m_presets;
-        const length = presets.length;
-        for (let i = 0; i < length; ++i)
-        {
-            if (presets[i].name === name)
-                return presets[i];
-        }
-
-        throw Error("Could not find a preset with name \"" + name + "\"");
+        return this.m_presets.find(predicate);
     }
 
+    /** Find a preset by its name, its first occurrance */
+    findByName(name: string): MixPreset | undefined
+    {
+        return this.m_presets.find(p => p.name === name);
+    }
+
+    /** Clear the container of all presets */
     clear()
     {
         this.m_presets.length = 0;
+    }
+
+    /** Transforms the object to JSON format for storage in a database */
+    toJSON(): string
+    {
+        throw Error("Not implemented!");
+    }
+
+    /** Create a MixPresetMgr from JSON string retrieved from the database */
+    static fromJSON(json: string): MixPresetMgr
+    {
+        throw Error("Not implemented!");
     }
 }

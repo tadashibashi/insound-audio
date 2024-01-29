@@ -73,6 +73,12 @@ export class AudioConsole
             new AudioChannel(this.track, name, this.channels.length + 1));
     }
 
+    emplaceChannels(channels: AudioChannel[])
+    {
+        this.channels.length = 0;
+        this.channels.push(...channels);
+    }
+
     /**
      * Add multiple channels to the console
      *
