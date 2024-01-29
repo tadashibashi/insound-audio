@@ -120,6 +120,7 @@ declare interface InsoundMultiTrackControl
     loadSound(data: number, bytelength: number): void;
     loadBank(data: number, bytelength: number): void;
     loadScript(scriptText: string): string;
+    executeScript(script: string): string;
     update(deltaTime: number): void;
     unload(): void;
     isLoaded(): boolean;

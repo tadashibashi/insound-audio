@@ -2,8 +2,44 @@
 ---environment as defined in this file.
 
 ---Environment for the sandbox
+
 env = {}
 function reset_env()
+    local printFunc = function(...)
+        local args = {...}
+        if env.raw_print == nil then return end
+
+        local res = ""
+        for i, v in ipairs(args) do
+            res = res..tostring(v).."\t"
+        end
+
+        env.raw_print(1, "LOG", res);
+    end
+
+    local warnFunc = function(...)
+        if env.raw_print == nil then return end
+        local args = {...}
+        local res = ""
+        for i, v in ipairs(args) do
+            res = res..tostring(v).."\t"
+        end
+
+        env.raw_print(2, "WARN", res)
+    end
+
+    local errorFunc = function(...)
+        if env.raw_print == nil then return end
+        local args = {...}
+
+        local res = ""
+        for i, v in ipairs(args) do
+            res = res..tostring(v).."\t"
+        end
+
+        env.raw_print(3, "ERROR", res)
+    end
+
     env = {
         coroutine = coroutine,
         math = math,
@@ -12,13 +48,13 @@ function reset_env()
         table = table,
         _VERSION = _VERSION,
         collectgarbage = collectgarbage,
-        error = error,
+        error = errorFunc,
         getmetatable = getmetatable,
         ipairs = ipairs,
         next = next,
         pairs = pairs,
         pcall = pcall,
-        print = print,
+        print = printFunc,
         rawequal = rawequal,
         rawget = rawget,
         rawset = rawset,
@@ -27,7 +63,7 @@ function reset_env()
         tonumber = tonumber,
         tostring = tostring,
         type = type,
-        warn = warn,
+        warn = warnFunc,
         xpcall = xpcall,
     }
 end
@@ -48,6 +84,26 @@ function load_script(untrusted_code)
     end
 
     return res
+end
+
+function execute_string(untrusted_code)
+    local untrusted_func, message = load("return "..untrusted_code, nil, 't', env)
+
+    if not untrusted_func then
+        error(message)
+    end
+
+    local did_suceed, res = pcall(untrusted_func)
+
+    if not did_succeed then -- function had an error
+        print("HEY")
+        error(res)
+    end
+
+    print("printing from execute_string: "..tostring(res))
+    env.raw_print(2, "LOG", tostring(res))
+
+    return tostring(res)
 end
 
 --Callback that fires immediately after script load

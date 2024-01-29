@@ -48,6 +48,12 @@ namespace Insound
             emscripten::val getPresetName = callbacks["getPresetName"];
             emscripten::val getPresetCount = callbacks["getPresetCount"];
             emscripten::val applyPreset = callbacks["applyPreset"];
+            emscripten::val print = callbacks["print"];
+
+            env.set_function("raw_print", [this, print](int level, std::string name, std::string message)
+            {
+                print(level, name, message);
+            });
 
             Scripting::Marker::inject("Marker", env);
 

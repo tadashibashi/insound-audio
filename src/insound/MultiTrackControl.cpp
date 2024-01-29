@@ -28,6 +28,11 @@ namespace Insound
         totalTime = 0;
     }
 
+    std::string MultiTrackControl::executeScript(const std::string &script)
+    {
+        return lua->execute(script);
+    }
+
     void MultiTrackControl::unload()
     {
         track->clear();

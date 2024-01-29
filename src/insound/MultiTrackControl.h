@@ -42,6 +42,15 @@ namespace Insound
          */
         const std::string &loadScript(const std::string &text);
 
+        /**
+         * Execute lua script in the current scripting context
+         * @param  script - script text to load
+         * @return        - string with result of script
+         *
+         * @throws sol::error on script error
+         */
+        std::string executeScript(const std::string &script);
+
         /** Unload any currently loaded sounds, script - resets state, etc. */
         void unload();
 

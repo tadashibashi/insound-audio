@@ -60,6 +60,12 @@ export class MultiTrackControl
     /** Called when position is set from lua */
     readonly onseek: Callback<[number]>;
 
+    /** Perform print on console where:
+     * @param level - 0 comment, 1 normal, 2 warn, 3 error
+     * @param name - logger name, displayed [name]
+     *   */
+    readonly doprint: Callback<[number, string, string, any?]>;
+
     constructor(engine: AudioEngine, ptr: number)
     {
         this.m_engine = engine;
@@ -73,6 +79,7 @@ export class MultiTrackControl
         this.onmarker = new Callback;
         this.onseek = new Callback;
         this.onload = new Callback;
+        this.doprint = new Callback;
 
         this.m_console = new AudioConsole(this);
         this.m_mixPresets = [];
@@ -150,12 +157,21 @@ export class MultiTrackControl
                         indexOrName);
 
                 this.m_console.applySettings(preset.mix, seconds);
-            }
+            },
+            print: (level: number, name: string, message: string) => {
+                this.doprint.invoke(level, name, message);
+            },
         });
 
         this.m_markers.onmarker.addListener((marker) => {
-            // Notify Lua scripting
-            this.m_track.doMarker(marker.name, marker.position);
+            try {
+                // Notify Lua scripting
+                this.m_track.doMarker(marker.name, marker.position);
+            }
+            catch(err)
+            {
+                this.printSolError(err);
+            }
             // Local callbacks
             this.onmarker.invoke(marker);
         });
@@ -186,7 +202,15 @@ export class MultiTrackControl
         }
 
         this.onupdate.invoke(deltaTime, this.position);
-        this.m_track.update(deltaTime);
+
+        try {
+            this.m_track.update(deltaTime);
+        }
+        catch(err)
+        {
+            this.printSolError(err);
+        }
+
         this.m_spectrum.update();
 
         this.m_lastPosition = this.position;
@@ -198,10 +222,14 @@ export class MultiTrackControl
     private postLoadAudio(opts: LoadOptions)
     {
         // Load script
-        const scriptErr = this.m_track.loadScript(opts.script || "");
-        if (scriptErr)
+
+        this.print(`Track loaded with ${this.m_track.getChannelCount()} channel(s), at ${this.m_track.getLength()} seconds long`);
+        try {
+            this.m_track.loadScript(opts.script || "");
+        }
+        catch(err)
         {
-            console.error("Lua script load error:", scriptErr);
+            this.printSolError(err);
         }
 
         // Load markers
@@ -230,56 +258,13 @@ export class MultiTrackControl
         }
 
 
-
         // Populate channels from list
         if (opts.channels)
         {
-            this.m_console.channels.length = 0;
-            const mainCh = this.m_console.main;
-
-            this.m_console.channels.push(...opts.channels);
-
-            const channels = this.m_console.channels;
-            console.log(channels);
-
+            this.m_console.emplaceChannels(opts.channels);
 
             // update presets if any chans deleted, remove, if any created, add default preset
-            // TODO: would be nice if there was a mix presets manager that encapsulates this logic
-            this.m_mixPresets.forEach(preset => {
-                // check for deleted, splice out
-                for (let i = 0; i < preset.mix.channels.length;)
-                {
-                    const setting = preset.mix.channels[i];
-                    if (setting.channel === mainCh)
-                    {
-                        ++i;
-                        continue;
-                    }
-
-                    const found = channels.find(ch => ch === setting.channel);
-                    if (!found)
-                    {
-                        console.log("splicing", setting.channel.name);
-                        preset.mix.channels.splice(i, 1);
-                    }
-                    else
-                    {
-                        ++i;
-                    }
-                }
-
-                // check for new, add default mix if so
-                for (let i = 1; i < channels.length; ++i) // start at one since 0 is guaranteed to be the main bus
-                {
-                    if (!preset.mix.channels.find(setting => setting.channel === channels[i]))
-                    {
-                        preset.mix.channels.push(
-                            channels[i].getDefaultSettings()
-                        );
-                    }
-                }
-            });
-
+            this.m_mixPresets.update(opts.channels);
         }
         else // populate default channels for each track
         {
@@ -299,6 +284,46 @@ export class MultiTrackControl
         this.m_track.setPosition(0);
         this.m_lastPosition = 0;
         this.onload.invoke(this);
+    }
+
+    private print(...args: any[])
+    {
+        let str = "";
+        for (let i = 0; i < args.length; ++i)
+        {
+            str += args[i].toString() + "\t";
+        }
+
+        this.doprint.invoke(0, "INFO", str);
+    }
+
+    /**
+     * Checks caught object for sol::error object, and fires print error
+     * callback.
+     *
+     * @param error - error object to check
+     */
+    private printSolError(error: any)
+    {
+        if (error instanceof WebAssembly["Exception"] &&
+            error.message[0] === "sol::error")
+        {
+            const fullMessage: string = error.message[1];
+            const linebreakIndex = fullMessage.indexOf("\n");
+            const message = fullMessage.substring(0, linebreakIndex === -1 ? fullMessage.length : linebreakIndex);
+
+            const beforeLineNumberIndex = message.lastIndexOf("]:");
+            if (beforeLineNumberIndex === -1) return;
+
+            const afterLineNumberIndex = message.indexOf(":", beforeLineNumberIndex + 2);
+            if (afterLineNumberIndex === -1) return;
+
+            const lineNumber = message.substring(beforeLineNumberIndex + 2, afterLineNumberIndex);
+            const errorMessage = message.substring(afterLineNumberIndex + 1, message.length);
+
+
+            this.doprint.invoke(4, "ERROR", errorMessage, parseInt(lineNumber));
+        }
     }
 
     loadFSBank(buffer: ArrayBuffer, opts: LoadOptions = defaultLoadOps)
@@ -360,7 +385,7 @@ export class MultiTrackControl
                 {
                     failedSounds.push({
                         index: i,
-                        reason: processErrorMessage(err),
+                        reason: processLoadingErrorMessage(err),
                     });
                 }
             }
@@ -387,15 +412,30 @@ export class MultiTrackControl
      * To be called when editing a track and wanting to reset state, and
      * and update the script.
      */
-    updateScript(updatedScript: string)
+    updateScript(updatedScript: string): boolean
     {
         this.m_track.setPosition(0);
         this.m_track.setPause(true, 0);
 
-        const scriptErr = this.m_track.loadScript(updatedScript);
-        if (scriptErr)
+        try {
+            this.m_track.loadScript(updatedScript);
+            return true;
+        }
+        catch(err)
         {
-            throw Error("Lua script load error: " + scriptErr);
+            this.printSolError(err);
+            return false;
+        }
+    }
+
+    executeScript(script: string): string
+    {
+        try {
+           return this.m_track.executeScript(script);
+        }
+        catch (err)
+        {
+            this.printSolError(err);
         }
     }
 
@@ -489,7 +529,7 @@ export class MultiTrackControl
  *               loadSound functions
  * @return error message string
  */
-function processErrorMessage(err: any): string
+function processLoadingErrorMessage(err: any): string
 {
     let reason: string = "";
 

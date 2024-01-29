@@ -75,6 +75,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("loadSound", &MultiTrackControl::loadSound)
         .function("loadBank", &MultiTrackControl::loadBank)
         .function("loadScript", &MultiTrackControl::loadScript)
+        .function("executeScript", &MultiTrackControl::executeScript)
         .function("update", &MultiTrackControl::update)
         .function("unload", &MultiTrackControl::unload)
         .function("isLoaded", &MultiTrackControl::isLoaded)

@@ -42,7 +42,7 @@ namespace Insound
 
     LuaDriver::~LuaDriver() { delete m; }
 
-    bool LuaDriver::load(std::string_view userScript) noexcept
+    bool LuaDriver::load(std::string_view userScript)
     {
         try
         {
@@ -126,6 +126,7 @@ namespace Insound
                 {
                     sol::error err = result;
                     m->error = err.what();
+                    throw err;
                     return false;
                 }
             }
@@ -136,6 +137,10 @@ namespace Insound
             m->error = NoErrors;
 
             return true;
+        }
+        catch(const sol::error &e)
+        {
+            throw e;
         }
         catch (const std::exception &e)
         {
@@ -158,6 +163,26 @@ namespace Insound
         }
 
         return load(m->script);
+    }
+
+    std::string LuaDriver::execute(std::string_view script)
+    {
+        auto execute_string = m->lua["execute_string"];
+        if (!execute_string.valid())
+        {
+            throw std::runtime_error("Failed to get execute_string from lua driver");
+        }
+
+        auto result = execute_string(script);
+
+        if (!result.valid())
+        {
+            sol::error err = result;
+            m->error = err.what();
+            throw err;
+        }
+
+        return result.get<std::string>();
     }
 
     bool LuaDriver::isLoaded() const
@@ -191,6 +216,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -215,6 +241,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -242,6 +269,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -269,6 +297,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -296,6 +325,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -323,6 +353,7 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
@@ -364,9 +395,20 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
+            throw err;
             return false;
         }
 
         return true;
+    }
+
+    const sol::state &LuaDriver::context() const
+    {
+        return m->lua;
+    }
+
+    sol::state &LuaDriver::context()
+    {
+        return m->lua;
     }
 }

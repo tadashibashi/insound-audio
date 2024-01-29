@@ -38,7 +38,16 @@ namespace Insound
          *
          * @return whether load was successful
          */
-        bool load(std::string_view userScript) noexcept;
+        bool load(std::string_view userScript);
+
+        /**
+         * Execute script in the current context
+         *
+         * @param script - valid lua script to execute
+         *
+         * @returns result as a string to display
+         */
+        std::string execute(std::string_view script);
 
         /**
          * Reload the last successfully loaded script
@@ -74,6 +83,11 @@ namespace Insound
         // To be called by the AudioEngine from JavaScript to let our Lua
         // API know that a parameter has been set.
         bool doParam(const ParamDesc &param, float value);
+
+        [[nodiscard]]
+        sol::state &context();
+        [[nodiscard]]
+        const sol::state &context() const;
     private:
         enum class Event {
             Init,

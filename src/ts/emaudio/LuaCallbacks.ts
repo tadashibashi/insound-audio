@@ -1,9 +1,7 @@
 
 export interface LuaCallbacks
 {
-    // Called by C++ engine when sync points have been mutated.
-    // The audio engine then updates its own local copy of sync opint info
-    // to alter the frontend display to match.
+    // ----- Markers ----------------------------------------------------------
     addMarker(name: string, ms: number): void;
     editMarker(index: number | string, name: string, ms: number): void;
     getMarker(index: number | string): {name: string, position: number};
@@ -20,6 +18,8 @@ export interface LuaCallbacks
     setPanLeft(ch: number, level: number, seconds?: number): void;
     setPanRight(ch: number, level: number, seconds?: number): void;
     setReverbLevel(ch: number, level: number, seconds?: number): void;
+
+    print(level: number, name: string, message: string);
 
     // ----- presets ----------------------------------------------------------
 
