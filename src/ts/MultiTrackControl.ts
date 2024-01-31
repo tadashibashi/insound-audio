@@ -135,16 +135,20 @@ export class MultiTrackControl
                 this.onseek.invoke(seconds);
             },
             setVolume: (ch: number, level: number, seconds: number = 0) => {
-                this.m_console.channels.at(ch).params.volume.transitionTo(level, seconds);
+                const channel = (ch === 0) ? this.m_console.main : this.m_console.channels.at(ch - 1);
+                channel.params.volume.transitionTo(level, seconds);
             },
-            setPanLeft: (ch: number, level: number) => {
-                this.m_track.setPanLeft(ch, level);
+            setPanLeft: (ch: number, level: number, seconds: number = 0) => {
+                const channel = (ch === 0) ? this.m_console.main : this.m_console.channels.at(ch - 1);
+                channel.params.panLeft.transitionTo(level, seconds);
             },
-            setPanRight: (ch: number, level: number) => {
-                this.m_track.setPanRight(ch, level);
+            setPanRight: (ch: number, level: number, seconds: number = 0) => {
+                const channel = (ch === 0) ? this.m_console.main : this.m_console.channels.at(ch - 1);
+                channel.params.panRight.transitionTo(level, seconds);
             },
-            setReverbLevel: (ch: number, level: number) => {
-                this.m_track.setReverbLevel(ch, level);
+            setReverbLevel: (ch: number, level: number, seconds: number = 0) => {
+                const channel = (ch === 0) ? this.m_console.main : this.m_console.channels.at(ch - 1);
+                channel.params.reverb.transitionTo(level, seconds);
             },
             getPresetName: (index: number) => {
                 return this.m_mixPresets.at(index).name;

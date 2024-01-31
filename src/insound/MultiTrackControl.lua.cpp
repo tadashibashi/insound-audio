@@ -108,44 +108,44 @@ namespace Insound
             });
 
             snd.set_function("volume",
-            [this, setVolume](std::optional<int> ch=0, std::optional<float> volume={})
+            [this, setVolume](std::optional<int> ch={}, std::optional<float> volume={}, std::optional<float> seconds={})
             {
                 if (volume)
                 {
-                    setVolume(ch.value_or(0), volume.value());
+                    setVolume(ch.value_or(0), volume.value(), seconds.value_or(0));
                 }
 
                 return this->getVolume(ch.value_or(0));
             });
 
             snd.set_function("pan_left",
-            [this, setPanLeft](std::optional<int> ch=0, std::optional<float> value = {})
+            [this, setPanLeft](std::optional<int> ch={}, std::optional<float> value = {}, std::optional<float> seconds={})
             {
                 if (value)
                 {
-                    setPanLeft(ch.value_or(0), value.value());
+                    setPanLeft(ch.value_or(0), value.value(), seconds.value_or(0));
                 }
 
                 return this->getPanLeft(ch.value_or(0));
             });
 
             snd.set_function("pan_right",
-            [this, setPanRight](std::optional<int> ch=0, std::optional<float> value = {})
+            [this, setPanRight](std::optional<int> ch={}, std::optional<float> value = {}, std::optional<float> seconds={})
             {
                 if (value)
                 {
-                    setPanRight(ch.value_or(0), value.value());
+                    setPanRight(ch.value_or(0), value.value(), seconds.value_or(0));
                 }
 
                 return this->getPanRight(ch.value_or(0));
             });
 
             snd.set_function("reverb_level",
-            [this, setReverbLevel](std::optional<int> ch=0, std::optional<float> value = {})
+            [this, setReverbLevel](std::optional<int> ch={}, std::optional<float> value = {}, std::optional<float> seconds={})
             {
                 if (value)
                 {
-                    setReverbLevel(ch.value_or(0), value.value());
+                    setReverbLevel(ch.value_or(0), value.value(), seconds.value_or(0));
                 }
 
                 return this->getReverbLevel(ch.value_or(0));
