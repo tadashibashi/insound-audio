@@ -171,14 +171,9 @@ export class MultiTrackControl
         });
 
         this.m_markers.onmarker.addListener((marker) => {
-            try {
-                // Notify Lua scripting
-                this.m_track.doMarker(marker.name, marker.position);
-            }
-            catch(err)
-            {
-                this.printSolError(err);
-            }
+
+            // Notify Lua scripting
+            this.m_track.doMarker(marker.name, marker.position);
 
             // Local callbacks
             this.onmarker.invoke(marker);
@@ -211,13 +206,7 @@ export class MultiTrackControl
 
         this.onupdate.invoke(deltaTime, this.position);
 
-        try {
-            this.m_track.update(deltaTime);
-        }
-        catch(err)
-        {
-            this.printSolError(err);
-        }
+        this.m_track.update(deltaTime);
 
         this.m_spectrum.update();
 
@@ -230,15 +219,9 @@ export class MultiTrackControl
     private postLoadAudio(opts: LoadOptions)
     {
         // Load script
-
         this.print(`Track loaded with ${this.m_track.getChannelCount()} channel(s), at ${this.m_track.getLength()} seconds long`);
-        try {
-            this.m_track.loadScript(opts.script || "");
-        }
-        catch(err)
-        {
-            this.printSolError(err);
-        }
+
+        this.m_track.loadScript(opts.script || "");
 
         // Load markers
         this.m_markers.clear();
@@ -305,35 +288,6 @@ export class MultiTrackControl
         this.doprint.invoke(0, "INFO", str);
     }
 
-    /**
-     * Checks caught object for sol::error object, and fires print error
-     * callback.
-     *
-     * @param error - error object to check
-     */
-    private printSolError(error: any)
-    {
-        if (error instanceof WebAssembly["Exception"] &&
-            (error.message[0] === "sol::error" || error.message[0] === "Insound::LuaError"))
-        {
-            const fullMessage: string = error.message[1];
-            const linebreakIndex = fullMessage.indexOf("\n");
-            const message = fullMessage.substring(0, linebreakIndex === -1 ? fullMessage.length : linebreakIndex);
-
-            const beforeLineNumberIndex = message.lastIndexOf("]:");
-            if (beforeLineNumberIndex === -1) return;
-
-            const afterLineNumberIndex = message.indexOf(":", beforeLineNumberIndex + 2);
-            if (afterLineNumberIndex === -1) return;
-
-            const lineNumber = message.substring(beforeLineNumberIndex + 2, afterLineNumberIndex);
-            const errorMessage = message.substring(afterLineNumberIndex + 1, message.length);
-
-
-            this.doprint.invoke(4, "ERROR", errorMessage, parseInt(lineNumber));
-        }
-    }
-
     loadFSBank(buffer: ArrayBuffer, opts: LoadOptions = defaultLoadOps)
     {
         if (this.m_track.isLoaded())
@@ -349,8 +303,8 @@ export class MultiTrackControl
         }
         catch(err)
         {
-            this.printSolError(err);
             this.unload();
+            throw err;
         }
         finally
         {
@@ -407,8 +361,8 @@ export class MultiTrackControl
         }
         catch(err)
         {
-            this.printSolError(err);
             this.unload();
+            throw err;
         }
         finally
         {
@@ -431,20 +385,13 @@ export class MultiTrackControl
         }
         catch(err)
         {
-            this.printSolError(err);
             return false;
         }
     }
 
     executeScript(script: string): string
     {
-        try {
-           return this.m_track.executeScript(script);
-        }
-        catch (err)
-        {
-            this.printSolError(err);
-        }
+       return this.m_track.executeScript(script);
     }
 
     unload()
