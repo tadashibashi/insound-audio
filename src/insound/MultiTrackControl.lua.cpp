@@ -4,6 +4,9 @@
 #include <insound/scripting/Marker.h>
 #include <insound/scripting/lua.hpp>
 #include <insound/scripting/LuaDriver.h>
+#include <insound/scripting/LuaError.h>
+
+#include <string>
 
 namespace Insound
 {
@@ -29,6 +32,7 @@ namespace Insound
         return NoErrors;
     }
 
+
     void MultiTrackControl::initScriptingEngine()
     {
         // set up lua environment callback
@@ -49,10 +53,16 @@ namespace Insound
             emscripten::val getPresetCount = callbacks["getPresetCount"];
             emscripten::val applyPreset = callbacks["applyPreset"];
             emscripten::val print = callbacks["print"];
+            emscripten::val clearConsole = callbacks["clearConsole"];
 
             env.set_function("raw_print", [this, print](int level, std::string name, std::string message)
             {
                 print(level, name, message);
+            });
+
+            env.set_function("clear", [clearConsole]()
+            {
+                clearConsole();
             });
 
             Scripting::Marker::inject("Marker", env);
@@ -98,59 +108,47 @@ namespace Insound
             });
 
             snd.set_function("volume",
-            [this, setVolume](int ch = 0, std::optional<float> volume={})
+            [this, setVolume](std::optional<int> ch=0, std::optional<float> volume={})
             {
                 if (volume)
                 {
-                    setVolume(ch, volume.value());
-                    return volume.value();
+                    setVolume(ch.value_or(0), volume.value());
                 }
-                else
-                {
-                    return this->getVolume(ch);
-                }
+
+                return this->getVolume(ch.value_or(0));
             });
 
             snd.set_function("pan_left",
-            [this, setPanLeft](int ch = 0, std::optional<float> value = {})
+            [this, setPanLeft](std::optional<int> ch=0, std::optional<float> value = {})
             {
                 if (value)
                 {
-                    setPanLeft(ch, value.value());
-                    return value.value();
+                    setPanLeft(ch.value_or(0), value.value());
                 }
-                else
-                {
-                    return this->getPanLeft(ch);
-                }
+
+                return this->getPanLeft(ch.value_or(0));
             });
 
             snd.set_function("pan_right",
-            [this, setPanRight](int ch = 0, std::optional<float> value = {})
+            [this, setPanRight](std::optional<int> ch=0, std::optional<float> value = {})
             {
                 if (value)
                 {
-                    setPanRight(ch, value.value());
-                    return value.value();
+                    setPanRight(ch.value_or(0), value.value());
                 }
-                else
-                {
-                    return this->getPanRight(ch);
-                }
+
+                return this->getPanRight(ch.value_or(0));
             });
 
             snd.set_function("reverb_level",
-            [this, setReverbLevel](int ch = 0, std::optional<float> value = {})
+            [this, setReverbLevel](std::optional<int> ch=0, std::optional<float> value = {})
             {
                 if (value)
                 {
-                    setReverbLevel(ch, value.value());
-                    return value.value();
+                    setReverbLevel(ch.value_or(0), value.value());
                 }
-                else
-                {
-                    return this->getReverbLevel(ch);
-                }
+
+                return this->getReverbLevel(ch.value_or(0));
             });
 
 
@@ -161,7 +159,7 @@ namespace Insound
             });
 
             snd.set_function("loop_point", // loopstart and loopend in milliseconds
-            [this](std::optional<unsigned> loopstart, std::optional<unsigned> loopend)
+            [this](std::optional<unsigned> loopstart={}, std::optional<unsigned> loopend={})
             {
                 if (loopstart)
                 {
@@ -186,12 +184,20 @@ namespace Insound
                     {   // index
                         auto index = std::get<int>(indexOrName) - 1; // offset index since lua indexes from 1
                         marker = getMarker(index);
+
+                        if (marker.isUndefined() || marker.isNull())
+                        {
+                            throw LuaError(lua, "marker at index " +
+                                std::to_string(index+1) + " is out of range");
+                        }
                     }
                     else // string name
                     {
                         auto name = std::get<std::string>(indexOrName);
                         marker = getMarker(name);
                     }
+
+
 
                     return Scripting::Marker{
                         .name=marker["name"].as<std::string>(),
@@ -248,5 +254,14 @@ namespace Insound
         };
 
         this->lua = new LuaDriver(populateEnv);
+
+        emscripten::val print = callbacks["print"];
+        this->lua->setErrorCallback(
+            [print](const std::string &message, int line)
+        {
+            static const std::string name = "ERROR";
+            std::cout << "Error line: " << line << '\n';
+            print(4, name, message, line); // 4 is code for error originating from lua script
+        });
     }
 }

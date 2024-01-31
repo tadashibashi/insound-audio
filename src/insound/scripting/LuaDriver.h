@@ -84,6 +84,15 @@ namespace Insound
         // API know that a parameter has been set.
         bool doParam(const ParamDesc &param, float value);
 
+        /**
+         * Set a callback that fires when an error occurs.
+         * The first parameter contains the error message, and the second
+         * is an integer with the line that the error occurred.
+         *
+         * @param callback - callback to set
+         */
+        void setErrorCallback(const std::function<void(const std::string &, int)> &callback);
+
         [[nodiscard]]
         sol::state &context();
         [[nodiscard]]

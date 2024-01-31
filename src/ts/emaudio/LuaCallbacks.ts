@@ -20,6 +20,7 @@ export interface LuaCallbacks
     setReverbLevel(ch: number, level: number, seconds?: number): void;
 
     print(level: number, name: string, message: string);
+    clearConsole();
 
     // ----- presets ----------------------------------------------------------
 

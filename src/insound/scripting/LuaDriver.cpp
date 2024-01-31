@@ -1,24 +1,85 @@
 #include "LuaDriver.h"
 #include "lua.hpp"
+
 #include <insound/params/ParamDesc.h>
 
 static auto DriverScript =
 #include <insound/embed/driver.lua.h>
 ;
 
+#include <charconv>
 #include <chrono>
+#include <string_view>
 
 static auto NoErrors = "no errors.";
 
 namespace Insound
 {
+    /** Data parsed from a sol::error */
+    struct SolErrorData
+    {
+        /** Line number, or 0, if null */
+        int lineNumber;
+        /** Error message */
+        std::string_view message;
+    };
+
+    /**
+     * Get error data from a sol::error object.
+     * Reliant on the message formatting, may break if Lua changes it's
+     * error message format in a later version.
+     *
+     * @param err - error object to parse
+     */
+    static SolErrorData parseSolError(const std::exception &err)
+    {
+        int lineNumber;
+        std::string_view errorMessage;
+
+        std::string_view fullMessage = err.what();
+        auto message = fullMessage.substr(0, fullMessage.find('\n'));
+
+        // Error format:  [<filename or code>]:<line_number>:<error_message>
+
+        // Get line number
+        const auto beforeLineNumberIndex = message.rfind("]:");
+        const auto afterLineNumberIndex = message.find(":",
+            beforeLineNumberIndex + 2);
+        if (beforeLineNumberIndex == std::string_view::npos ||
+            afterLineNumberIndex == std::string_view::npos)
+        {
+            // couldn't parse line number, set just return full message
+            lineNumber = 0;
+            errorMessage = message;
+        }
+        else
+        {
+            // found line number, parse it
+            auto numberStr = message.substr(beforeLineNumberIndex + 2, afterLineNumberIndex - (beforeLineNumberIndex + 2));
+            auto result = std::from_chars(numberStr.data(), numberStr.data() + numberStr.size(), lineNumber);
+
+            if (result.ec == std::errc::invalid_argument)
+            {
+                lineNumber = 0;
+            }
+
+            errorMessage = message.substr(afterLineNumberIndex + 1);
+        }
+
+        return {
+            .lineNumber=lineNumber,
+            .message=errorMessage
+        };
+    }
+
+
     /**
      * Implementation class for LuaDriver
      */
     struct LuaDriver::Impl
     {
         Impl(const std::function<void(sol::table &)> &populateEnv)
-        : error(NoErrors), script(), lua(),
+        : error(NoErrors), script(), lua(), onError(),
         populateEnv(populateEnv)
         {
         }
@@ -31,6 +92,7 @@ namespace Insound
         sol::state lua;
         // callback populatates the env from owner
         std::function<void(sol::table &)> populateEnv;
+        std::function<void(const std::string &, int)> onError;
     };
 
     LuaDriver::LuaDriver(const std::function<void(sol::table &)> &populateEnv)
@@ -101,7 +163,7 @@ namespace Insound
             if (!userScript.empty())
             {
                 // Get the load_script function to create sandbox with user script
-                auto loadScript = lua.get<sol::protected_function>("load_script");
+                auto loadScript = lua.get<sol::unsafe_function>("load_script");
                 if (!loadScript.valid())
                 {
                     m->error = "failed to get `load_script` "
@@ -112,7 +174,7 @@ namespace Insound
                 // Just check that this function exists which is used as a reducer
                 // to run events.
                 auto processEvent =
-                    lua.get<sol::protected_function>("process_event");
+                    lua.get<sol::unsafe_function>("process_event");
                 if (!processEvent.valid())
                 {
                     m->error = "failed to get `process_event` function from the "
@@ -126,7 +188,14 @@ namespace Insound
                 {
                     sol::error err = result;
                     m->error = err.what();
-                    throw err;
+
+                    // callback error message
+                    if (m->onError)
+                    {
+                        auto data = parseSolError(err);
+                        m->onError(data.message.data(), data.lineNumber);
+                    }
+
                     return false;
                 }
             }
@@ -138,13 +207,17 @@ namespace Insound
 
             return true;
         }
-        catch(const sol::error &e)
-        {
-            throw e;
-        }
         catch (const std::exception &e)
         {
             m->error = e.what();
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(e);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
         catch (...)
@@ -179,7 +252,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
+            return m->error;
         }
 
         return result.get<std::string>();
@@ -209,6 +289,7 @@ namespace Insound
         {
             m->error = "Could not get `process_event` function from lua "
                 "driver.";
+            return false;
         }
 
         auto result = process_event(Event::Init);
@@ -216,7 +297,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -228,7 +316,7 @@ namespace Insound
         if (!isLoaded()) return false; // no err set since it may be expensive?
 
         auto process_event = m->lua["process_event"]
-            .get<sol::protected_function>();
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
             m->error = "Could not get `process_event` function from lua "
@@ -241,7 +329,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -257,7 +352,7 @@ namespace Insound
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::protected_function>();
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
             m->error = "Could not get `process_event` function from lua "
@@ -269,7 +364,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -285,7 +387,7 @@ namespace Insound
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::protected_function>();
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
             m->error = "Could not get `process_event` function from lua "
@@ -297,7 +399,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -313,7 +422,7 @@ namespace Insound
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::protected_function>();
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
             m->error = "Could not get `process_event` function from lua "
@@ -325,7 +434,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -341,11 +457,12 @@ namespace Insound
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::protected_function>();
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
             m->error = "Could not get `process_event` function from lua "
                 "driver.";
+            return false;
         }
 
         auto result = process_event(Event::TrackEnd);
@@ -353,7 +470,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -368,9 +492,9 @@ namespace Insound
             return false;
         }
 
-        sol::protected_function_result result;
+        sol::unsafe_function_result result;
 
-        auto process_event = m->lua.get<sol::protected_function>(
+        auto process_event = m->lua.get<sol::unsafe_function>(
             "process_event");
         if (!process_event.valid())
         {
@@ -395,7 +519,14 @@ namespace Insound
         {
             sol::error err = result;
             m->error = err.what();
-            throw err;
+
+            // callback error message
+            if (m->onError)
+            {
+                auto data = parseSolError(err);
+                m->onError(data.message.data(), data.lineNumber);
+            }
+
             return false;
         }
 
@@ -410,5 +541,11 @@ namespace Insound
     sol::state &LuaDriver::context()
     {
         return m->lua;
+    }
+
+    void LuaDriver::setErrorCallback(
+        const std::function<void(const std::string &, int)> &callback)
+    {
+        m->onError = callback;
     }
 }

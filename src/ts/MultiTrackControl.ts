@@ -67,6 +67,7 @@ export class MultiTrackControl
      * @param name - logger name, displayed [name]
      *   */
     readonly doprint: Callback<[number, string, string, any?]>;
+    readonly doclear: Callback<[]>;
 
     constructor(engine: AudioEngine, ptr: number)
     {
@@ -82,6 +83,7 @@ export class MultiTrackControl
         this.onseek = new Callback;
         this.onload = new Callback;
         this.doprint = new Callback;
+        this.doclear = new Callback;
 
         this.m_console = new AudioConsole(this);
         this.m_mixPresets = new MixPresetMgr();
@@ -118,7 +120,7 @@ export class MultiTrackControl
             },
             getMarker: (index) => {
                 return (typeof index === "number") ?
-                    this.m_markers.array[index-1] :
+                    this.m_markers.array[index] :
                     this.m_markers.findByName(index);
             },
             getMarkerCount: () => {
@@ -160,9 +162,12 @@ export class MultiTrackControl
 
                 this.m_console.applySettings(preset.mix, seconds);
             },
-            print: (level: number, name: string, message: string) => {
-                this.doprint.invoke(level, name, message);
+            print: (level: number, name: string, message: string, extraData?: any) => {
+                this.doprint.invoke(level, name, message, extraData);
             },
+            clearConsole: () => {
+                this.doclear.invoke();
+            }
         });
 
         this.m_markers.onmarker.addListener((marker) => {
@@ -309,7 +314,7 @@ export class MultiTrackControl
     private printSolError(error: any)
     {
         if (error instanceof WebAssembly["Exception"] &&
-            error.message[0] === "sol::error")
+            (error.message[0] === "sol::error" || error.message[0] === "Insound::LuaError"))
         {
             const fullMessage: string = error.message[1];
             const linebreakIndex = fullMessage.indexOf("\n");
@@ -344,8 +349,8 @@ export class MultiTrackControl
         }
         catch(err)
         {
+            this.printSolError(err);
             this.unload();
-            throw err;
         }
         finally
         {
@@ -402,8 +407,8 @@ export class MultiTrackControl
         }
         catch(err)
         {
+            this.printSolError(err);
             this.unload();
-            throw err;
         }
         finally
         {

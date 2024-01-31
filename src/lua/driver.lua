@@ -37,7 +37,8 @@ function reset_env()
             res = res..tostring(v).."\t"
         end
 
-        env.raw_print(3, "ERROR", res)
+        -- env.raw_print(3, "ERROR", res)
+        error(res)
     end
 
     env = {
@@ -75,12 +76,14 @@ function load_script(untrusted_code)
 
     if not untrusted_func then
         error(message)
+        return false
     end
 
     local res, err = pcall(untrusted_func)
 
     if not res then
         error(err)
+        return false
     end
 
     return res
@@ -96,7 +99,6 @@ function execute_string(untrusted_code)
     local did_suceed, res = pcall(untrusted_func)
 
     if not did_succeed then -- function had an error
-        print("HEY")
         error(res)
     end
 
