@@ -28,19 +28,6 @@ function reset_env()
         env.raw_print(2, "WARN", res)
     end
 
-    local errorFunc = function(...)
-        if env.raw_print == nil then return end
-        local args = {...}
-
-        local res = ""
-        for i, v in ipairs(args) do
-            res = res..tostring(v).."\t"
-        end
-
-        -- env.raw_print(3, "ERROR", res)
-        error(res)
-    end
-
     env = {
         coroutine = coroutine,
         math = math,
@@ -49,7 +36,7 @@ function reset_env()
         table = table,
         _VERSION = _VERSION,
         collectgarbage = collectgarbage,
-        error = errorFunc,
+        error = error,
         getmetatable = getmetatable,
         ipairs = ipairs,
         next = next,
@@ -90,7 +77,7 @@ function load_script(untrusted_code)
 end
 
 function execute_string(untrusted_code)
-    local untrusted_func, message = load("return "..untrusted_code, nil, 't', env)
+    local untrusted_func, message = load(untrusted_code, nil, 't', env)
 
     if not untrusted_func then
         error(message)
@@ -101,9 +88,6 @@ function execute_string(untrusted_code)
     if not did_succeed then -- function had an error
         error(res)
     end
-
-    print("printing from execute_string: "..tostring(res))
-    env.raw_print(2, "LOG", tostring(res))
 
     return tostring(res)
 end
