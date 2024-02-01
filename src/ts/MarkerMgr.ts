@@ -61,6 +61,9 @@ export class MarkerMgr
      */
     readonly oncursorchanged: Callback<[number, number]>;
 
+    private soughtPosition: number;
+    private isInvoking: boolean;
+
     /** Read-only, mutating results in unwanted and undefined behavior */
     get array() { return this.markers; }
 
@@ -94,6 +97,9 @@ export class MarkerMgr
         track.onupdate.addListener(this.handleUpdate);
 
         this.track = track;
+
+        this.soughtPosition = -1;
+        this.isInvoking = false;
     }
 
     private m_loopStart: AudioMarker | null;
@@ -325,9 +331,23 @@ export class MarkerMgr
 
         this.m_loopStart = null;
         this.m_loopEnd = null;
+        this.soughtPosition = -1;
+        this.isInvoking = false;
     }
 
     private handleSeek(time: number)
+    {
+        if (this.isInvoking)
+        {
+            this.soughtPosition = time;
+        }
+        else
+        {
+            this.performSeek(time);
+        }
+    }
+
+    private performSeek(time: number)
     {
         this.lastPosition = time * 1000;
 
@@ -364,54 +384,67 @@ export class MarkerMgr
 
     private handleUpdate(delta: number, position: number)
     {
-        position *= 1000;
+        this.isInvoking = true;
+        try {
+            position *= 1000;
 
-        const oldCursor = this.cursor;
+            const oldCursor = this.cursor;
 
-        if (position !== this.lastPosition) // make sure non-seek, player not paused
-        {
-            const length = this.markers.length;
-            if (this.isDirty) // if dirty, we need to recalibrate cursor
+            if (position !== this.lastPosition) // make sure non-seek, player not paused
             {
-                this.calibrateCursor(this.lastPosition);
-
-                this.onmarkersupdated.invoke();
-                this.isDirty = false;
-            }
-
-            // Track looped, invoke marker callback on every marker at the end of the track
-            if (position < this.lastPosition)
-            {
-                while (this.cursor < length)
+                const length = this.markers.length;
+                if (this.isDirty) // if dirty, we need to recalibrate cursor
                 {
-                    this.onmarker.invoke(this.markers[this.cursor++]);
+                    this.calibrateCursor(this.lastPosition);
+
+                    this.onmarkersupdated.invoke();
+                    this.isDirty = false;
                 }
-                this.cursor = 0;
-            }
 
-            if (this.cursor < length)
-            {
-                // Invoke markers up until cursor reaches position
-                while (this.markers[this.cursor].position <= position)
+                // Track looped, invoke marker callback on every marker at the end of the track
+                if (position < this.lastPosition)
                 {
-                    this.onmarker.invoke(this.markers[this.cursor++]);
-                    console.log(position, this.lastPosition);
-
-                    if (this.cursor >= length)
+                    while (this.cursor < length)
                     {
-                        break;
+                        this.onmarker.invoke(this.markers[this.cursor++]);
+                    }
+                    this.cursor = 0;
+                }
+
+                if (this.cursor < length)
+                {
+                    // Invoke markers up until cursor reaches position
+                    while (this.markers[this.cursor].position <= position)
+                    {
+                        this.onmarker.invoke(this.markers[this.cursor++]);
+                        console.log(position, this.lastPosition);
+
+                        if (this.cursor >= length)
+                        {
+                            break;
+                        }
                     }
                 }
+
+
             }
 
+            this.lastPosition = position;
 
+            if (oldCursor !== this.cursor)
+            {
+                this.oncursorchanged.invoke(this.cursor, oldCursor);
+            }
+        }
+        finally
+        {
+            this.isInvoking = false;
         }
 
-        this.lastPosition = position;
-
-        if (oldCursor !== this.cursor)
+        if (this.soughtPosition !== -1)
         {
-            this.oncursorchanged.invoke(this.cursor, oldCursor);
+            this.performSeek(this.soughtPosition);
+            this.soughtPosition = -1; // unset flag
         }
     }
 

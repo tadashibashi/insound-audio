@@ -131,8 +131,7 @@ export class MultiTrackControl
                 this.onpause.invoke(pause);
             },
             setPosition: (seconds: number) => {
-                this.m_track.setPosition(seconds);
-                this.onseek.invoke(seconds);
+                this.position = seconds;
             },
             setVolume: (ch: number, level: number, seconds: number = 0) => {
                 const channel = (ch === 0) ? this.m_console.main : this.m_console.channels.at(ch - 1);
@@ -380,7 +379,7 @@ export class MultiTrackControl
      */
     updateScript(updatedScript: string): boolean
     {
-        this.m_track.setPosition(0);
+        this.position = 0;
         this.m_track.setPause(true, 0);
 
         try {
@@ -441,8 +440,8 @@ export class MultiTrackControl
 
     get isPaused() { return this.m_track.getPause(); }
 
-    set position(seconds: number) {
-
+    set position(seconds: number)
+    {
         this.m_track.setPosition(seconds);
         this.m_lastPosition = this.m_track.getPosition(); // seeking should cause last position to align with current
         this.onseek.invoke(this.m_track.getPosition());
