@@ -81,12 +81,14 @@ function execute_string(untrusted_code)
 
     if not untrusted_func then
         error(message)
+        return false
     end
 
     local did_suceed, res = pcall(untrusted_func)
 
     if not did_succeed then -- function had an error
         error(res)
+        return false
     end
 
     return tostring(res)

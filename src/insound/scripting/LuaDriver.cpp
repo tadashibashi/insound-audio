@@ -240,29 +240,43 @@ namespace Insound
 
     std::string LuaDriver::execute(std::string_view script)
     {
-        auto execute_string = m->lua["execute_string"];
+        auto execute_string = m->lua["execute_string"]
+            .get<sol::unsafe_function>();
         if (!execute_string.valid())
         {
             throw std::runtime_error("Failed to get execute_string from lua driver");
         }
 
-        auto result = execute_string(script);
+        try {
+            auto result = execute_string(script);
 
-        if (!result.valid())
+            if (!result.valid())
+            {
+                sol::error err = result;
+                m->error = err.what();
+
+                if (m->onError)
+                {
+                    auto data = parseSolError(err);
+                    m->onError(data.message.data(), data.lineNumber);
+                }
+
+                return m->error;
+            }
+
+            return result.get<std::string>();
+        }
+        catch(const sol::error &e)
         {
-            sol::error err = result;
-            m->error = err.what();
-
             if (m->onError)
             {
-                auto data = parseSolError(err);
+                auto data = parseSolError(e);
                 m->onError(data.message.data(), data.lineNumber);
             }
 
-            return m->error;
+            return e.what();
         }
 
-        return result.get<std::string>();
     }
 
     bool LuaDriver::isLoaded() const
