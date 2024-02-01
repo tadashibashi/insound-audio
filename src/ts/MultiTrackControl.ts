@@ -37,6 +37,7 @@ export class MultiTrackControl
     private m_console: AudioConsole;
     private m_mixPresets: MixPresetMgr;
     private m_looping: boolean;
+    private m_loop: {start: number, end: number};
 
     private m_lastPosition: number;
 
@@ -44,6 +45,7 @@ export class MultiTrackControl
 
     /** Read-only list of mix presets, do not modify directly */
     get mixPresets() { return this.m_mixPresets.presets; }
+    set mixPresets(val: MixPreset[]) { this.m_mixPresets.presets = val; }
     get console() { return this.m_console; }
     get spectrum() { return this.m_spectrum; }
     get markers() { return this.m_markers; }
@@ -77,6 +79,8 @@ export class MultiTrackControl
         this.m_spectrum = new SpectrumAnalyzer();
         this.m_trackData = new EmBufferGroup();
 
+        this.m_loop = { start: 0, end: 0 };
+
         this.onpause = new Callback;
         this.onupdate = new Callback;
         this.onmarker = new Callback;
@@ -91,6 +95,8 @@ export class MultiTrackControl
         this.m_lastPosition = 0;
 
         this.m_markers = new MarkerMgr(this);
+
+
 
         const MultiTrackControl = getAudioModule().MultiTrackControl;
         this.m_track = new MultiTrackControl(this.m_ptr, {
@@ -117,6 +123,9 @@ export class MultiTrackControl
                         this.m_markers.updatePositionByIndex(markerIndex, ms);
                     }
                 }
+            },
+            setLoopPoint: (start, end) => {
+                this.setLoopPoint(start, end);
             },
             getMarker: (index) => {
                 return (typeof index === "number") ?
@@ -200,7 +209,7 @@ export class MultiTrackControl
         {
             if (this.position < this.m_lastPosition)
             {
-                const loop = this.loopPoints;
+                const loop = this.m_track.getLoopPoint();
                 this.position = (loop.end - .001) * .001;
                 this.setPause(true, 0);
                 this.m_engine.suspend();
@@ -241,16 +250,8 @@ export class MultiTrackControl
         if (opts.loopPoints)
         {
             // loop points will be set to track automatically via markers
-            this.m_markers.loopStart = {
-                name: "LoopStart",
-                position: opts.loopPoints.start,
-            };
-            this.m_markers.loopEnd = {
-                name: "Loopend",
-                position: opts.loopPoints.end,
-            };
+            this.setLoopPoint(opts.loopPoints.start, opts.loopPoints.end);
         }
-
 
         // Populate channels from list
         if (opts.channels)
@@ -273,10 +274,10 @@ export class MultiTrackControl
             }
         }
 
-
         this.m_track.setPause(true, 0);
         this.m_track.setPosition(0);
         this.m_lastPosition = 0;
+        this.m_loop = this.m_track.getLoopPoint();
         this.onload.invoke(this);
     }
 
@@ -410,7 +411,7 @@ export class MultiTrackControl
 
     get length() { return this.m_track.getLength(); }
 
-    get loopPoints() { return this.m_track.getLoopPoint(); }
+    get loopPoint() { return this.m_loop; }
 
     // ----- Track controls ---------------------------------------------------
 
@@ -427,10 +428,13 @@ export class MultiTrackControl
 
     setPause(pause: boolean, seconds: number = 0)
     {
+        // This is usually the case when a track is in non-loop mode and stops at the end
+        // We need to set the position to 0 to keep it from getting stuck at the end
+        // Future: have a sample accurate way to end the track
         if (!pause && this.m_engine.isSuspended())
         {
             this.m_engine.resume();
-            if (this.position > (this.loopPoints.end * .001) - .01)
+            if (this.position > (this.m_track.getLoopPoint().end * .001) - .01)
                 this.position = 0;
         }
 
@@ -455,6 +459,7 @@ export class MultiTrackControl
     setLoopPoint(startMS: number, endMS: number)
     {
         this.m_track.setLoopPoint(startMS, endMS);
+        this.m_loop = this.m_track.getLoopPoint();
     }
 
     applyMixPreset(indexOrName: number | string, seconds: number = 0)

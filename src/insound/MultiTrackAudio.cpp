@@ -403,8 +403,6 @@ namespace Insound
                 if (!loopStart)
                 {
                     loopStart.emplace(0);
-                    sound->addSyncPoint(0, FMOD_TIMEUNIT_PCM, "LoopStart",
-                        nullptr);
                     didAlterLoop = true;
                 }
 
@@ -412,11 +410,7 @@ namespace Insound
                 {
                     unsigned int length;
                     checkResult(sound->getLength(&length, FMOD_TIMEUNIT_PCM));
-
                     loopEnd.emplace(length);
-                    sound->addSyncPoint(length, FMOD_TIMEUNIT_PCM, "LoopEnd",
-                        nullptr);
-
                     didAlterLoop = true;
                 }
 
@@ -548,16 +542,12 @@ namespace Insound
         bool didSetLoop = false;
         if (!loopstart)
         {
-            checkResult( firstSound->addSyncPoint(0, FMOD_TIMEUNIT_PCM,
-                "LoopStart", nullptr) );
             loopstart.emplace(0);
             didSetLoop = true;
         }
 
         if (!loopend)
         {
-            checkResult( firstSound->addSyncPoint(length,
-                FMOD_TIMEUNIT_PCM, "LoopEnd", nullptr) );
             loopend.emplace(length);
             didSetLoop = true;
         }

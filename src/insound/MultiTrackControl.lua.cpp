@@ -54,6 +54,7 @@ namespace Insound
             emscripten::val applyPreset = callbacks["applyPreset"];
             emscripten::val print = callbacks["print"];
             emscripten::val clearConsole = callbacks["clearConsole"];
+            emscripten::val setLoopPoint = callbacks["setLoopPoint"];
 
             env.set_function("raw_print", [this, print](int level, std::string name, std::string message)
             {
@@ -159,11 +160,12 @@ namespace Insound
             });
 
             snd.set_function("loop_point", // loopstart and loopend in milliseconds
-            [this](std::optional<unsigned> loopstart={}, std::optional<unsigned> loopend={})
+            [this, setLoopPoint](std::optional<double> loopstart={}, std::optional<double> loopend={})
             {
+                std::cout << "setting loop start: " << loopstart.value_or(0) << ", " << loopend.value_or(0) << '\n';
                 if (loopstart)
                 {
-                    setLoopPoint(loopstart.value(), loopend.value_or(getLength()));
+                    setLoopPoint(loopstart.value(), loopend.value_or(getLength() * 1000.0));
                 }
 
                 return this->getLoopPoint();

@@ -7,6 +7,8 @@ export interface LuaCallbacks
     getMarker(index: number | string): {name: string, position: number};
     getMarkerCount(): number;
 
+    setLoopPoint(start: number, end: number): void;
+
     // ----- controls ---------------------------------------------------------
 
     setPause(pause: boolean, seconds?: number): void;
@@ -19,8 +21,8 @@ export interface LuaCallbacks
     setPanRight(ch: number, level: number, seconds?: number): void;
     setReverbLevel(ch: number, level: number, seconds?: number): void;
 
-    print(level: number, name: string, message: string);
-    clearConsole();
+    print(level: number, name: string, message: string): void
+    clearConsole(): void;
 
     // ----- presets ----------------------------------------------------------
 
