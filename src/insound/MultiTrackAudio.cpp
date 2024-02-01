@@ -286,6 +286,8 @@ namespace Insound
     static FMOD_RESULT F_CALL pcmReadCallback(FMOD_SOUND *pSnd, void *data,
         unsigned int datalen)
     {
+        static_assert(sizeof(float) == 4, "Sizeof float must be 32-bit, 4 bytes");
+
         // Get callback objects
         auto sound = (FMOD::Sound *)pSnd;
 
@@ -337,12 +339,12 @@ namespace Insound
             {
                 if (format == FMOD_SOUND_FORMAT_PCMFLOAT)
                 {
-                    auto len = datalen / sizeof(float);
+                    auto len = datalen / 4;
                     res.reserve(len);
                     for (size_t i = 0; i < len; ++i)
                     {
                         auto val = *((float *)data + i);
-                        res.push_back((double)val / std::numeric_limits<float>::max());
+                        res.push_back(val);
                     }
                 }
                 else
