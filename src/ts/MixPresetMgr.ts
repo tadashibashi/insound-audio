@@ -18,10 +18,9 @@ export class MixPresetMgr
 {
     private m_presets: MixPreset[];
 
-    /**
-     * Do not modify from the outside - readonly!
-     */
     get presets() { return this.m_presets; }
+
+    set presets(val: MixPreset[]) { this.m_presets = val; }
 
     /**
      * Makes a copy of each preset's name in order.
