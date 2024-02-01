@@ -58,11 +58,14 @@ namespace Insound
 
         /**
          * Set paused status
-         * @param  set     - set value of pause
-         * @param  seconds - number of seconds to fade in/out
+         * @param  set        - set value of pause
+         * @param  seconds    - if performFade is true: number of seconds to fade in/out
+         *                      if performFade is false: number of seconds to delay pause set
+         * @param performFade - whether to fade pause by `seconds`, or if false,
+         *                    delays pause set by `seconds`
          * @return reference to this channel for chaining.
          */
-        Channel &pause(bool value, float seconds = 0);
+        Channel &pause(bool value, float seconds = 0, bool performFade = true);
 
         Channel &volume(float val);
 

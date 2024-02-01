@@ -188,7 +188,7 @@ namespace Insound
     }
 
 
-    Channel &Channel::pause(bool value, float seconds)
+    Channel &Channel::pause(bool value, float seconds, bool performFade)
     {
         // Get current parent clock to time pause below
         unsigned long long clock;
@@ -196,8 +196,12 @@ namespace Insound
 
         if (value) // pause
         {
-            // fade-out in `seconds`
-            fadeTo(0, seconds);
+            if (performFade)
+            {
+                // fade-out in `seconds`
+                fadeTo(0, seconds);
+            }
+
 
             // pause at ramp end
             auto rampEnd = clock + samplerate * seconds;
@@ -213,11 +217,23 @@ namespace Insound
                 checkResult( chan->setPaused(false) );
             }
 
-            // unpause right now
-            checkResult( chan->setDelay(clock, 0, false) );
+            // Do pause behavior based on `performFade`
+            if (performFade)
+            {
+                // unpause right now
+                checkResult( chan->setDelay(clock, 0, false) );
 
-            // fade-in in `seconds`
-            fade(0.f, 1.f, seconds);
+                // fade-in in `seconds`
+                fade(0.f, 1.f, seconds);
+            }
+            else
+            {
+                // unpause at the delayed time
+                auto targetClock = clock + samplerate * seconds;
+                checkResult( chan->setDelay(targetClock, 0, false) );
+            }
+
+
         }
 
         m_isPaused = value;
