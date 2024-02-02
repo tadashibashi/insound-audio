@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+static const unsigned int CHANSET_COUNT = 2;
+
 namespace Insound
 {
     static std::map<FMOD::Sound *, std::vector<float>> pcmData;
@@ -28,8 +30,8 @@ namespace Insound
     {
     public:
         Impl(FMOD::System *sys) :
-            sounds(), chans(), fsb(),
-            main(sys), points(), syncpointCallback(), endCallback()
+            sounds(), chans(CHANSET_COUNT), fsb(),
+            main(sys), points(), syncpointCallback(), endCallback(), current(0)
         {
 
         }
@@ -51,7 +53,9 @@ namespace Insound
         }
 
         std::vector<FMOD::Sound *> sounds;
-        std::vector<Channel> chans;
+        std::vector<std::vector<Channel>> chans;
+        int current;
+
         FMOD::Sound *fsb;
 
         Channel main;
@@ -83,13 +87,13 @@ namespace Insound
 
     void MultiTrackAudio::fadeChannelTo(int ch, float to, float seconds)
     {
-        m->chans.at(ch).fadeTo(to, seconds);
+        m->chans.at(m->current).at(ch).fadeTo(to, seconds);
     }
 
 
     float MultiTrackAudio::channelFadeLevel(int ch, bool final) const
     {
-        return m->chans.at(ch).fadeLevel(final);
+        return m->chans.at(m->current).at(ch).fadeLevel(final);
     }
 
 
@@ -101,7 +105,7 @@ namespace Insound
 
     void MultiTrackAudio::pause(bool value, float seconds)
     {
-        for (auto &chan : m->chans)
+        for (auto &chan : m->chans.at(m->current))
         {
             chan.pause(value, seconds);
         }
@@ -112,7 +116,7 @@ namespace Insound
     {
         if (!isLoaded()) return false;
         
-        return m->chans.at(0).paused();
+        return m->chans.at(m->current).at(0).paused();
     }
 
 
@@ -125,7 +129,7 @@ namespace Insound
 
         const auto samplerate = this->samplerate();
 
-        for (auto &chan : m->chans)
+        for (auto &chan : m->chans.at(m->current))
             chan.ch_positionSamples(seconds * samplerate);
     }
 
@@ -134,8 +138,11 @@ namespace Insound
     {
         if (m->chans.empty()) return 0;
 
+        auto &chanSet = m->chans.at(m->current);
+        if (chanSet.empty()) return 0;
+
         // get first channel, assuming each is synced
-        return m->chans[0].ch_positionSamples() / samplerate();
+        return (double)m->chans.at(m->current)[0].ch_positionSamples() / (double)samplerate();
     }
 
 
@@ -169,7 +176,18 @@ namespace Insound
 
     void MultiTrackAudio::clear()
     {
-        m->chans.clear();
+        if (!paused())
+        {
+            pause(true, 0); // stop audio if it's playing
+        }
+
+
+        for (auto &chanSet : m->chans)
+        {
+            chanSet.clear();
+        }
+        m->current = 0;
+
         m->points.clear();
         m->syncpointCallback =
             std::function<void(const std::string &, double, int)>{};
@@ -390,11 +408,11 @@ namespace Insound
                 &sound)
             );
 
-            SyncPointMgr points(sound);
 
             // Check if this is to be the first sound
             if (m->fsb || m->sounds.empty()) // fsb means it will be later unloaded, otherwise, checks for empty sounds
             {
+                SyncPointMgr points(sound);
                 // set loop info from markers
                 auto loopStart = points.getOffsetPCM("LoopStart");
                 auto loopEnd = points.getOffsetPCM("LoopEnd");
@@ -420,6 +438,8 @@ namespace Insound
 
                 if (didAlterLoop)
                     points.load(sound);
+
+                m->points.swap(points);
             }
             else
             {
@@ -451,23 +471,17 @@ namespace Insound
                 clear();
             }
 
-            auto chanSize = m->chans.size();
-
-            auto &chan = m->chans.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
-                sys);
-
-            if (chanSize == 0)
+            for (auto &chanSet : m->chans)
             {
-                m->points.swap(points); // only set points of first track
+                auto &chan = chanSet.emplace_back(sound, (FMOD::ChannelGroup *)m->main.raw(),
+                    sys);
 
-                checkResult( chan.raw()->setUserData(this));
-                checkResult( chan.raw()->setCallback(channelCallback) );
-            }
-            else
-            {
-                // set channel track position to others' position
-                auto seconds = m->chans[0].ch_position();
-                chan.ch_position(seconds);
+                if (!chanSet.empty())
+                {
+                    // set channel track position to others' position
+                    auto seconds = chanSet[0].ch_position();
+                    chan.ch_position(seconds);
+                }
             }
 
             m->sounds.emplace_back(sound);
@@ -561,7 +575,7 @@ namespace Insound
             throw std::runtime_error("LoopStart comes after LoopEnd.");
 
         // Set loop points on each sound, emplacing them into a Channel vector
-        std::vector<Channel> chans;
+        std::vector<std::vector<Channel>> chans(CHANSET_COUNT);
         std::vector<FMOD::Sound *> sounds;
         for (int i = 0; i < numSubSounds; ++i)
         {
@@ -575,17 +589,14 @@ namespace Insound
                     loopend.value(), FMOD_TIMEUNIT_PCM)
             );
 
-            // create the channel wrapper object from the subsound
-            chans.emplace_back(subsound,
-                (FMOD::ChannelGroup *)m->main.raw(), sys);
-            sounds.emplace_back(subsound);
-        }
+            for (auto &chanSet : m->chans) // create channel for each channel set
+            {
+                // create the channel wrapper object from the subsound
+                chanSet.emplace_back(subsound,
+                    (FMOD::ChannelGroup *)m->main.raw(), sys);
+            }
 
-        // Set channel callback on first channel
-        if (!chans.empty())
-        {
-            checkResult( chans[0].raw()->setUserData(this));
-            checkResult( chans[0].raw()->setCallback(channelCallback) );
+            sounds.emplace_back(subsound);
         }
 
         // Success, clear any prior internals then commit changes
@@ -599,33 +610,106 @@ namespace Insound
     }
 
 
-    void MultiTrackAudio::mainVolume(double vol)
+    void MultiTrackAudio::mainVolume(float vol)
     {
         m->main.volume(vol);
     }
 
 
-    double MultiTrackAudio::mainVolume() const
+    float MultiTrackAudio::mainVolume() const
     {
         return m->main.volume();
     }
 
 
-    void MultiTrackAudio::channelVolume(int ch, double vol)
+    void MultiTrackAudio::channelVolume(int ch, float vol)
     {
-        m->chans.at(ch).volume(vol);
+        for (auto &chanSet : m->chans)
+        {
+            chanSet.at(ch).volume(vol);
+        }
     }
 
-
-    double MultiTrackAudio::channelVolume(int ch) const
+    float MultiTrackAudio::channelVolume(int ch) const
     {
-        return m->chans.at(ch).volume();
+        return m->chans.at(0).at(ch).volume();
+    }
+
+    void MultiTrackAudio::channelReverbLevel(int ch, float level)
+    {
+        for (auto &chanSet : m->chans)
+        {
+            chanSet.at(ch).reverbLevel(level);
+        }
+    }
+
+    float MultiTrackAudio::channelReverbLevel(int ch) const
+    {
+        return m->chans.at(0).at(ch).reverbLevel();
+    }
+
+    void MultiTrackAudio::mainReverbLevel(float level)
+    {
+        m->main.reverbLevel(level);
+    }
+
+    float MultiTrackAudio::mainReverbLevel() const
+    {
+        return m->main.reverbLevel();
+    }
+
+    void MultiTrackAudio::mainPanLeft(float level)
+    {
+        m->main.panLeft(level);
+    }
+
+    float MultiTrackAudio::mainPanLeft() const
+    {
+        return m->main.panLeft();
+    }
+
+    void MultiTrackAudio::channelPanLeft(int ch, float level)
+    {
+        for (auto &chanSet : m->chans)
+        {
+            chanSet.at(ch).panLeft(level);
+        }
+
+    }
+
+    float MultiTrackAudio::channelPanLeft(int ch) const
+    {
+        return m->chans.at(m->current).at(ch).panLeft();
+    }
+
+    void MultiTrackAudio::mainPanRight(float level)
+    {
+        m->main.panRight(level);
+    }
+
+    float MultiTrackAudio::mainPanRight() const
+    {
+        return m->main.panRight();
+    }
+
+    void MultiTrackAudio::channelPanRight(int ch, float level)
+    {
+        for (auto &chanSet : m->chans)
+        {
+            chanSet.at(ch).panRight(level);
+        }
+
+    }
+
+    float MultiTrackAudio::channelPanRight(int ch) const
+    {
+        return m->chans.at(m->current).at(ch).panRight();
     }
 
 
     int MultiTrackAudio::channelCount() const
     {
-        return m->chans.size();
+        return m->chans.at(0).size();
     }
 
 
@@ -700,26 +784,6 @@ namespace Insound
     }
 
 
-    void MultiTrackAudio::channelReverbLevel(int ch, float level)
-    {
-        m->chans.at(ch).reverbLevel(level);
-    }
-
-    float MultiTrackAudio::channelReverbLevel(int ch) const
-    {
-        return m->chans.at(ch).reverbLevel();
-    }
-
-    void MultiTrackAudio::mainReverbLevel(float level)
-    {
-        m->main.reverbLevel(level);
-    }
-
-    float MultiTrackAudio::mainReverbLevel() const
-    {
-        return m->main.reverbLevel();
-    }
-
     void MultiTrackAudio::loopMilliseconds(double loopstart, double loopend)
     {
         loopSeconds(loopstart * .001, loopend * .001);
@@ -754,15 +818,19 @@ namespace Insound
             loopstart = loopend - 1;
 
         // Set points
-        for (auto &ch : m->chans)
+        for (auto &chanSet : m->chans)
         {
-            ch.ch_loopPCM(loopstart, loopend);
+            for (auto &ch : chanSet)
+            {
+                ch.ch_loopPCM(loopstart, loopend);
+            }
         }
+
     }
 
     LoopInfo<double> MultiTrackAudio::loopMilliseconds() const
     {
-        const auto loop =  m->chans.at(0).ch_loopPCM();
+        const auto loop =  loopSamples();
         const double rate = samplerate();
 
         return {
@@ -773,7 +841,7 @@ namespace Insound
 
     LoopInfo<double> MultiTrackAudio::loopSeconds() const
     {
-        const auto loop =  m->chans.at(0).ch_loopPCM();
+        const auto loop =  loopSamples();
         const double rate = samplerate();
 
         return {
@@ -784,17 +852,19 @@ namespace Insound
 
     LoopInfo<unsigned> MultiTrackAudio::loopSamples() const
     {
-        return m->chans.at(0).ch_loopPCM();
+        return (m->chans.at(0).empty()) ?
+            LoopInfo<unsigned>{0, 0} :
+            m->chans.at(0).at(0).ch_loopPCM();
     }
 
     Channel &MultiTrackAudio::channel(int ch)
     {
-        return m->chans.at(ch);
+        return m->chans.at(m->current).at(ch);
     }
 
     const Channel &MultiTrackAudio::channel(int ch) const
     {
-        return m->chans.at(ch);
+        return m->chans.at(m->current).at(ch);
     }
 
     Channel &MultiTrackAudio::main()
@@ -821,10 +891,36 @@ namespace Insound
         return it->second;
     }
 
+    void MultiTrackAudio::transitionTo(float position, float fadeInTime, float delayOut)
+    {
+        // pause current layer, delayed
+        for (auto &chan : m->chans.at(m->current))
+        {
+            chan.pause(true, delayOut, false);
+        }
+
+        // move cursor to next layer
+        m->current = (m->current + 1) % m->chans.size();
+
+        // move to new position and fade-in
+        for (auto &chan : m->chans.at(m->current))
+        {
+            chan.ch_position(position);
+            chan.pause(false, fadeInTime, true);
+        }
+    }
+
     float MultiTrackAudio::samplerate() const
     {
         float freq;
         checkResult(m->sounds.at(0)->getDefaults(&freq, nullptr));
         return freq;
+    }
+
+    unsigned long long MultiTrackAudio::dspClock() const
+    {
+        unsigned long long clock;
+        checkResult(m->main.raw()->getDSPClock(&clock, nullptr));
+        return clock;
     }
 }

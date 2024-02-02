@@ -85,6 +85,15 @@ namespace Insound {
         void pause(bool pause, float seconds);
 
         /**
+         * Perform a faded transition to another portion of the track.
+         * @param position    - position to jump to
+         * @param fadeInTime  - fade-in time at new position (in seconds)
+         * @param delayOut    - time to delay for current stem to keep playing
+         *                      until it stops (in seconds)
+         */
+        void transitionTo(float position, float fadeInTime, float delayOut);
+
+        /**
          * Get the paused status of the track
          *
          * @returns true if paused, false if not.
@@ -136,7 +145,7 @@ namespace Insound {
          *            1 are allowed, and negative values mean reversed polarity
          */
         [[nodiscard]]
-        double mainVolume() const;
+        float mainVolume() const;
 
         /**
          * Set the volume level of the track's main bus
@@ -144,12 +153,35 @@ namespace Insound {
          * @param vol - volume level to set where 0 = 0%, 1 = 100%; values over
          *            1 are allowed, and negative values mean reversed polarity
          */
-        void mainVolume(double vol);
+        void mainVolume(float vol);
 
         [[nodiscard]]
-        double channelVolume(int ch) const;
+        float channelVolume(int ch) const;
+        void channelVolume(int ch, float vol);
 
-        void channelVolume(int ch, double vol);
+        [[nodiscard]]
+        float channelReverbLevel(int ch) const;
+        void channelReverbLevel(int ch, float level);
+
+        [[nodiscard]]
+        float mainReverbLevel() const;
+        void mainReverbLevel(float level);
+
+        [[nodiscard]]
+        float channelPanLeft(int ch) const;
+        void channelPanLeft(int ch, float level);
+
+        [[nodiscard]]
+        float mainPanLeft() const;
+        void mainPanLeft(float level);
+
+        [[nodiscard]]
+        float channelPanRight(int ch) const;
+        void channelPanRight(int ch, float level);
+
+        [[nodiscard]]
+        float mainPanRight() const;
+        void mainPanRight(float level);
 
         [[nodiscard]]
         Channel &channel(int ch);
@@ -206,16 +238,6 @@ namespace Insound {
         [[nodiscard]]
         double getSyncPointOffsetMS(size_t i) const;
 
-        [[nodiscard]]
-        float channelReverbLevel(int ch) const;
-
-        void channelReverbLevel(int ch, float level);
-
-        [[nodiscard]]
-        float mainReverbLevel() const;
-
-        void mainReverbLevel(float level);
-
         void loopMilliseconds(double loopstart, double loopend);
         void loopSeconds(double loopstart, double loopend);
         void loopSamples(unsigned loopstart, unsigned loopend);
@@ -238,7 +260,7 @@ namespace Insound {
         [[nodiscard]]
         float samplerate() const;
 
-        
+        unsigned long long dspClock() const;
 
     private:
 

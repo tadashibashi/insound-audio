@@ -142,6 +142,9 @@ declare interface InsoundMultiTrackControl
 
     setPosition(seconds: number): void;
     getPosition(): number;
+
+    transitionTo(position: number, fadeInTime: number, delayOut: number): void;
+
     getLength(): number;
     getChannelCount(): number;
     getAudibility(ch: number): number;

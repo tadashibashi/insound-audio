@@ -108,6 +108,12 @@ namespace Insound
                 return getPosition();
             });
 
+            snd.set_function("transition_to",
+            [this](float position, float fadeIn, float stopDelay)
+            {
+                this->transitionTo(position, fadeIn, stopDelay);
+            });
+
             snd.set_function("volume",
             [this, setVolume](std::optional<int> ch={}, std::optional<float> volume={}, std::optional<float> seconds={})
             {

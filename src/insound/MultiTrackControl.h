@@ -129,6 +129,8 @@ namespace Insound
 
         [[nodiscard]]
         float getAudibility(int ch) const;
+        
+        void transitionTo(float position, float fadeInTime, float delayOut);
 
         /**
          * Set loop points (in milliseconds)

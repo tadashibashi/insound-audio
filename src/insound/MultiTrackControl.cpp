@@ -16,6 +16,11 @@ namespace Insound
         delete lua;
     }
 
+    void MultiTrackControl::transitionTo(float position, float fadeInTime, float delayOut)
+    {
+        track->transitionTo(position, fadeInTime, delayOut);
+    }
+
     void MultiTrackControl::loadSound(size_t data, size_t bytelength)
     {
         track->loadSound((const char *)data, bytelength);
@@ -92,31 +97,31 @@ namespace Insound
     void MultiTrackControl::setPanLeft(int ch, float level)
     {
         if (ch == 0)
-            track->main().panLeft(level);
+            track->mainPanLeft(level);
         else
-            track->channel(ch-1).panLeft(level);
+            track->channelPanLeft(ch-1, level);
     }
 
     float MultiTrackControl::getPanLeft(int ch) const
     {
         return (ch == 0) ?
-            track->main().panLeft() :
-            track->channel(ch-1).panLeft();
+            track->mainPanLeft() :
+            track->channelPanLeft(ch-1);
     }
 
     void MultiTrackControl::setPanRight(int ch, float level)
     {
         if (ch == 0)
-            track->main().panRight(level);
+            track->mainPanRight(level);
         else
-            track->channel(ch-1).panRight(level);
+            track->channelPanRight(ch-1, level);
     }
 
     float MultiTrackControl::getPanRight(int ch) const
     {
         return (ch == 0) ?
-            track->main().panRight() :
-            track->channel(ch-1).panRight();
+            track->mainPanRight() :
+            track->channelPanRight(ch-1);
     }
 
     void MultiTrackControl::setPosition(float seconds)

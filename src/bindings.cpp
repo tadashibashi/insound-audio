@@ -91,6 +91,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getPanRight", &MultiTrackControl::getPanRight)
         .function("setPosition", &MultiTrackControl::setPosition)
         .function("getPosition", &MultiTrackControl::getPosition)
+        .function("transitionTo", &MultiTrackControl::transitionTo)
         .function("getLength", &MultiTrackControl::getLength)
         .function("getChannelCount", &MultiTrackControl::getChannelCount)
         .function("getAudibility", &MultiTrackControl::getAudibility)
