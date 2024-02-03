@@ -225,7 +225,7 @@ export class MultiTrackControl
             }
         }
 
-        if (!this.m_transition)
+        if (!this.m_transition && !this.isPaused)
         {
             const nextTransition = this.m_markers.nextTransition();
 
