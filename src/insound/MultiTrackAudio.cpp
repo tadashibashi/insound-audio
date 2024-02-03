@@ -891,22 +891,22 @@ namespace Insound
         return it->second;
     }
 
-    void MultiTrackAudio::transitionTo(float position, float fadeInTime, float delayOut)
+    void MultiTrackAudio::transitionTo(float position, float inTime, bool fadeIn, float outTime, bool fadeOut, unsigned long long clock)
     {
         // pause current layer, delayed
         for (auto &chan : m->chans.at(m->current))
         {
-            chan.pause(true, delayOut, false);
+            chan.pause(true, outTime, fadeOut, clock);
         }
 
         // move cursor to next layer
         m->current = (m->current + 1) % m->chans.size();
 
-        // move to new position and fade-in
+        // prepare to move to new position and fade-in
         for (auto &chan : m->chans.at(m->current))
         {
             chan.ch_position(position);
-            chan.pause(false, fadeInTime, true);
+            chan.pause(false, inTime, fadeIn, clock);
         }
     }
 

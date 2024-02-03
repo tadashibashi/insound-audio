@@ -1,6 +1,15 @@
 import { Callback } from "./Callback";
 import { MultiTrackControl } from "./MultiTrackControl";
 
+export interface MarkerTransition
+{
+    destination: AudioMarker;
+    inTime: number;
+    fadeIn: boolean;
+    outTime: number;
+    fadeOut: boolean;
+}
+
 export interface AudioMarker
 {
     /**
@@ -12,6 +21,8 @@ export interface AudioMarker
      * Offset from start in milliseconds
      */
     position: number;
+
+    transition?: MarkerTransition;
 }
 
 /**
@@ -36,7 +47,8 @@ export class MarkerMgr
     private isDirty: boolean;
 
     /**
-     * Callback when marker is passed by playhead
+     * Callback when marker is passed by playhead.
+     * Note: this is not sample-accurate, limited to update ticks ~1-10ms grain
      *
      * param 1: marker object
      * param 2: index in markers array
@@ -112,6 +124,23 @@ export class MarkerMgr
                 position: point.offset,
             });
         }
+    }
+
+    /**
+     * Get the next marker with a transition on it, or `null` if there are
+     * no markers with transitions available from the current cursor until
+     * the end of the container (end of track).
+     */
+    nextTransition(): (AudioMarker & {transition: MarkerTransition}) | null
+    {
+        const length = this.markers.length;
+        for (let i = this.cursor; i < length; ++i)
+        {
+            if (this.markers[i].transition)
+                return this.markers[i] as (AudioMarker & {transition: MarkerTransition});
+        }
+
+        return null;
     }
 
     /**

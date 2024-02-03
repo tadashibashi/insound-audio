@@ -105,5 +105,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
         .function("getSampleData", &MultiTrackControl::getSampleData)
         .function("onSyncPoint", &MultiTrackControl::onSyncPoint)
         .function("doMarker", &MultiTrackControl::doMarker)
+        .function("samplerate", &MultiTrackControl::samplerate)
+        .function("dspClock", &MultiTrackControl::dspClock)
         ;
 }

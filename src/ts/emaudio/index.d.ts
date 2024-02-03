@@ -143,7 +143,8 @@ declare interface InsoundMultiTrackControl
     setPosition(seconds: number): void;
     getPosition(): number;
 
-    transitionTo(position: number, fadeInTime: number, delayOut: number): void;
+    transitionTo(position: number, inTime: number, fadeIn: boolean,
+        outTime: number, fadeOut: boolean, clock: number): void;
 
     getLength(): number;
     getChannelCount(): number;
@@ -161,6 +162,9 @@ declare interface InsoundMultiTrackControl
     onSyncPoint(
         callback: (name: string, offset: number, index: number) => void): void;
     doMarker(name: string, ms: number): void;
+
+    samplerate(): number;
+    dspClock(): number;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

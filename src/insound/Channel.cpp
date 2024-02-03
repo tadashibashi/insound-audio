@@ -136,12 +136,14 @@ namespace Insound
     }
 
 
-    float Channel::fadeLevel(bool final) const
+    float Channel::fadeLevel(bool final, unsigned long long targetClock) const
     {
         if (!final) return lastFadePoint;
 
-        unsigned long long clock;
-        checkResult(chan->getDSPClock(nullptr, &clock));
+        if (targetClock == 0)
+        {
+            checkResult(chan->getDSPClock(nullptr, &targetClock));
+        }
 
         unsigned int numPoints;
         checkResult(chan->getFadePoints(&numPoints, nullptr, nullptr));
@@ -155,11 +157,15 @@ namespace Insound
                 numPoints = 2;
             checkResult( chan->getFadePoints(&numPoints, clocks, volumes) );
 
-            if (clocks[0] <= clock && clocks[1] >= clock)
+            if (clocks[0] <= targetClock && clocks[1] > targetClock)
             {
                 float percentage =
-                    ((float)clock - clocks[0]) / (clocks[1] - clocks[0]);
+                    ((float)targetClock - clocks[0]) / (clocks[1] - clocks[0]);
                 return std::abs(volumes[1] - volumes[0] * percentage);
+            }
+            else if (targetClock > clocks[1])
+            {
+                return volumes[1];
             }
         }
 
@@ -167,39 +173,49 @@ namespace Insound
     }
 
 
-    Channel &Channel::fade(float from, float to, float seconds)
+    Channel &Channel::fade(float from, float to, float seconds, unsigned long long targetClock)
     {
+        unsigned long long currentClock;
+        checkResult( chan->getDSPClock(nullptr, &currentClock) );
 
-        unsigned long long clock;
-        checkResult( chan->getDSPClock(nullptr, &clock) );
+        if (targetClock == 0)
+        {
+            targetClock = currentClock;
+        }
 
-        checkResult( chan->removeFadePoints(clock, clock + 60 * samplerate));
-        checkResult( chan->addFadePoint(clock, from) );
-        checkResult( chan->addFadePoint(clock + seconds * samplerate, to) );
+        checkResult( chan->removeFadePoints(currentClock, targetClock + 60 * samplerate));
+        checkResult( chan->addFadePoint(targetClock, from) );
+
+        auto rampEnd = targetClock + seconds * samplerate;
+        if (rampEnd == targetClock)
+            ++rampEnd;
+        checkResult( chan->addFadePoint(rampEnd, to) );
 
         this->lastFadePoint = to;
         return *this;
     }
 
 
-    Channel &Channel::fadeTo(float vol, float seconds)
+    Channel &Channel::fadeTo(float vol, float seconds, unsigned long long clock)
     {
-        return fade(fadeLevel(true), vol, seconds);
+        return fade(fadeLevel(true, clock), vol, seconds, clock);
     }
 
 
-    Channel &Channel::pause(bool value, float seconds, bool performFade)
+    Channel &Channel::pause(bool value, float seconds, bool performFade, unsigned long long clock)
     {
         // Get current parent clock to time pause below
-        unsigned long long clock;
-        checkResult( chan->getDSPClock(nullptr, &clock) );
+        if (clock == 0)
+        {
+            checkResult( chan->getDSPClock(nullptr, &clock) );
+        }
 
         if (value) // pause
         {
             if (performFade)
             {
                 // fade-out in `seconds`
-                fadeTo(0, seconds);
+                fadeTo(0, seconds, clock);
             }
 
 
@@ -220,20 +236,19 @@ namespace Insound
             // Do pause behavior based on `performFade`
             if (performFade)
             {
-                // unpause right now
+                // unpause at clock point
                 checkResult( chan->setDelay(clock, 0, false) );
 
-                // fade-in in `seconds`
-                fade(0.f, 1.f, seconds);
+                // fade-in from clock point to `seconds` afterward
+                fade(0.f, 1.f, seconds, clock);
             }
             else
             {
                 // unpause at the delayed time
                 auto targetClock = clock + samplerate * seconds;
                 checkResult( chan->setDelay(targetClock, 0, false) );
+                fade(0.1, 1.f, 0, clock);
             }
-
-
         }
 
         m_isPaused = value;

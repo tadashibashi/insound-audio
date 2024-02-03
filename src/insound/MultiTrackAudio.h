@@ -91,7 +91,7 @@ namespace Insound {
          * @param delayOut    - time to delay for current stem to keep playing
          *                      until it stops (in seconds)
          */
-        void transitionTo(float position, float fadeInTime, float delayOut);
+        void transitionTo(float position, float inTime, bool fadeIn, float outTime, bool fadeOut, unsigned long long clock = 0);
 
         /**
          * Get the paused status of the track

@@ -55,6 +55,7 @@ namespace Insound
             emscripten::val print = callbacks["print"];
             emscripten::val clearConsole = callbacks["clearConsole"];
             emscripten::val setLoopPoint = callbacks["setLoopPoint"];
+            emscripten::val transitionTo = callbacks["transitionTo"];
 
             env.set_function("raw_print", [this, print](int level, std::string name, std::string message)
             {
@@ -109,9 +110,9 @@ namespace Insound
             });
 
             snd.set_function("transition_to",
-            [this](float position, float fadeIn, float stopDelay)
+            [this, transitionTo](float position, float inTime, bool fadeIn, float outTime, bool fadeOut, std::optional<unsigned long long> clock={})
             {
-                this->transitionTo(position, fadeIn, stopDelay);
+                transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock.value_or(0));
             });
 
             snd.set_function("volume",

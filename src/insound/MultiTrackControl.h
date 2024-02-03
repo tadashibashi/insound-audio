@@ -129,8 +129,9 @@ namespace Insound
 
         [[nodiscard]]
         float getAudibility(int ch) const;
-        
-        void transitionTo(float position, float fadeInTime, float delayOut);
+
+        void transitionTo(float position, float inTime, bool fadeIn,
+            float outTime, bool fadeOut, unsigned long clock);
 
         /**
          * Set loop points (in milliseconds)
@@ -167,6 +168,12 @@ namespace Insound
         void onSyncPoint(emscripten::val callback);
 
         void doMarker(const std::string &name, double ms);
+
+        [[nodiscard]]
+        float samplerate() const;
+        [[nodiscard]]
+        unsigned long dspClock() const;
+
 
     private:
         void initScriptingEngine();

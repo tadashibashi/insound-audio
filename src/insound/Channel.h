@@ -44,17 +44,20 @@ namespace Insound
          * @param  from    - origin fade level
          * @param  to      - destination fade level
          * @param  seconds - time to transition in seconds
+         * @param clock    - when to schedule fade in parent DSP clock units.
+         *                   0 is null, which will use the current clock
          * @return reference to this object for chaining.
          */
-        Channel &fade(float from, float to, float seconds);
+        Channel &fade(float from, float to, float seconds, unsigned long long clock = 0);
 
         /**
          * Fade from current fade level to another over a period of time
          * @param  vol     - destination fade level
          * @param  seconds - time to transition in seconds
+         * @param clock    - when to schedule fade, in parent DSP clock units
          * @return reference to this object for chaining.
          */
-        Channel &fadeTo(float vol, float seconds);
+        Channel &fadeTo(float vol, float seconds, unsigned long long clock = 0);
 
         /**
          * Set paused status
@@ -63,9 +66,12 @@ namespace Insound
          *                      if performFade is false: number of seconds to delay pause set
          * @param performFade - whether to fade pause by `seconds`, or if false,
          *                    delays pause set by `seconds`
+         * @param clock       - DSP clock of parent ChannelGroup, when to
+         *                      schedule the pause. 0 is null, which will use
+         *                      current clock.
          * @return reference to this channel for chaining.
          */
-        Channel &pause(bool value, float seconds = 0, bool performFade = true);
+        Channel &pause(bool value, float seconds = 0, bool performFade = true, unsigned long long clock=0);
 
         Channel &volume(float val);
 
@@ -148,9 +154,11 @@ namespace Insound
 
         /**
          * Get the current channel fade level
+         * @param final - whether to show calculated result (when true), or last set value (when false)
+         * @param targetClock - the clock point at which to check, if 0, it uses the current clock
          */
         [[nodiscard]]
-        float fadeLevel(bool final=true) const;
+        float fadeLevel(bool final=true, unsigned long long targetClock=0) const;
 
         /**
          * Get whether the channel is paused

@@ -6,7 +6,7 @@ import { SpectrumAnalyzer } from "./SpectrumAnalyzer";
 import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { SoundLoadError } from "./SoundLoadError";
 import { AudioEngine } from "./AudioEngine";
-import { AudioMarker, MarkerMgr } from "./MarkerMgr";
+import { AudioMarker, MarkerMgr, MarkerTransition } from "./MarkerMgr";
 import { AudioChannel } from "./AudioChannel";
 
 // Get this info from a database to populate a new track with
@@ -40,6 +40,7 @@ export class MultiTrackControl
     private m_loop: {start: number, end: number};
 
     private m_lastPosition: number;
+    private m_transition: MarkerTransition | null;
 
     get track() { return this.m_track; }
 
@@ -95,8 +96,7 @@ export class MultiTrackControl
         this.m_lastPosition = 0;
 
         this.m_markers = new MarkerMgr(this);
-
-
+        this.m_transition = null;
 
         const MultiTrackControl = getAudioModule().MultiTrackControl;
         this.m_track = new MultiTrackControl(this.m_ptr, {
@@ -136,8 +136,7 @@ export class MultiTrackControl
                 return this.m_markers.length;
             },
             setPause: (pause: boolean, seconds: number) => {
-                this.m_track.setPause(pause, seconds);
-                this.onpause.invoke(pause);
+                this.setPause(pause, seconds);
             },
             setPosition: (seconds: number) => {
                 this.position = seconds;
@@ -179,6 +178,9 @@ export class MultiTrackControl
             },
             clearConsole: () => {
                 this.doclear.invoke();
+            },
+            transitionTo: (position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number) => {
+                this.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
             }
         });
 
@@ -189,6 +191,13 @@ export class MultiTrackControl
 
             // Local callbacks
             this.onmarker.invoke(marker);
+
+            if (this.m_transition && marker === this.m_transition.destination)
+            {
+                // transition head is pointing at the correct place (new channelset)
+                // we can unset transition flag, which blocks pause
+                this.m_transition = null;
+            }
         });
     }
 
@@ -216,6 +225,30 @@ export class MultiTrackControl
             }
         }
 
+        if (!this.m_transition)
+        {
+            const nextTransition = this.m_markers.nextTransition();
+
+            if (nextTransition) // transition available, use it
+            {
+                // perform transition if it is within .1 seconds away
+                if (nextTransition.position * .001 - this.position < .1)
+                {
+                    console.log("triggering transition from lookahead", nextTransition);
+                    const transition = nextTransition.transition;
+                    const clock = this.m_track.dspClock() + this.m_track.samplerate() * (nextTransition.position * .001 - this.position);
+                    this.m_track.transitionTo(
+                        transition.destination.position * .001,
+                        transition.inTime,
+                        transition.fadeIn,
+                        transition.outTime,
+                        transition.fadeOut,
+                        clock);
+                    this.m_transition = nextTransition.transition;
+                }
+            }
+        }
+
         this.onupdate.invoke(deltaTime, this.position);
 
         this.m_track.update(deltaTime);
@@ -223,6 +256,16 @@ export class MultiTrackControl
         this.m_spectrum.update();
 
         this.m_lastPosition = this.position;
+    }
+
+    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number = 0)
+    {
+        if (this.m_transition)
+        {
+            this.m_transition = null;
+        }
+
+        this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
     }
 
     // ----- Loading / Unloading ----------------------------------------------
@@ -278,6 +321,7 @@ export class MultiTrackControl
         this.m_track.setPosition(0);
         this.m_lastPosition = 0;
         this.m_loop = this.m_track.getLoopPoint();
+        this.m_transition = null;
         this.onload.invoke(this);
     }
 
@@ -409,6 +453,7 @@ export class MultiTrackControl
     /** Number of sub-track channels (doesn't include the main bus channel) */
     get channelCount() { return this.m_track.getChannelCount(); }
 
+    /** Track length in seconds */
     get length() { return this.m_track.getLength(); }
 
     get loopPoint() { return this.m_loop; }
@@ -428,6 +473,8 @@ export class MultiTrackControl
 
     setPause(pause: boolean, seconds: number = 0)
     {
+        if (this.m_transition) return; // don't pause while transitioning
+
         // This is usually the case when a track is in non-loop mode and stops at the end
         // We need to set the position to 0 to keep it from getting stuck at the end
         // Future: have a sample accurate way to end the track

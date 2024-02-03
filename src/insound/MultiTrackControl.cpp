@@ -16,9 +16,9 @@ namespace Insound
         delete lua;
     }
 
-    void MultiTrackControl::transitionTo(float position, float fadeInTime, float delayOut)
+    void MultiTrackControl::transitionTo(float position, float inTime, bool fadeIn, float outTime, bool fadeOut, unsigned long clock)
     {
-        track->transitionTo(position, fadeInTime, delayOut);
+        track->transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
     }
 
     void MultiTrackControl::loadSound(size_t data, size_t bytelength)
@@ -218,5 +218,15 @@ namespace Insound
     void MultiTrackControl::doMarker(const std::string &name, double ms)
     {
         this->lua->doSyncPoint(name, ms * .001);
+    }
+
+    float MultiTrackControl::samplerate() const
+    {
+        return track->samplerate();
+    }
+
+    unsigned long MultiTrackControl::dspClock() const
+    {
+        return track->dspClock();
     }
 }
