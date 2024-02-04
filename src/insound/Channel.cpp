@@ -183,12 +183,18 @@ namespace Insound
             targetClock = currentClock;
         }
 
-        checkResult( chan->removeFadePoints(currentClock, targetClock + 60 * samplerate));
-        checkResult( chan->addFadePoint(targetClock, from) );
-
         auto rampEnd = targetClock + seconds * samplerate;
         if (rampEnd == targetClock)
             ++rampEnd;
+
+        // Remove any fade points in between region we will create new ones
+        // hack to only remove fadepoints when unpausing
+        if (to != 0)
+        {
+            checkResult( chan->removeFadePoints(targetClock-1, targetClock + 60  * samplerate));
+        }
+
+        checkResult( chan->addFadePoint(targetClock, from) );
         checkResult( chan->addFadePoint(rampEnd, to) );
 
         this->lastFadePoint = to;
@@ -204,11 +210,15 @@ namespace Insound
 
     Channel &Channel::pause(bool value, float seconds, bool performFade, unsigned long long clock)
     {
+        if (paused() == value) return *this;
+
         // Get current parent clock to time pause below
         if (clock == 0)
         {
             checkResult( chan->getDSPClock(nullptr, &clock) );
         }
+
+
 
         if (value) // pause
         {
@@ -216,6 +226,10 @@ namespace Insound
             {
                 // fade-out in `seconds`
                 fadeTo(0, seconds, clock);
+            }
+            else
+            {
+                fadeTo(0, 0, clock);
             }
 
 
@@ -247,7 +261,7 @@ namespace Insound
                 // unpause at the delayed time
                 auto targetClock = clock + samplerate * seconds;
                 checkResult( chan->setDelay(targetClock, 0, false) );
-                fade(0.1, 1.f, 0, clock);
+                fade(0, 1.f, 0, clock);
             }
         }
 

@@ -105,9 +105,10 @@ namespace Insound
 
     void MultiTrackAudio::pause(bool value, float seconds)
     {
+        auto clock = this->dspClock();
         for (auto &chan : m->chans.at(m->current))
         {
-            chan.pause(value, seconds);
+            chan.pause(value, seconds, clock);
         }
     }
 
@@ -907,6 +908,7 @@ namespace Insound
         {
             chan.ch_position(position);
             chan.pause(false, inTime, fadeIn, clock);
+
         }
     }
 
