@@ -51,6 +51,8 @@ export class MultiTrackControl
     get spectrum() { return this.m_spectrum; }
     get markers() { return this.m_markers; }
 
+    get currentTransition() { return this.m_transition; }
+
     readonly onpause: Callback<[boolean]>;
 
     /**
@@ -258,14 +260,35 @@ export class MultiTrackControl
         this.m_lastPosition = this.position;
     }
 
-    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number = 0)
+    /**
+     * Seek immediately to a new track position, and activate transitionary fade-out and fade-in.
+     *
+     * @param position - position to seek to, in seconds
+     * @param inTime - the time, in seconds, to fade in, or if `fadeIn` is
+     *                 false, the number of seconds to delay entrance at new
+     *                 position
+     * @param fadeIn - whether to fade in (true), or cause a delay before
+     *                 entering at the new position (false)
+     * @param outTime - the time, in seconds, to fade out from current position,
+     *                  or if `fadeOut` is false, the number of seconds to
+     *                  continue playing track until stopping. This will over-
+     *                  lap with the new position's materials, and is useful
+     *                  for allowing track's reverb tail to play while the next
+     *                  portion of the track begins.
+     * @param fadeOut - whether to fade current position out (true), or cause
+     *                  a delay where the current track continues playing at
+     *                  full volume, until `outTime` elapses.
+     *  */
+    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean)
     {
         if (this.m_transition)
         {
             this.m_transition = null;
         }
 
-        this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
+        this.onseek.invoke(position);
+
+        this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, 0);
     }
 
     // ----- Loading / Unloading ----------------------------------------------
