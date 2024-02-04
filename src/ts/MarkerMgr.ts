@@ -368,12 +368,12 @@ export class MarkerMgr
                 // Track looped, invoke marker callback on every marker at the end of the track
                 if (position < this.lastPosition)
                 {
-                    const loop = this.track.loopPoint;
-                    while (this.cursor < length && this.markers[this.cursor].position <= loop.end)
+                    const endPoint = this.markers[this.cursor]?.position || this.track.loopPoint.end;
+                    while (this.cursor < length && this.markers[this.cursor].position <= endPoint)
                     {
                         this.onmarker.invoke(this.markers[this.cursor++]);
                     }
-                    this.cursor = 0;
+                    this.calibrateCursor(position);
                 }
 
                 if (this.cursor < length)
