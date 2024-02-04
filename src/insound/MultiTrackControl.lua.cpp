@@ -110,7 +110,7 @@ namespace Insound
             });
 
             snd.set_function("transition_to",
-            [this, transitionTo](float position, float inTime, bool fadeIn, float outTime, bool fadeOut, std::optional<unsigned long long> clock={})
+            [this, transitionTo](float position, float inTime, bool fadeIn, float outTime, bool fadeOut, std::optional<unsigned long> clock={})
             {
                 transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock.value_or(0));
             });
