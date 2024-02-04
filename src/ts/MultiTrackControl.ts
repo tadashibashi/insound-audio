@@ -425,7 +425,7 @@ export class MultiTrackControl
     updateScript(updatedScript: string): boolean
     {
         this.position = 0;
-        this.m_track.setPause(true, 0);
+        this.setPause(true);
 
         try {
             this.m_track.loadScript(updatedScript);
