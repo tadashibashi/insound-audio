@@ -210,8 +210,6 @@ namespace Insound
 
     Channel &Channel::pause(bool value, float seconds, bool performFade, unsigned long long clock)
     {
-        if (paused() == value) return *this;
-
         // Get current parent clock to time pause below
         if (clock == 0)
         {
