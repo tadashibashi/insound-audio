@@ -2,8 +2,66 @@
 ---environment as defined in this file.
 
 ---Environment for the sandbox
-
 env = {}
+
+function table_length(t)
+    local count = 0
+    for _ in pairs(t) do count = count + 1 end
+    return count
+end
+
+local function to_json_string_array(arr)
+    local res = "["
+    for i, v in ipairs(arr) do
+        res = res .. '"'..v..'"'
+        if i < #arr then
+            res = res .. ","
+        end
+    end
+    res = res .. "]"
+
+    return res
+end
+
+local function add_param(config)
+    if env.track.param.raw_add == nil then
+        error("Internal error: missing env.param.raw_add in Lua driver code")
+    end
+    if config == nil then
+        error("parameter config was `nil`")
+    end
+
+    local type = config.type or error("parameter config is missing `type`")
+    local name = config.name or error("parameter config is missing `name`")
+    local default_value = config.default_value or 0
+    local json = '{"name": "'..name..'", "type": "'..type..'"'
+
+    if type == "strings" then
+        json = json..',"strings": '..to_json_string_array(config.strings or {})..""
+    elseif type == "float" or type == "int" then
+        if config.number then
+            json = json..',"number": {'
+                ..'"min": '..(config.number.min == nil and 'null' or config.number.min)..','
+                ..'"max": '..(config.number.max == nil and 'null' or config.number.max)..','
+            if config.number.step ~= nil and type == "float" then
+                json = json..'"step": '..config.number.step
+            elseif type == "int" then
+                json = json..'"step": 1'
+            else
+                json = json..'"step": null'
+            end
+            json = json..'}'
+        end
+    end
+
+    json = json..'}'
+
+    env.track.param.raw_add(json)
+end
+
+
+
+
 function reset_env()
     local printFunc = function(...)
         local args = {...}
@@ -53,20 +111,28 @@ function reset_env()
         type = type,
         warn = warnFunc,
         xpcall = xpcall,
+
+        track = {
+            param = {
+                add = add_param,
+            },
+        },
     }
+
 end
 
 ---Load a script and its sandbox environment
 ---@param untrusted_code string
 function load_script(untrusted_code)
-    local untrusted_func, message = load(untrusted_code, nil, 't', env)
+    local untrusted_func <const>, message <const> =
+        load(untrusted_code, nil, 't', env)
 
     if not untrusted_func then
         error(message)
         return false
     end
 
-    local res, err = pcall(untrusted_func)
+    local res <const>, err <const> = pcall(untrusted_func)
 
     if not res then
         error(err)
@@ -144,22 +210,28 @@ local function on_trackend()
     end
 end
 
-local function on_paramset(name, value)
-    if env.on_paramset ~= nil then
-        env.on_paramset(name, value)
+local function on_param(name, value)
+    if env.on_param ~= nil then
+        env.on_param(name, value)
     end
 end
 
-local event_table = {
+local EV_TABLE <const> = {
     [Event.Init] = on_init,
     [Event.Update] = on_update,
     [Event.SyncPoint] = on_syncpoint,
     [Event.Load] = on_load,
     [Event.Unload] = on_unload,
     [Event.TrackEnd] = on_trackend,
-    [Event.ParamSet] = on_paramset,
+    [Event.ParamSet] = on_param,
 }
 
 function process_event(ev_type, ...)
-    event_table[ev_type](...)
+    local callback <const> = EV_TABLE[ev_type]
+    if callback ~= nil then
+        callback(...)
+    else
+        error("Internal error: event type " .. ev_type ..
+            " is not recognized")
+    end
 end

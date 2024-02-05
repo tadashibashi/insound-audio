@@ -8,6 +8,7 @@ import { SoundLoadError } from "./SoundLoadError";
 import { AudioEngine } from "./AudioEngine";
 import { AudioMarker, MarkerMgr, MarkerTransition } from "./MarkerMgr";
 import { AudioChannel } from "./AudioChannel";
+import { ParamConfig, ParameterMgr } from "./params/ParameterMgr";
 
 // Get this info from a database to populate a new track with
 export interface LoadOptions
@@ -41,6 +42,8 @@ export class MultiTrackControl
 
     private m_lastPosition: number;
     private m_transition: MarkerTransition | null;
+
+    private m_params: ParameterMgr;
 
     get track() { return this.m_track; }
 
@@ -94,6 +97,7 @@ export class MultiTrackControl
 
         this.m_console = new AudioConsole(this);
         this.m_mixPresets = new MixPresetMgr();
+        this.m_params = new ParameterMgr(this);
         this.m_looping = true;
         this.m_lastPosition = 0;
 
@@ -183,6 +187,28 @@ export class MultiTrackControl
             },
             transitionTo: (position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean) => {
                 this.transitionTo(position, inTime, fadeIn, outTime, fadeOut);
+            },
+            setParameter: (index: number | string, value: number) => {
+                this.m_params.setParameter(index, value);
+            },
+            addParameter: (json: string) => {
+                try {
+                    const data = JSON.parse(json);
+                    // do check here? lua script already makes checks/guarantees...
+                    this.m_params.addParameter(data as ParamConfig);
+                } catch(err)
+                {
+                    console.error(err);
+                    throw err;
+                }
+
+            },
+            getParameter: (index: number | string): number | undefined => {
+                let p =  this.m_params.get(index);
+                if (p)
+                {
+                    return p.value;
+                }
             }
         });
 
@@ -299,6 +325,7 @@ export class MultiTrackControl
         // Load script
         this.print(`Track loaded with ${this.m_track.getChannelCount()} channel(s), at ${this.m_track.getLength()} seconds long`);
 
+        this.m_params.clear(); // param clear must come before loadScript!
         this.m_track.loadScript(opts.script || "");
 
         // Load markers
@@ -447,6 +474,7 @@ export class MultiTrackControl
      */
     updateScript(updatedScript: string): boolean
     {
+        this.m_params.clear();
         this.position = 0;
         this.setPause(true);
 
@@ -469,6 +497,7 @@ export class MultiTrackControl
     {
         this.m_track.unload();
         this.m_trackData.free();
+        this.m_params.clear();
     }
 
     get isLoaded() { return this.m_track.isLoaded(); }

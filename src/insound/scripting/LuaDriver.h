@@ -16,6 +16,10 @@
 
 #include <sol/forward.hpp>
 
+namespace sol {
+    class error;
+}
+
 #include <functional>
 #include <string>
 #include <string_view>
@@ -82,7 +86,7 @@ namespace Insound
 
         // To be called by the AudioEngine from JavaScript to let our Lua
         // API know that a parameter has been set.
-        bool doParam(const ParamDesc &param, float value);
+        bool doParam(const std::string &paramName, float value);
 
         /**
          * Set a callback that fires when an error occurs.
@@ -98,6 +102,9 @@ namespace Insound
         [[nodiscard]]
         const sol::state &context() const;
     private:
+        void doError(std::string_view message);
+        void doError(const sol::error &err);
+
         enum class Event {
             Init,
             Update,

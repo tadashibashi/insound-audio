@@ -1,3 +1,4 @@
+import { ParamConfig } from "../params/ParameterMgr";
 
 export interface LuaCallbacks
 {
@@ -32,4 +33,9 @@ export interface LuaCallbacks
     getPresetName(index: number): string;
     getPresetCount(): number;
     applyPreset(indexOrName: number | string, seconds?: number): void;
+
+    addParameter(json: string): void;
+    setParameter(index: number | string, value: number): void;
+    // Returns undefined if the parameter doesn't exist
+    getParameter(index: number | string): number | undefined;
 }

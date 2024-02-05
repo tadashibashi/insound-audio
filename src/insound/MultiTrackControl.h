@@ -186,6 +186,7 @@ namespace Insound
         [[nodiscard]]
         unsigned long dspClock() const;
 
+        void setParameter(const std::string &name, float value);
 
     private:
         void initScriptingEngine();

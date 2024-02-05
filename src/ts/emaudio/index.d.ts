@@ -24,7 +24,7 @@ declare interface SampleDataInfo {
 declare interface Vector<T> {
     get(index: number): T;
     resize(size: number): void;
-    push_back(item: T);
+    push_back(item: T): void;
     size(): number;
 
     delete();
@@ -165,6 +165,8 @@ declare interface InsoundMultiTrackControl
 
     samplerate(): number;
     dspClock(): number;
+
+    setParameter(name: string, value: number): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

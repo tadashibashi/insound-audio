@@ -15,6 +15,7 @@ static auto NoErrors = "no errors.";
 
 namespace Insound
 {
+
     /** Data parsed from a sol::error */
     struct SolErrorData
     {
@@ -244,7 +245,8 @@ namespace Insound
             .get<sol::unsafe_function>();
         if (!execute_string.valid())
         {
-            throw std::runtime_error("Failed to get execute_string from lua driver");
+            doError("Internal error: failed to get execute_string from lua driver");
+            return "";
         }
 
         try {
@@ -268,13 +270,8 @@ namespace Insound
         }
         catch(const sol::error &e)
         {
-            if (m->onError)
-            {
-                auto data = parseSolError(e);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
-            return e.what();
+            doError(e);
+            return "";
         }
 
     }
@@ -293,7 +290,7 @@ namespace Insound
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
@@ -301,24 +298,15 @@ namespace Insound
             .get<sol::protected_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Internal error: could not get `process_event` function "
+                "from lua driver.");
             return false;
         }
 
         auto result = process_event(Event::Init);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
@@ -330,27 +318,18 @@ namespace Insound
         if (!isLoaded()) return false; // no err set since it may be expensive?
 
         auto process_event = m->lua["process_event"]
-            .get<sol::unsafe_function>();
+            .get<sol::protected_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Internal error: could not get `process_event` "
+                "function from lua driver");
             return false;
         }
 
         auto result = process_event(Event::Update, delta, total);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
@@ -361,31 +340,23 @@ namespace Insound
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::unsafe_function>();
+            .get<sol::protected_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Internal error: could not get `process_event` function "
+                "from lua driver");
+            return false;
         }
 
         auto result = process_event(Event::SyncPoint, label, seconds);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
@@ -396,31 +367,23 @@ namespace Insound
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
         auto process_event = m->lua["process_event"]
-            .get<sol::unsafe_function>();
+            .get<sol::protected_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Internal error: could not get `process_event` function "
+                "from lua driver.");
+            return false;
         }
 
         auto result = process_event(Event::Load);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
@@ -431,7 +394,7 @@ namespace Insound
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
@@ -439,23 +402,15 @@ namespace Insound
             .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Internal error: could not get `process_event` function "
+                "from lua driver.");
+            return false;
         }
 
         auto result = process_event(Event::Unload);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
@@ -466,7 +421,7 @@ namespace Insound
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
@@ -474,73 +429,61 @@ namespace Insound
             .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Could not get `process_event` function from lua "
+                "driver.");
             return false;
         }
 
         auto result = process_event(Event::TrackEnd);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 
         return true;
     }
 
-    bool LuaDriver::doParam(const ParamDesc &param, float value)
+    void LuaDriver::doError(std::string_view message)
+    {
+        m->error = message;
+        if (m->onError)
+        {
+            m->onError(message.data(), 0);
+        }
+    }
+
+    void LuaDriver::doError(const sol::error &err)
+    {
+        auto data = parseSolError(err);
+        m->error = data.message;
+        if (m->onError)
+        {
+            m->onError(data.message.data(), data.lineNumber);
+        }
+    }
+
+    bool LuaDriver::doParam(const std::string &paramName, float value)
     {
         if (!isLoaded())
         {
-            m->error = "Script is not loaded";
+            doError("Internal error: script is not loaded");
             return false;
         }
 
-        sol::unsafe_function_result result;
-
-        auto process_event = m->lua.get<sol::unsafe_function>(
-            "process_event");
+        auto process_event = m->lua["process_event"]
+            .get<sol::unsafe_function>();
         if (!process_event.valid())
         {
-            m->error = "Could not get `process_event` function from lua "
-                "driver.";
+            doError("Could not get `process_event` function from lua "
+                "driver.");
             return false;
         }
 
-        if (param.getType() == ParamDesc::Type::Strings)
-        {
-            auto &strings = param.getStrings();
-            result = process_event(Event::ParamSet, param.getName(),
-                strings.at((int)value));
-        }
-        else
-        {
-            result = process_event(Event::ParamSet, param.getName(),
-                value);
-        }
-
+        auto result = process_event(Event::ParamSet, paramName, value);
         if (!result.valid())
         {
-            sol::error err = result;
-            m->error = err.what();
-
-            // callback error message
-            if (m->onError)
-            {
-                auto data = parseSolError(err);
-                m->onError(data.message.data(), data.lineNumber);
-            }
-
+            doError(result);
             return false;
         }
 

@@ -1,86 +1,149 @@
-import { AudioEngine } from "../AudioEngine";
 import { BoolParameter } from "./types/BoolParameter";
 import { NumberParameter } from "./types/NumberParameter";
 import { StringsParameter } from "./types/StringsParameter";
-import { ParamType } from "./ParamType";
+import { Callback } from "../Callback";
+import { MultiTrackControl } from "../MultiTrackControl";
 
 // Contains non-virtual children of ParameterBase
 export type Param = NumberParameter | StringsParameter | BoolParameter;
 
+export interface ParamConfig {
+    name: string;
+    defaultValue: number;
+    type: "strings" | "float" | "int" | "bool";
+
+    /**
+     * Choices to pick from from a strings parameter.
+     * If `type === "strings"`, this field will be available
+     */
+    strings?: string[];
+    number?: {
+        min?: number;
+        max?: number;
+        step?: number;
+    };
+}
+
+/**
+ * Create parameter from config
+ */
+function makeParam(config: ParamConfig, onset: (index: number, value: number) => void, index: number): Param
+{
+    switch(config.type)
+    {
+        case "strings":
+        {
+            return new StringsParameter(config.name, index, config.strings || [],
+                config.defaultValue, onset);
+        }
+        case "float":
+        {
+            const num = config.number;
+            if (!num)
+            {
+                throw Error("Float parameter must have number field");
+            }
+
+            return new NumberParameter(config.name, index,
+                num.min || Number.MIN_VALUE, num.max || Number.MAX_VALUE,
+                config.number.step || .001, config.defaultValue, false, onset);
+        }
+        case "int":
+        {
+            const num = config.number;
+            if (!num)
+            {
+                throw Error("Int parameter must have number field");
+            }
+
+            return new NumberParameter(config.name, index,
+                num.min ? Math.floor(num.min) : Number.MIN_SAFE_INTEGER,
+                num.max ? Math.floor(num.max) : Number.MAX_SAFE_INTEGER,
+                1, config.defaultValue, true, onset);
+        }
+        case "bool":
+        {
+            return new BoolParameter(config.name, index, !!config.defaultValue, onset);
+        }
+        default:
+        {
+            throw Error("Invalid parameter type provided");
+        }
+    }
+
+}
+
 export class ParameterMgr
 {
+    private m_params: Param[];
+    private m_map: Map<string, Param>;
+    private track: MultiTrackControl;
 
-    private params: Param[];
-    private paramMap: Map<string, Param>;
-    private audio: AudioEngine;
+    /** Read-only, reactive on new additions or clearance */
+    get params() { return this.m_params; }
 
-    constructor(audio?: AudioEngine)
+    /** Called when parameter map is updated */
+    readonly onupdated: Callback<[]>;
+
+    constructor(track: MultiTrackControl)
     {
-        this.params = [];
-        this.paramMap = new Map;
-        if (audio)
-            this.load(audio);
+        this.m_map = new Map;
+        this.m_params = [];
+        this.track = track;
 
-        // bind this to callbacks
         this.handleParamSet = this.handleParamSet.bind(this);
-        this.handleParamReceive = this.handleParamReceive.bind(this);
-    }
-
-    handleParamSet(index: number, value: number)
-    {
-        if (!this.audio) return;
-
-        this.audio.engine.param_send(index, value);
-    }
-
-    handleParamReceive(index: number | string, value: number)
-    {
-        if (typeof index === "number")
-            this.params[index].value = value;
-        else
-            this.paramMap.get(index).value = value;
     }
 
     /**
-     * Load parameter info from the currently loaded track in the audio engine
-     *
-     * @param {AudioEngine} audio - the audio engine to load the params from
+     * Add a parameter to the container from a config
      */
-    load(audio: AudioEngine)
+    addParameter(config: ParamConfig)
     {
-        const paramCount = audio.engine.param_count();
-        const params: Param[] = [];
-        const paramMap: Map<string, Param> =
-            new Map;
+        const newParam = makeParam(config, this.handleParamSet,
+            this.m_params.length);
 
-        for (let i = 0; i < paramCount; ++i)
+        this.m_params.push(newParam);
+        this.m_map.set(newParam.name, newParam);
+
+        // notify frontend library
+        this.m_params = this.m_params;
+    }
+
+    /** On param set */
+    private handleParamSet(index: number, value: number)
+    {
+        // send signal to lua
+        const p = this.m_params[index];
+        if (p)
         {
-            const name = audio.engine.param_getName(i);
-            const type = audio.engine.param_getType(i);
-            if (type === ParamType.Strings)
+            this.track.track.setParameter(p.name, p.value);
+        }
+    }
+
+    /**
+     * Set a parameter
+     * @param index - numbered index of value or name of parameter
+     * @param value - value to set
+     */
+    setParameter(index: number | string, value: number)
+    {
+        if (typeof index === "number")
+        {
+            const p = this.m_params[index];
+            if (p)
             {
-                const p = audio.engine.param_getAsStrings(i);
-                const newParam = new StringsParameter(name, i, p.values,
-                 p.defaultValue, this.handleParamSet);
-                params.push(newParam);
-                paramMap.set(name, newParam);
+                p.value = value;
             }
-            else
+        }
+        else
+        {
+            const p = this.m_map.get(index);
+            if (p)
             {
-                const p = audio.engine.param_getAsNumber(i);
-                const newParam = type === ParamType.Bool ?
-                    new BoolParameter(name, i, p.defaultValue !== 0,
-                        this.handleParamSet) :
-                    new NumberParameter(name, i, p.min, p.max,
-                        p.step, p.defaultValue, type === ParamType.Integer,
-                        this.handleParamSet);
-                params.push(newParam);
-                paramMap.set(name, newParam);
+                p.value = value;
             }
         }
 
-        this.clear(params, paramMap);
-        this.audio = audio;
     }
 
     /**
@@ -88,31 +151,20 @@ export class ParameterMgr
      * @param params? - new parameter array
      * @param pMap?   - new parameter map
      */
-    clear(params?: Param[], pMap?: Map<string, Param>): void
+    clear(): void
     {
-        // Clean up any old intervals that may be firing
-        const oldParams = this.params;
-        for (let i = 0; i < oldParams.length; ++i) {
-            oldParams[i].clear();
-        }
+        this.m_map.clear();
+        this.m_params.length = 0;
 
-        if (params)
-            this.params = params;
-        else
-            this.params.length = 0;
-
-        if (pMap)
-            this.paramMap = pMap;
-        else
-            this.paramMap.clear();
+        this.m_params = this.m_params;
     }
 
     /**
      * Get the number of parameters stored in this container
      */
-    get count(): number
+    get size(): number
     {
-        return this.params.length;
+        return this.m_params.length;
     }
 
     /**
@@ -127,14 +179,14 @@ export class ParameterMgr
     {
         if (typeof indexOrName === "number")
         {
-            const val = this.params.at(indexOrName);
+            const val = this.m_params.at(indexOrName);
             if (val === undefined)
                 throw RangeError("Index is out of range");
             return val;
         }
         else
         {
-            const val = this.paramMap.get(indexOrName);
+            const val = this.m_map.get(indexOrName);
             if (val === undefined)
                 throw RangeError("No parameter with that name exists");
             return val;

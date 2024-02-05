@@ -56,6 +56,9 @@ namespace Insound
             emscripten::val clearConsole = callbacks["clearConsole"];
             emscripten::val setLoopPoint = callbacks["setLoopPoint"];
             emscripten::val transitionTo = callbacks["transitionTo"];
+            emscripten::val addParameter = callbacks["addParameter"];
+            emscripten::val setParameter = callbacks["setParameter"];
+            emscripten::val getParameter = callbacks["getParameter"];
 
             env.set_function("raw_print", [this, print](int level, std::string name, std::string message)
             {
@@ -259,6 +262,39 @@ namespace Insound
             [this, getPresetCount]()
             {
                 return getPresetCount().as<size_t>();
+            });
+
+            auto param = snd["param"].get_or_create<sol::table>();
+            param.set_function("raw_add",
+            [this, addParameter](std::string config)
+            {
+                addParameter(config);
+            });
+            param.set_function("set",
+            [setParameter](std::variant<int, std::string> indexOrName, float value)
+            {
+                if (indexOrName.index() == 0)
+                {
+                    setParameter(std::get<int>(indexOrName), value);
+                }
+                else
+                {
+                    setParameter(std::get<std::string>(indexOrName), value);
+                }
+            });
+            param.set_function("get",
+            [this, getParameter](std::variant<int, std::string> indexOrName)
+            {
+                auto value = (indexOrName.index() == 0) ?
+                    getParameter(std::get<int>(indexOrName)) :
+                    getParameter(std::get<std::string>(indexOrName));
+
+                if (value.isUndefined())
+                {
+                    throw LuaError(lua, "Attempted to index a non-existent parameter");
+                }
+
+                return value.as<float>();
             });
         };
 
