@@ -361,6 +361,19 @@ export class MarkerMgr
                 {
                     this.calibrateCursor(this.lastPosition);
 
+                    // Check that transitions are pointing to alive transition
+                    for (const marker of this.markers)
+                    {
+                        if (marker.transition)
+                        {
+                            // remove it otherwise
+                            if (!this.markers.find(m => m === marker.transition.destination))
+                            {
+                                marker.transition = undefined;
+                            }
+                        }
+                    }
+
                     this.onmarkersupdated.invoke();
                     this.isDirty = false;
                 }
