@@ -143,7 +143,7 @@ namespace Insound
          *                   or delay stop (false)
          */
         void transitionTo(float position, float inTime, bool fadeIn,
-            float outTime, bool fadeOut);
+            float outTime, bool fadeOut, unsigned long clock = 0);
 
         /**
          * Set loop points (in milliseconds)

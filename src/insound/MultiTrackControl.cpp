@@ -16,9 +16,9 @@ namespace Insound
         delete lua;
     }
 
-    void MultiTrackControl::transitionTo(float position, float inTime, bool fadeIn, float outTime, bool fadeOut)
+    void MultiTrackControl::transitionTo(float position, float inTime, bool fadeIn, float outTime, bool fadeOut, unsigned long clock)
     {
-        track->transitionTo(position, inTime, fadeIn, outTime, fadeOut);
+        track->transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
     }
 
     void MultiTrackControl::loadSound(size_t data, size_t bytelength)

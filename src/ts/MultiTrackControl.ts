@@ -278,8 +278,8 @@ export class MultiTrackControl
      * @param fadeOut - whether to fade current position out (true), or cause
      *                  a delay where the current track continues playing at
      *                  full volume, until `outTime` elapses.
-     *  */
-    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean)
+     */
+    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number = 0)
     {
         if (this.m_transition)
         {
@@ -288,7 +288,7 @@ export class MultiTrackControl
 
         this.onseek.invoke(position);
 
-        this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, 0);
+        this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
     }
 
     // ----- Loading / Unloading ----------------------------------------------
