@@ -181,8 +181,8 @@ export class MultiTrackControl
             clearConsole: () => {
                 this.doclear.invoke();
             },
-            transitionTo: (position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number) => {
-                this.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
+            transitionTo: (position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean) => {
+                this.transitionTo(position, inTime, fadeIn, outTime, fadeOut);
             }
         });
 

@@ -14,7 +14,7 @@ export interface LuaCallbacks
     setPause(pause: boolean, seconds?: number): void;
     setPosition(seconds: number): void;
 
-    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number): void;
+    transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean): void;
 
     // --- mixer parameters ---------------------------------------------------
 

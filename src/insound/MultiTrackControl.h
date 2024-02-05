@@ -130,8 +130,20 @@ namespace Insound
         [[nodiscard]]
         float getAudibility(int ch) const;
 
+        /**
+         * Immediately transition to another position in the track
+         * @param position - position within the track in seconds
+         * @param inTime   - time in seconds to fade in new position, or to
+         *                   delay entrance if `fadeIn` is false
+         * @param fadeIn   - fade in new track portion (true),
+         *                   or delay entrance (false)
+         * @param outTime  - time in seconds to fade out current track position
+         *                   or delay stop if `fadeOut` is false
+         * @param fadeOut  - fade out current track portion (true),
+         *                   or delay stop (false)
+         */
         void transitionTo(float position, float inTime, bool fadeIn,
-            float outTime, bool fadeOut, unsigned long clock);
+            float outTime, bool fadeOut);
 
         /**
          * Set loop points (in milliseconds)
