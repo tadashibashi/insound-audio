@@ -27,14 +27,17 @@ export interface ParamConfig {
 /**
  * Create parameter from config
  */
-function makeParam(config: ParamConfig, onset: (index: number, value: number) => void, index: number): Param
+function makeParam(config: ParamConfig, onset: (index: number, value: number | string) => void, index: number): Param
 {
     switch(config.type)
     {
         case "strings":
         {
-            return new StringsParameter(config.name, index, config.strings || [],
-                config.defaultValue, onset);
+            const param = new StringsParameter(config.name, index, config.strings || [],
+                config.defaultValue, (index, value) => {
+                    onset(index, param.labelAt(value));
+                });
+            return param;
         }
         case "float":
         {
@@ -110,13 +113,13 @@ export class ParameterMgr
     }
 
     /** On param set */
-    private handleParamSet(index: number, value: number)
+    private handleParamSet(index: number, value: number | string)
     {
         // send signal to lua
         const p = this.m_params[index];
         if (p)
         {
-            this.track.track.setParameter(p.name, p.value);
+            this.track.track.setParameter(p.name, value);
         }
     }
 
