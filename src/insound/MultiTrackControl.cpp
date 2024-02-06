@@ -230,8 +230,14 @@ namespace Insound
         return track->dspClock();
     }
 
-    void MultiTrackControl::setParameter(const std::string &name, float value)
+    void MultiTrackControl::setParameter(const std::string &name,
+        emscripten::val value)
     {
-        this->lua->doParam(name, value);
+        std::variant<float, std::string> v;
+        if (value.isString())
+            v = value.as<std::string>();
+        else
+            v = value.as<float>();
+        this->lua->doParam(name, v);
     }
 }

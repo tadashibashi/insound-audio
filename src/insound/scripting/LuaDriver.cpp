@@ -463,7 +463,7 @@ namespace Insound
         }
     }
 
-    bool LuaDriver::doParam(const std::string &paramName, float value)
+    bool LuaDriver::doParam(const std::string &paramName, std::variant<float, std::string> value)
     {
         if (!isLoaded())
         {
@@ -480,7 +480,16 @@ namespace Insound
             return false;
         }
 
-        auto result = process_event(Event::ParamSet, paramName, value);
+        sol::unsafe_function_result result;
+        if (value.index() == 0)
+        {
+            result = process_event(Event::ParamSet, paramName, std::get<float>(value));
+        }
+        else
+        {
+            result = process_event(Event::ParamSet, paramName, std::get<std::string>(value));
+        }
+
         if (!result.valid())
         {
             doError(result);

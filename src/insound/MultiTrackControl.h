@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <string>
+#include <variant>
 
 namespace Insound
 {
@@ -186,7 +187,7 @@ namespace Insound
         [[nodiscard]]
         unsigned long dspClock() const;
 
-        void setParameter(const std::string &name, float value);
+        void setParameter(const std::string &name, emscripten::val value);
 
     private:
         void initScriptingEngine();

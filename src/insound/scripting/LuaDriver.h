@@ -23,6 +23,7 @@ namespace sol {
 #include <functional>
 #include <string>
 #include <string_view>
+#include <variant>
 
 namespace Insound
 {
@@ -86,7 +87,7 @@ namespace Insound
 
         // To be called by the AudioEngine from JavaScript to let our Lua
         // API know that a parameter has been set.
-        bool doParam(const std::string &paramName, float value);
+        bool doParam(const std::string &paramName, std::variant<float, std::string> value);
 
         /**
          * Set a callback that fires when an error occurs.
