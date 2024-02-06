@@ -34,7 +34,8 @@ local function add_param(config)
     local type = config.type or error("parameter config is missing `type`")
     local name = config.name or error("parameter config is missing `name`")
     local default_value = config.default_value or 0
-    local json = '{"name": "'..name..'", "type": "'..type..'"'
+    local json = '{"name": "'..name..'", "type": "'..type..
+        '", "defaultValue": '..default_value
 
     if type == "strings" then
         json = json..',"strings": '..to_json_string_array(config.strings or {})..""
@@ -59,7 +60,20 @@ local function add_param(config)
     env.track.param.raw_add(json)
 end
 
+local function add_strings(name, strings, default_value)
+    default_value = default_value or 0
+    strings = strings or {}
+    if not name or #name == 0 then
+        error("cannot create strings parameter: missing `name`")
+    end
 
+    add_param({
+        name=name,
+        type="strings",
+        strings=strings,
+        default_value=default_value
+    })
+end
 
 
 function reset_env()
@@ -115,6 +129,7 @@ function reset_env()
         track = {
             param = {
                 add = add_param,
+                add_strings=add_strings
             },
         },
     }
