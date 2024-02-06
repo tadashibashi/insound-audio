@@ -14,8 +14,7 @@ const registry = new FinalizationRegistry((heldValue: any) => {
     }
 });
 
-export
-class ParameterBase
+export class ParameterBase
 {
     name: string;
     readonly type: ParamType;
@@ -23,6 +22,9 @@ class ParameterBase
     // All parameters have underlying number as value
     protected m_value: number;
 
+    /**
+     * Called when the parameter has been set, changed values only
+     */
     private onSetCallback: ((index: number, value: number) => void)[];
 
     readonly defaultValue: number;

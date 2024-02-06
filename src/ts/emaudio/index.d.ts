@@ -166,7 +166,7 @@ declare interface InsoundMultiTrackControl
     samplerate(): number;
     dspClock(): number;
 
-    setParameter(name: string, value: number): void;
+    setParameter(name: string, value: number | string): void;
 }
 
 declare interface InsoundAudioModule extends EmscriptenModule {

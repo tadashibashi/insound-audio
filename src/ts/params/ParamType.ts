@@ -1,4 +1,6 @@
-export enum ParamType {
+
+export enum ParamType
+{
     Integer,
     Bool,
     Float,

@@ -3,13 +3,16 @@ import { ParameterBase } from "./ParameterBase";
 
 export class StringsParameter extends ParameterBase
 {
-    private values: string[];
+    private m_values: string[];
+
+    get values() { return this.m_values; }
 
     constructor(name: string, index: number, values: string[],
         defaultValue: number = 0,
         onSetCallback: (index: number, value: number) => void)
     {
         super(name, index, ParamType.Strings, defaultValue, onSetCallback);
+        this.m_values = values;
     }
 
     /**
@@ -37,18 +40,18 @@ export class StringsParameter extends ParameterBase
      */
     get label(): string
     {
-        return this.values[Math.floor(this.value)];
+        return this.m_values[Math.floor(this.value)];
     }
 
     private findLabel(name: string): number
     {
-        for (let index = 0; index < this.values.length; ++index)
-            if (name === this.values[index])
+        for (let index = 0; index < this.m_values.length; ++index)
+            if (name === this.m_values[index])
                 return index;
         return -1;
     }
 
-    get labelCount(): number { return this.values.length; }
+    get labelCount(): number { return this.m_values.length; }
 
     /**
      * Get the label for a specific index
@@ -61,7 +64,7 @@ export class StringsParameter extends ParameterBase
      */
     labelAt(index: number): string
     {
-        const val = this.values.at(index);
+        const val = this.m_values.at(index);
         if (val === undefined)
             throw RangeError("Label index is out of range");
         return val;
@@ -69,6 +72,6 @@ export class StringsParameter extends ParameterBase
 
     copyLabels(): string[]
     {
-        return [...this.values];
+        return [...this.m_values];
     }
 }

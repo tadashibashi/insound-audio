@@ -54,6 +54,8 @@ export class MultiTrackControl
     get spectrum() { return this.m_spectrum; }
     get markers() { return this.m_markers; }
 
+    get params() { return this.m_params; }
+
     get currentTransition() { return this.m_transition; }
 
     readonly onpause: Callback<[boolean]>;
@@ -169,7 +171,7 @@ export class MultiTrackControl
             getPresetCount: () => {
                 return this.m_mixPresets.length;
             },
-            applyPreset: (indexOrName: number | number, seconds: number = 0) => {
+            applyPreset: (indexOrName: number | string, seconds: number = 0) => {
                 let preset = (typeof indexOrName === "number") ?
                     this.m_mixPresets.at(indexOrName) :
                     this.m_mixPresets.find(mp => mp.name === indexOrName);
