@@ -117,7 +117,7 @@ export class MusicCallbackMgr
             }
 
             // Update current measure & beat info
-            if (curBeat + 1 >= curSig.bottom)
+            if (curBeat + 1 >= curSig.top)
             {
                 ++curMeasure;
             }
