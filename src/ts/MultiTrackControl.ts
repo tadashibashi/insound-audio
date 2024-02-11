@@ -239,7 +239,7 @@ export class MultiTrackControl
                 if (transition)
                 {
                     const targetPosition = transition.destination.position * .001;
-                    
+
                     this.onseek.invoke(targetPosition);
                     this.m_track.transitionTo(
                         targetPosition,
@@ -277,31 +277,6 @@ export class MultiTrackControl
                 this.m_engine.suspend();
             }
         }
-
-        // TODO: move this to a callback that is pre-marker, it should pass the clock time of the marker as the third arg
-        // if (!this.m_transition && !this.isPaused)
-        // {
-        //     const nextTransition = this.m_markers.nextTransition();
-
-        //     if (nextTransition) // transition available, use it
-        //     {
-        //         // perform transition if it is within .1 seconds away
-        //         if (nextTransition.position * .001 - this.position < .1)
-        //         {
-        //             console.log("triggering transition from lookahead", nextTransition);
-        //             const transition = nextTransition.transition;
-        //             const clock = this.m_track.dspClock() + this.m_track.samplerate() * (nextTransition.position * .001 - this.position);
-        //             this.m_track.transitionTo(
-        //                 transition.destination.position * .001,
-        //                 transition.inTime,
-        //                 transition.fadeIn,
-        //                 transition.outTime,
-        //                 transition.fadeOut,
-        //                 clock);
-        //             this.m_transition = transition;
-        //         }
-        //     }
-        // }
 
         this.onupdate.invoke(deltaTime, this.position, this.m_lastPosition);
 
