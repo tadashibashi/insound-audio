@@ -1,3 +1,4 @@
+import { SignatureTrack } from "./SignatureTrack";
 import { TempoMarker } from "./SyncCondition";
 
 interface MusicMarker {
@@ -27,7 +28,7 @@ export class MusicCallbackMgr
      * @param tempoMarkers - tempo markers in order by position
      * @param length       [description]
      */
-    calculateMarkers(tempoMarkers: TempoMarker[], length: number)
+    calculateMarkers(tempoMarkers: TempoMarker[], signatures: SignatureTrack, length: number)
     {
         let markers: MusicMarker[] = [];
         let nextTempoMarkerIndex = 0; // index in tempoMarkers
@@ -41,30 +42,32 @@ export class MusicCallbackMgr
         while (cursor < length)
         {
 
-            // apply any tempo/time signature updates on beat
+            // apply any tempo updates on beat
             while (nextTempoMarkerIndex < tempoMarkers.length)
             {
                 const tempoMarker = tempoMarkers[nextTempoMarkerIndex];
                 if (floorDecimal(tempoMarker.position, 2) !== floorDecimal(cursor, 2)) break; // widens precision to 100th of a second for possible discrepancies in other DAWs or human error
 
-                if (curBeat === 0 && tempoMarker.signature !== undefined) // only allow signature changes on downbeat
+                if (tempoMarker.tempo <= 0)
                 {
-                    curSig = tempoMarker.signature;
+                    console.warn("Cannot apply 0 or negative tempo");
                 }
-
-                if (tempoMarker.tempo !== undefined)
+                else
                 {
-                    if (tempoMarker.tempo <= 0)
-                    {
-                        console.warn("Cannot apply 0 or negative tempo");
-                    }
-                    else
-                    {
-                        curTempo = tempoMarker.tempo;
-                    }
+                    curTempo = tempoMarker.tempo;
                 }
 
                 ++nextTempoMarkerIndex;
+            }
+
+            // apply time signature on downbeat
+            if (curBeat === 0)
+            {
+                const sig = signatures.get(curMeasure + 1);
+                if (sig && sig.time)
+                {
+                    curSig = sig.time;
+                }
             }
 
             // create beat marker
