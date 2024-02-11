@@ -62,10 +62,11 @@ export class MultiTrackControl
 
     /**
      * Fires on every update tick.
-     * Param 1 is delta time in seconds
-     * Param 2 is current track position in seconds
+     * Param 1: number - delta time in seconds
+     * Param 2: number - current track position in seconds
+     * Param 3: number - last track position in seconds
      */
-    readonly onupdate: Callback<[number, number]>;
+    readonly onupdate: Callback<[number, number, number]>;
     readonly onmarker: Callback<[AudioMarker]>;
     readonly onload: Callback<[MultiTrackControl]>;
 
@@ -176,7 +177,7 @@ export class MultiTrackControl
                     this.m_mixPresets.at(indexOrName) :
                     this.m_mixPresets.find(mp => mp.name === indexOrName);
                 if (!preset)
-                    throw Error("Mix preset could not be found with id: " +
+                    throw Error("mix preset could not be found with id: " +
                         indexOrName);
 
                 this.m_console.applySettings(preset.mix, seconds);
@@ -190,6 +191,7 @@ export class MultiTrackControl
             transitionTo: (position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean) => {
                 this.transitionTo(position, inTime, fadeIn, outTime, fadeOut);
             },
+
             setParameter: (index: number | string, value: number) => {
                 this.m_params.setParameter(index, value);
             },
@@ -198,7 +200,8 @@ export class MultiTrackControl
                     const data = JSON.parse(json);
                     // do check here? lua script already makes checks/guarantees...
                     this.m_params.addParameter(data as ParamConfig);
-                } catch(err)
+                }
+                catch(err)
                 {
                     console.error(err);
                     throw err;
@@ -214,7 +217,7 @@ export class MultiTrackControl
             }
         });
 
-        this.m_markers.onmarker.addListener((marker) => {
+        this.m_markers.onmarker.addListener((marker, clock) => {
 
             // Notify Lua scripting
             this.m_track.doMarker(marker.name, marker.position);
@@ -227,6 +230,26 @@ export class MultiTrackControl
                 // transition head is pointing at the correct place (new channelset)
                 // we can unset transition flag, which blocks pause
                 this.m_transition = null;
+            }
+
+            if (!this.m_transition)
+            {
+                const transition = marker.transition;
+
+                if (transition)
+                {
+                    const targetPosition = transition.destination.position * .001;
+                    
+                    this.onseek.invoke(targetPosition);
+                    this.m_track.transitionTo(
+                        targetPosition,
+                        transition.inTime,
+                        transition.fadeIn,
+                        transition.outTime,
+                        transition.fadeOut,
+                        clock);
+
+                }
             }
         });
     }
@@ -255,37 +278,51 @@ export class MultiTrackControl
             }
         }
 
-        if (!this.m_transition && !this.isPaused)
-        {
-            const nextTransition = this.m_markers.nextTransition();
+        // TODO: move this to a callback that is pre-marker, it should pass the clock time of the marker as the third arg
+        // if (!this.m_transition && !this.isPaused)
+        // {
+        //     const nextTransition = this.m_markers.nextTransition();
 
-            if (nextTransition) // transition available, use it
-            {
-                // perform transition if it is within .1 seconds away
-                if (nextTransition.position * .001 - this.position < .1)
-                {
-                    console.log("triggering transition from lookahead", nextTransition);
-                    const transition = nextTransition.transition;
-                    const clock = this.m_track.dspClock() + this.m_track.samplerate() * (nextTransition.position * .001 - this.position);
-                    this.m_track.transitionTo(
-                        transition.destination.position * .001,
-                        transition.inTime,
-                        transition.fadeIn,
-                        transition.outTime,
-                        transition.fadeOut,
-                        clock);
-                    this.m_transition = nextTransition.transition;
-                }
-            }
-        }
+        //     if (nextTransition) // transition available, use it
+        //     {
+        //         // perform transition if it is within .1 seconds away
+        //         if (nextTransition.position * .001 - this.position < .1)
+        //         {
+        //             console.log("triggering transition from lookahead", nextTransition);
+        //             const transition = nextTransition.transition;
+        //             const clock = this.m_track.dspClock() + this.m_track.samplerate() * (nextTransition.position * .001 - this.position);
+        //             this.m_track.transitionTo(
+        //                 transition.destination.position * .001,
+        //                 transition.inTime,
+        //                 transition.fadeIn,
+        //                 transition.outTime,
+        //                 transition.fadeOut,
+        //                 clock);
+        //             this.m_transition = transition;
+        //         }
+        //     }
+        // }
 
-        this.onupdate.invoke(deltaTime, this.position);
+        this.onupdate.invoke(deltaTime, this.position, this.m_lastPosition);
 
         this.m_track.update(deltaTime);
 
         this.m_spectrum.update();
 
         this.m_lastPosition = this.position;
+    }
+
+    /**
+     * Overriding transition, intended for immediate jumps in the middle of the track
+     * @param transition
+     */
+    jumpToMarker(transition: MarkerTransition)
+    {
+        this.m_transition = transition;
+        this.onseek.invoke(transition.destination.position);
+
+        this.m_track.transitionTo(transition.destination.position, transition.inTime,
+            transition.fadeIn, transition.outTime, transition.fadeOut, 0);
     }
 
     /**
@@ -377,6 +414,7 @@ export class MultiTrackControl
         this.onload.invoke(this);
     }
 
+    /** Invoke a console print */
     private print(...args: any[])
     {
         let str = "";

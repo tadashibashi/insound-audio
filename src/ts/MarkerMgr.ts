@@ -47,13 +47,15 @@ export class MarkerMgr
     private isDirty: boolean;
 
     /**
-     * Callback when marker is passed by playhead.
-     * Note: this is not sample-accurate, limited to update ticks ~1-10ms grain
+     * Callback when marker is just about to pass playhead (~.1 second before)
+     * Sample-accurate timings can be planned using the second parameter, which
+     * contains the dsp clock of the target marker.
+     * You can use a timeout to approximate exact timing via marker position.
      *
      * param 1: marker object
-     * param 2: index in markers array
+     * param 2: dsp clock of marker
      */
-    readonly onmarker: Callback<[AudioMarker]>;
+    readonly onmarker: Callback<[AudioMarker, number]>;
 
     /**
      * Notifies when markers container has been modified (new markers pushed or
@@ -69,9 +71,6 @@ export class MarkerMgr
      * Param2: old cursor position
      */
     readonly oncursorchanged: Callback<[number, number]>;
-
-    private soughtPosition: number;
-    private isInvoking: boolean;
 
     /** Read-only, mutating results in unwanted and undefined behavior */
     get array() { return this.markers; }
@@ -103,9 +102,6 @@ export class MarkerMgr
         track.onupdate.addListener(this.handleUpdate);
 
         this.track = track;
-
-        this.soughtPosition = -1;
-        this.isInvoking = false;
     }
 
 
@@ -295,23 +291,9 @@ export class MarkerMgr
         this.cursor = 0;
         this.lastPosition = 0;
         this.isDirty = true;
-        this.soughtPosition = -1;
-        this.isInvoking = false;
     }
 
     private handleSeek(time: number)
-    {
-        if (this.isInvoking)
-        {
-            this.soughtPosition = time;
-        }
-        else
-        {
-            this.performSeek(time);
-        }
-    }
-
-    private performSeek(time: number)
     {
         this.lastPosition = time * 1000;
 
@@ -348,81 +330,65 @@ export class MarkerMgr
 
     private handleUpdate(delta: number, position: number)
     {
-        this.isInvoking = true;
-        try {
-            position *= 1000;
+        position *= 1000;
 
-            const oldCursor = this.cursor;
+        const oldCursor = this.cursor;
 
-            if (position !== this.lastPosition) // make sure non-seek, player not paused
+        if (position !== this.lastPosition) // make sure non-seek, player not paused
+        {
+            if (this.isDirty) // if dirty, we need to recalibrate cursor
             {
-                const length = this.markers.length;
-                if (this.isDirty) // if dirty, we need to recalibrate cursor
-                {
-                    this.calibrateCursor(this.lastPosition);
+                this.calibrateCursor(this.lastPosition);
 
-                    // Check that transitions are pointing to alive transition
-                    for (const marker of this.markers)
+                // Check that transitions are pointing to alive transition
+                for (const marker of this.markers)
+                {
+                    if (marker.transition)
                     {
-                        if (marker.transition)
+                        // remove it otherwise
+                        if (!this.markers.find(m => m === marker.transition.destination))
                         {
-                            // remove it otherwise
-                            if (!this.markers.find(m => m === marker.transition.destination))
-                            {
-                                marker.transition = undefined;
-                            }
+                            marker.transition = undefined;
                         }
                     }
-
-                    this.onmarkersupdated.invoke();
-                    this.isDirty = false;
                 }
 
-                // Track looped, invoke marker callback on every marker at the end of the track
-                if (position < this.lastPosition)
-                {
-                    const endPoint = this.markers[this.cursor]?.position || this.track.loopPoint.end;
-                    while (this.cursor < length && this.markers[this.cursor].position <= endPoint)
-                    {
-                        this.onmarker.invoke(this.markers[this.cursor++]);
-                    }
-                    this.calibrateCursor(position);
-                }
-
-                if (this.cursor < length)
-                {
-                    // Cursor starts at first marker at or after loop start
-                    const loop = this.track.loopPoint;
-                    while (this.markers[this.cursor].position < loop.start)
-                        ++this.cursor;
-
-                    // Invoke markers up until cursor reaches position
-                    while (this.cursor < length &&
-                        this.markers[this.cursor].position <= position)
-                    {
-                        this.onmarker.invoke(this.markers[this.cursor++]);
-                    }
-                }
-
-
+                this.onmarkersupdated.invoke();
+                this.isDirty = false;
             }
 
-            this.lastPosition = position;
-
-            if (oldCursor !== this.cursor)
+            for (let marker = this.markers[this.cursor]; this.cursor < this.markers.length; )
             {
-                this.oncursorchanged.invoke(this.cursor, oldCursor);
+                const curPos = this.track.position * 1000;
+                let checkMS = (marker.position < curPos) ? // loop probably occured, check position by added length
+                    marker.position + this.track.length * 1000:
+                    marker.position;
+
+                if (checkMS - curPos < 100)
+                {
+                    // get target clock for marker
+                    const clock = this.track.track.dspClock() + this.track.track.samplerate() * ((checkMS - curPos) * .001);
+
+                    // increment cursor/marker for next check (this happens before callback invocation, since transition may update cursor during callback)
+                    this.cursor = (this.cursor + 1) % this.markers.length;
+
+                    // fire callback
+                    this.onmarker.invoke(marker, clock);
+
+                    marker = this.markers[this.cursor];
+                }
+                else
+                {
+                    break;
+                }
             }
         }
-        finally
-        {
-            this.isInvoking = false;
-        }
 
-        if (this.soughtPosition !== -1)
+        this.lastPosition = position;
+
+        if (oldCursor !== this.cursor)
         {
-            this.performSeek(this.soughtPosition);
-            this.soughtPosition = -1; // unset flag
+            this.oncursorchanged.invoke(this.cursor, oldCursor);
         }
     }
 
