@@ -259,7 +259,7 @@ namespace Insound
                 // unpause at the delayed time
                 auto targetClock = clock + samplerate * seconds;
                 checkResult( chan->setDelay(targetClock, 0, false) );
-                fade(0, 1.f, 0, clock);
+                fade(0, 1.f, 0, targetClock);
             }
         }
 
