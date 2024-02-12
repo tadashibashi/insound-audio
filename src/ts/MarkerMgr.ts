@@ -118,13 +118,12 @@ export class MarkerMgr<T extends IMarker>
     protected cleanMarkers(): boolean { return false; }
 
     /**
-     * Update the state of the container, should not be called if track is paused
-     * @param getPosition Callback to get the current position
-     *                (needs this callback since updates can occur during onmarker)
+     * Update the state of the container
      */
     private update(): void
     {
         const track = this.track;
+        if (track.isPaused) return;
 
         let position = track.position;
         const oldCursor = this.cursor;
