@@ -6,7 +6,7 @@ import { SpectrumAnalyzer } from "./SpectrumAnalyzer";
 import { EmBufferGroup } from "./emaudio/EmBuffer";
 import { SoundLoadError } from "./SoundLoadError";
 import { AudioEngine } from "./AudioEngine";
-import { AudioMarker, MarkerMgr, MarkerTransition } from "./MarkerMgr";
+import { AudioMarker, AudioMarkerMgr } from "./AudioMarkerMgr";
 import { AudioChannel } from "./AudioChannel";
 import { ParamConfig, ParameterMgr } from "./params/ParameterMgr";
 
@@ -32,7 +32,7 @@ export class MultiTrackControl
     private m_engine: AudioEngine;
     private m_track: InsoundMultiTrackControl;
     private m_ptr: number;
-    private m_markers: MarkerMgr;
+    private m_markers: AudioMarkerMgr;
     private m_spectrum: SpectrumAnalyzer;
     private m_trackData: EmBufferGroup;
     private m_console: AudioConsole;
@@ -41,7 +41,6 @@ export class MultiTrackControl
     private m_loop: {start: number, end: number};
 
     private m_lastPosition: number;
-    private m_transition: MarkerTransition | null;
 
     private m_params: ParameterMgr;
 
@@ -55,8 +54,6 @@ export class MultiTrackControl
     get markers() { return this.m_markers; }
 
     get params() { return this.m_params; }
-
-    get currentTransition() { return this.m_transition; }
 
     readonly onpause: Callback<[boolean]>;
 
@@ -104,23 +101,22 @@ export class MultiTrackControl
         this.m_looping = true;
         this.m_lastPosition = 0;
 
-        this.m_markers = new MarkerMgr(this);
-        this.m_transition = null;
+        this.m_markers = new AudioMarkerMgr(this);
 
         const MultiTrackControl = getAudioModule().MultiTrackControl;
         this.m_track = new MultiTrackControl(this.m_ptr, {
-            addMarker: (name: string, ms: number) => {
+            addMarker: (name: string, sec: number) => {
                 this.m_markers.push({
-                    name: name, position: ms
+                    name: name, position: sec
                 });
             },
-            editMarker: (index, name, ms) => {
+            editMarker: (index, name, sec) => {
                 if (typeof index === "number")
                 {
                     --index; // lua indices are 1-based
                     const marker = this.m_markers.array[index];
                     marker.name = name;
-                    this.m_markers.updatePositionByIndex(index, ms);
+                    this.m_markers.editPositionByIndex(index, sec);
                 }
                 else
                 {
@@ -129,7 +125,7 @@ export class MultiTrackControl
                     if (markerIndex !== -1)
                     {
                         this.m_markers.array[markerIndex].name = name;
-                        this.m_markers.updatePositionByIndex(markerIndex, ms);
+                        this.m_markers.editPositionByIndex(markerIndex, sec);
                     }
                 }
             },
@@ -225,32 +221,21 @@ export class MultiTrackControl
             // Local callbacks
             this.onmarker.invoke(marker);
 
-            if (this.m_transition && marker === this.m_transition.destination)
+            const transition = marker.transition;
+
+            if (transition)
             {
-                // transition head is pointing at the correct place (new channelset)
-                // we can unset transition flag, which blocks pause
-                this.m_transition = null;
+                const targetPosition = transition.destination.position;
+                this.onseek.invoke(targetPosition);
+                this.m_track.transitionTo(
+                    targetPosition,
+                    transition.inTime,
+                    transition.fadeIn,
+                    transition.outTime,
+                    transition.fadeOut,
+                    clock);
             }
 
-            if (!this.m_transition)
-            {
-                const transition = marker.transition;
-
-                if (transition)
-                {
-                    const targetPosition = transition.destination.position;
-
-                    this.onseek.invoke(targetPosition);
-                    this.m_track.transitionTo(
-                        targetPosition,
-                        transition.inTime,
-                        transition.fadeIn,
-                        transition.outTime,
-                        transition.fadeOut,
-                        clock);
-
-                }
-            }
         });
     }
 
@@ -288,19 +273,6 @@ export class MultiTrackControl
     }
 
     /**
-     * Overriding transition, intended for immediate jumps in the middle of the track
-     * @param transition
-     */
-    jumpToMarker(transition: MarkerTransition)
-    {
-        this.m_transition = transition;
-        this.onseek.invoke(transition.destination.position);
-
-        this.m_track.transitionTo(transition.destination.position, transition.inTime,
-            transition.fadeIn, transition.outTime, transition.fadeOut, 0);
-    }
-
-    /**
      * Seek immediately to a new track position, and activate transitionary fade-out and fade-in.
      *
      * @param position - position to seek to, in seconds
@@ -321,11 +293,6 @@ export class MultiTrackControl
      */
     transitionTo(position: number, inTime: number, fadeIn: boolean, outTime: number, fadeOut: boolean, clock: number = 0)
     {
-        if (this.m_transition)
-        {
-            this.m_transition = null;
-        }
-
         this.onseek.invoke(position);
 
         this.m_track.transitionTo(position, inTime, fadeIn, outTime, fadeOut, clock);
@@ -385,7 +352,6 @@ export class MultiTrackControl
         this.m_track.setPosition(0);
         this.m_lastPosition = 0;
         this.m_loop = this.m_track.getLoopPoint();
-        this.m_transition = null;
         this.onload.invoke(this);
     }
 
@@ -540,8 +506,6 @@ export class MultiTrackControl
 
     setPause(pause: boolean, seconds: number = 0)
     {
-        if (this.m_transition) return; // don't pause while transitioning
-
         // This is usually the case when a track is in non-loop mode and stops at the end
         // We need to set the position to 0 to keep it from getting stuck at the end
         // Future: have a sample accurate way to end the track

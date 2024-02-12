@@ -1,50 +1,34 @@
 import { Callback } from "./Callback";
-import { MultiTrackControl } from "./MultiTrackControl";
+import { type MultiTrackControl } from "./MultiTrackControl";
 
-export interface MarkerTransition
+export interface IMarker
 {
-    destination: AudioMarker;
-    inTime: number;
-    fadeIn: boolean;
-    outTime: number;
-    fadeOut: boolean;
-}
-
-export interface AudioMarker
-{
-    /**
-     * Name or text label of the marker
-     */
-    name: string;
-
-    /**
-     * Offset from start in milliseconds
-     */
     position: number;
-
-    transition?: MarkerTransition;
 }
 
 /**
- * Manager for an audio track's markers. Emits callbacks when markers are
- * triggered from playback.
- *
+ * Manages a list of markers in order by position.
+ * Fires callbacks right before marker with clock time for sample accurate
+ * synchronization.
  */
-export class MarkerMgr
+export class MarkerMgr<T extends IMarker>
 {
-    private track: MultiTrackControl;
-    /** Audio position in seconds from last call to update */
-    private lastPosition: number;
-    /** Internal list of markers */
-    private markers: AudioMarker[];
-    /** Current index of marker to check */
-    private cursor: number;
-    /**
-     * Flag indicating if `markers` array was modified, thus indicating that
-     * the cursor position has been invalidated. During the update loop, the
-     * cursor position will be readjusted when `isDirty` was set to `true`.
-     */
-    private isDirty: boolean;
+    /** list of markers */
+    protected markers: T[];
+
+    protected track: MultiTrackControl;
+
+    /** **read-only** list of markers sorted in order of position */
+    get array(): T[] { return this.markers; }
+
+    /** Get the number of markers contained by the manager */
+    get length() { return this.markers.length; }
+
+    /** index of next marker */
+    protected cursor: number;
+
+    /** set when an alteration to markers occurs */
+    protected isDirty: boolean;
 
     /**
      * Callback when marker is just about to pass playhead (~.1 second before)
@@ -55,7 +39,7 @@ export class MarkerMgr
      * param 1: marker object
      * param 2: dsp clock of marker
      */
-    readonly onmarker: Callback<[AudioMarker, number]>;
+    readonly onmarker: Callback<[T, number]>;
 
     /**
      * Notifies when markers container has been modified (new markers pushed or
@@ -72,83 +56,33 @@ export class MarkerMgr
      */
     readonly oncursorchanged: Callback<[number, number]>;
 
-    /** Read-only, mutating results in unwanted and undefined behavior */
-    get array() { return this.markers; }
-
-    /** Get the number of markers contained by the manager */
-    get length() { return this.markers.length; }
-
-    get current() { return this.cursor; }
-
-    /** The markers are directly iterable */
-    [Symbol.iterator]() { return this.markers[Symbol.iterator](); }
-
     constructor(track: MultiTrackControl)
     {
-        this.lastPosition = 0;
+        this.markers = [];
         this.cursor = 0;
         this.isDirty = false;
 
-        this.markers = [];
         this.onmarker = new Callback;
         this.onmarkersupdated = new Callback;
         this.oncursorchanged = new Callback;
 
-        // Hook up callbacks to track
-        this.handleSeek = this.handleSeek.bind(this);
-        this.handleUpdate = this.handleUpdate.bind(this);
-
-        track.onseek.addListener(this.handleSeek);
-        track.onupdate.addListener(this.handleUpdate);
-
         this.track = track;
-    }
 
+        this.update = this.update.bind(this);
+        this.seek = this.seek.bind(this);
 
-    /**
-     * Populate the marker manager from the current sync points in the track
-     * set in the constructor
-     */
-    loadFromTrack()
-    {
-        const pointCount = this.track.track.getSyncPointCount();
-        for (let i = 0; i < pointCount; ++i)
-        {
-            this.push(this.track.track.getSyncPoint(i));
-        }
-    }
-
-    /**
-     * Get the next marker with a transition on it, or `null` if there are
-     * no markers with transitions available from the current cursor until
-     * the end of the container (end of track).
-     */
-    nextTransition(): (AudioMarker & {transition: MarkerTransition}) | null
-    {
-        const length = this.markers.length;
-        for (let i = this.cursor; i < length; ++i)
-        {
-            if (this.markers[i].transition)
-                return this.markers[i] as (AudioMarker & {transition: MarkerTransition});
-        }
-
-        return null;
+        track.onupdate.addListener(this.update);
+        track.onseek.addListener(this.seek);
     }
 
     /**
      * Add a marker to the container/manager. Automatically inserts it in order
      * of position.
      *
-     * Special markers "LoopStart" or "LoopEnd" get added as loop points
-     * instead of to the main container.
-     *
      * @param marker - marker to insert
      */
-    push(marker: AudioMarker)
+    push(marker: T)
     {
-        // clamp marker position within valid range
-        marker.position = this.clampTimePosition(marker.position);
-
         // find the insertion index (by order of position)
         const length = this.markers.length;
         let index = -1;
@@ -175,51 +109,139 @@ export class MarkerMgr
         return marker;
     }
 
-    /** Find marker by name (only the first occurrence) */
-    findByName(name: string): AudioMarker | undefined
-    {
-        return this.markers.find(m => m.name === name);
-    }
+    /**
+     * Called when markers are dirty and are requested to be cleaned
+     * Should be overriden with desired behavior for each marker subclass
+     *
+     * @return whether alteration was made to the markers array
+     */
+    protected cleanMarkers(): boolean { return false; }
 
-    /** Find a marker's index with name (only gets the first occurrence) */
-    findIndexByName(name: string)
+    /**
+     * Update the state of the container, should not be called if track is paused
+     * @param getPosition Callback to get the current position
+     *                (needs this callback since updates can occur during onmarker)
+     */
+    private update(): void
     {
-        return this.markers.findIndex(m => m.name === name);
-    }
+        const track = this.track;
 
-    findIndex(marker: AudioMarker)
-    {
-        return this.markers.findIndex(m => m === marker);
+        let position = track.position;
+        const oldCursor = this.cursor;
+
+        if (this.isDirty) // if dirty, we need to recalibrate cursor
+        {
+            this.calibrateCursor(position);
+            if (this.cleanMarkers())
+            {
+                this.onmarkersupdated.invoke();
+            }
+
+            this.isDirty = false;
+        }
+
+        for (let marker = this.markers[this.cursor]; this.cursor < this.markers.length; )
+        {
+            position = track.position; // (update in case seek occurs in onmark callback)
+
+            let checkSec = (marker.position < position) ? // loop probably occured, check position by added length
+                marker.position + track.length:
+                marker.position;
+
+            if (checkSec - position < .1)
+            {
+                // get target clock for marker
+                const clock = track.track.dspClock() + track.track.samplerate() * (checkSec - position);
+
+                // increment cursor/marker for next check (this happens before callback invocation, since transition may update cursor during callback)
+                this.cursor = (this.cursor + 1) % this.markers.length;
+
+                // fire callback
+                this.onmarker.invoke(marker, clock);
+
+                marker = this.markers[this.cursor];
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (oldCursor !== this.cursor)
+        {
+            this.oncursorchanged.invoke(this.cursor, oldCursor);
+        }
     }
 
     /**
-     * Update the position of a provided marker.
-     * Marker position should not be set directly - only through this function.
-     *
-     * @param marker      - marker to update position of
-     * @param newPosition - position in milliseconds
+     * Simulate a seek-to-position, updating this container's cursor.
+     * This should be hooked up to a callback when a track that owns this
+     * container seeks.
      */
-    updatePosition(marker: AudioMarker, newPosition: number)
+    private seek(position: number): void
+    {
+        const oldCursor = this.cursor;
+        this.calibrateCursor(position);
+
+        if (this.cursor !== oldCursor)
+        {
+            this.oncursorchanged.invoke(this.cursor, oldCursor);
+        }
+    }
+
+    /**
+     * Erase a marker
+     * @param  marker - marker to erase from the container
+     * @return        whether marker was erased
+     */
+    erase(marker: T): boolean
     {
         const index = this.markers.findIndex(m => m === marker);
-        if (index === -1) return;
+        if (index !== -1)
+        {
+            this.eraseByIndex(index);
+            return true;
+        }
 
-        this.updatePositionByIndex(index, newPosition);
+        return false;
     }
 
     /**
-     * Update the position of a marker at the specified index.
-     * Marker position should not be set directly - only through this function.
-     *
-     * @param index       - index of marker to modify
-     * @param newPosition - position in milliseconds
+     * Erase marker at the specified index
+     * @param index - index of marker to delete (0-based)
      */
-    updatePositionByIndex(index: number, newPosition: number)
+    eraseByIndex(index: number): boolean
+    {
+        if (index < this.markers.length && index >= 0)
+        {
+            this.markers.splice(index, 1);
+            this.isDirty = true;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    editPosition(marker: T, position: number): boolean
+    {
+        return this.editPositionByIndex(this.findIndexOf(marker), position);
+    }
+
+    /**
+     * Edit a pre-existing marker's position
+     * @param marker   - marker to edit position of
+     * @param position - position to set
+     * @return  whether marker position was edited - it will not if position is
+     *          already the same as marker's position, or if marker does not
+     *          belong to this container
+     */
+    editPositionByIndex(index: number, position: number): boolean
     {
         const marker = this.markers[index];
-
-        // clamp new position within range
-        newPosition = this.clampTimePosition(newPosition);
+        if (marker.position === position) return false;
+        if (index === -1) return false;
 
         // Find new index
         let newIndex = 0;
@@ -233,7 +255,7 @@ export class MarkerMgr
             }
 
             // Once the new position is higher, this is the index to splice to
-            if (newPosition < this.markers[i].position)
+            if (position < this.markers[i].position)
             {
                 break;
             }
@@ -248,68 +270,46 @@ export class MarkerMgr
             temp.splice(index, 1);
             temp.splice(newIndex, 0, marker);
             this.markers = temp;
+
+            this.isDirty = true; // set dirty flag only if index changed
         }
 
-        marker.position = newPosition;
-        this.isDirty = true;
-    }
+        marker.position = position;
 
-    /**
-     * Erase a marker from the container
-     * @param {AudioMarker} marker - marker to delete from container. Must be
-     *                             a reference of a marker inside, not a copy
-     */
-    erase(marker: AudioMarker)
-    {
-        const index = this.markers.findIndex(m => m === marker);
-        if (index !== -1)
-        {
-            this.eraseByIndex(index);
-        }
-    }
+        // signal update for frontend library
+        this.markers = this.markers;
 
-    /** Erase marker at the specified index */
-    eraseByIndex(index: number)
-    {
-        this.markers.splice(index, 1);
-        this.isDirty = true;
+        return true;
     }
 
     /**
      * Remove all markers, reset state
      */
-    clear()
+    clear(): void
     {
         this.markers.length = 0;
         this.cursor = 0;
-        this.lastPosition = 0;
         this.isDirty = true;
+
+        // signal update for frontend library
+        this.markers = this.markers;
     }
 
     /**
-     * Handle track seeks
-     * @param time - track position time in seconds
+     * Find the index of a marker stored in the container, or -1 if it doesn't
+     * belong to the container.
+     * @param   marker - marker to find index of
+     * @return         index of marker, or -1 if it was not found
      */
-    private handleSeek(time: number)
+    findIndexOf(marker: T): number
     {
-        this.lastPosition = time;
-
-        const oldCursor = this.cursor;
-        this.calibrateCursor(this.lastPosition);
-
-        if (this.cursor !== oldCursor)
-        {
-            this.oncursorchanged.invoke(this.cursor, oldCursor);
-        }
+        return this.markers.findIndex(m => m === marker);
     }
 
-    private clampTimePosition(position: number)
-    {
-        return Math.max(Math.min(position, this.track.length), 0);
-    }
+    // ===== Helpers ==========================================================
 
-    /** Calibrate cursor to a position in the track (in ms) */
-    private calibrateCursor(position: number)
+    /** Calibrate cursor to a position in the track (in seconds) */
+    private calibrateCursor(position: number): void
     {
         const length = this.markers.length;
         let newCursor = length;
@@ -324,73 +324,5 @@ export class MarkerMgr
 
         this.cursor = newCursor;
     }
-
-    private handleUpdate(delta: number, position: number)
-    {
-        const oldCursor = this.cursor;
-
-        if (!this.track.isPaused)
-        {
-            if (this.isDirty) // if dirty, we need to recalibrate cursor
-            {
-                this.calibrateCursor(this.lastPosition);
-
-                // Check that transitions are pointing to alive transition
-                for (const marker of this.markers)
-                {
-                    if (marker.transition)
-                    {
-                        // remove it otherwise
-                        if (!this.markers.find(m => m === marker.transition.destination))
-                        {
-                            marker.transition = undefined;
-                        }
-                    }
-                }
-
-                this.onmarkersupdated.invoke();
-                this.isDirty = false;
-            }
-
-            for (let marker = this.markers[this.cursor]; this.cursor < this.markers.length; )
-            {
-                position = this.track.position; // (update in case seek occurs in onmark callback)
-
-                let checkSec = (marker.position < position) ? // loop probably occured, check position by added length
-                    marker.position + this.track.length:
-                    marker.position;
-
-                if (checkSec - position < .1)
-                {
-                    // get target clock for marker
-                    const clock = this.track.track.dspClock() + this.track.track.samplerate() * (checkSec - position);
-
-                    // increment cursor/marker for next check (this happens before callback invocation, since transition may update cursor during callback)
-                    this.cursor = (this.cursor + 1) % this.markers.length;
-
-                    // fire callback
-                    this.onmarker.invoke(marker, clock);
-
-                    marker = this.markers[this.cursor];
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-
-        this.lastPosition = position;
-
-        if (oldCursor !== this.cursor)
-        {
-            this.oncursorchanged.invoke(this.cursor, oldCursor);
-        }
-    }
-
-    load(markers: AudioMarker[])
-    {
-        this.clear();
-        markers.forEach(m => this.push(m));
-    }
 }
+
