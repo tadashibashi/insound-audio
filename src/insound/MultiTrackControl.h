@@ -147,22 +147,22 @@ namespace Insound
             float outTime, bool fadeOut, unsigned long clock = 0);
 
         /**
-         * Set loop points (in milliseconds)
+         * Set loop points (in seconds)
          *
-         * @param loopstart - loop start point in milliseconds
-         * @param loopend - loop end point in milliseconds
+         * @param loopstart - loop start point in seconds
+         * @param loopend - loop end point in seconds
          */
         void setLoopPoint(double loopstart, double loopend);
 
         /**
-         * Get loop points in milliseconds (fine-grained from samples)
+         * Get loop points in seconds
          */
         [[nodiscard]]
         LoopInfo<double> getLoopPoint() const;
 
-        bool addSyncPoint(const std::string &label, unsigned ms);
+        bool addSyncPoint(const std::string &label, double seconds);
         bool deleteSyncPoint(int i);
-        bool editSyncPoint(int i, const std::string &label, unsigned ms);
+        bool editSyncPoint(int i, const std::string &label, double seconds);
 
         [[nodiscard]]
         size_t getSyncPointCount() const;
@@ -180,7 +180,7 @@ namespace Insound
 
         void onSyncPoint(emscripten::val callback);
 
-        void doMarker(const std::string &name, double ms);
+        void doMarker(const std::string &name, double seconds);
 
         [[nodiscard]]
         float samplerate() const;

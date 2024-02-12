@@ -1,8 +1,9 @@
 import { MultiTrackControl } from "./MultiTrackControl";
 
-export interface SyncPoint {
+export interface SyncPoint
+{
     name: string;
-    offset: number;
+    position: number;
 }
 
 export class SyncPointMgr
@@ -36,9 +37,9 @@ export class SyncPointMgr
         }
     }
 
-    addSyncPoint(name: string, offsetMS: number)
+    addSyncPoint(name: string, offsetSec: number)
     {
-        if (this.m_track.track.addSyncPoint(name, offsetMS))
+        if (this.m_track.track.addSyncPoint(name, offsetSec))
         {
             //this.update();
             return true;
@@ -58,9 +59,9 @@ export class SyncPointMgr
         return false;
     }
 
-    editSyncPoint(index: number, newName: string, newOffsetMS: number)
+    editSyncPoint(index: number, newName: string, newOffsetSec: number)
     {
-        if (this.m_track.track.editSyncPoint(index, newName, newOffsetMS))
+        if (this.m_track.track.editSyncPoint(index, newName, newOffsetSec))
         {
             //this.update();
             return true;

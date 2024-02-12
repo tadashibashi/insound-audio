@@ -114,11 +114,7 @@ export class MarkerMgr
         const pointCount = this.track.track.getSyncPointCount();
         for (let i = 0; i < pointCount; ++i)
         {
-            const point = this.track.track.getSyncPoint(i);
-            this.push({
-                name: point.name,
-                position: point.offset,
-            });
+            this.push(this.track.track.getSyncPoint(i));
         }
     }
 
@@ -174,8 +170,6 @@ export class MarkerMgr
         {
             this.markers.splice(index, 0, marker);
         }
-
-
 
         this.isDirty = true;
         return marker;
@@ -282,8 +276,7 @@ export class MarkerMgr
     }
 
     /**
-     * Bring marker manager to a clean slate, removing all markers, resetting
-     * position to 0
+     * Remove all markers, reset state
      */
     clear()
     {
@@ -293,9 +286,13 @@ export class MarkerMgr
         this.isDirty = true;
     }
 
+    /**
+     * Handle track seeks
+     * @param time - track position time in seconds
+     */
     private handleSeek(time: number)
     {
-        this.lastPosition = time * 1000;
+        this.lastPosition = time;
 
         const oldCursor = this.cursor;
         this.calibrateCursor(this.lastPosition);
@@ -308,7 +305,7 @@ export class MarkerMgr
 
     private clampTimePosition(position: number)
     {
-        return Math.max(Math.min(position, this.track.length * 1000), 0);
+        return Math.max(Math.min(position, this.track.length), 0);
     }
 
     /** Calibrate cursor to a position in the track (in ms) */
@@ -330,11 +327,9 @@ export class MarkerMgr
 
     private handleUpdate(delta: number, position: number)
     {
-        position *= 1000;
-
         const oldCursor = this.cursor;
 
-        if (position !== this.lastPosition) // make sure non-seek, player not paused
+        if (!this.track.isPaused)
         {
             if (this.isDirty) // if dirty, we need to recalibrate cursor
             {
@@ -359,15 +354,16 @@ export class MarkerMgr
 
             for (let marker = this.markers[this.cursor]; this.cursor < this.markers.length; )
             {
-                const curPos = this.track.position * 1000;
-                let checkMS = (marker.position < curPos) ? // loop probably occured, check position by added length
-                    marker.position + this.track.length * 1000:
+                position = this.track.position; // (update in case seek occurs in onmark callback)
+
+                let checkSec = (marker.position < position) ? // loop probably occured, check position by added length
+                    marker.position + this.track.length:
                     marker.position;
 
-                if (checkMS - curPos < 100)
+                if (checkSec - position < .1)
                 {
                     // get target clock for marker
-                    const clock = this.track.track.dspClock() + this.track.track.samplerate() * ((checkMS - curPos) * .001);
+                    const clock = this.track.track.dspClock() + this.track.track.samplerate() * (checkSec - position);
 
                     // increment cursor/marker for next check (this happens before callback invocation, since transition may update cursor during callback)
                     this.cursor = (this.cursor + 1) % this.markers.length;

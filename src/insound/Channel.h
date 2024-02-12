@@ -129,8 +129,13 @@ namespace Insound
          * @return reference to this object for chaining.
          */
         Channel &ch_position(float seconds);
-        Channel &ch_positionSamples(float samples);
+        Channel &ch_positionSamples(unsigned int samples);
 
+        /**
+         * Get the Channel position in samples.
+         * If there is no underlying FMOD::Channel, (e.g. if it's an
+         * FMOD::ChannelGroup) this function will throw.
+         */
         [[nodiscard]]
         unsigned int ch_positionSamples() const;
 
@@ -203,8 +208,11 @@ namespace Insound
          */
         [[nodiscard]]
         Channel *group() const;
-        // Only available if underlying context is an FMOD::Channel. Thorws if
-        // this is not the case.
+
+        /**
+         * Get the current channel track position in seconds. If this Channel
+         * does not contain an underlying FMOD::Channel, it will throw
+         */
         [[nodiscard]]
         float ch_position() const;
 

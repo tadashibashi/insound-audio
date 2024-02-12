@@ -38,7 +38,7 @@ EMSCRIPTEN_BINDINGS(AudioEngine) {
 
     value_object<SyncPointInfo>("SyncPointInfo")
         .field("name", &SyncPointInfo::name)
-        .field("offset", &SyncPointInfo::offset);
+        .field("position", &SyncPointInfo::position);
 
     value_object<Preset>("Preset")
         .field("name", &Preset::name)

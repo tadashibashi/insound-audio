@@ -213,11 +213,11 @@ namespace Insound {
         [[nodiscard]]
         const std::function<void()> &getEndCallback() const;
 
-        bool addSyncPointMS(const std::string &name,
-            double offset);
+        bool addSyncPoint(const std::string &name,
+            double offsetSeconds);
 
-        bool editSyncPointMS(size_t i, const std::string &name,
-            double offset);
+        bool editSyncPoint(size_t i, const std::string &name,
+            double offsetSeconds);
 
         bool deleteSyncPoint(size_t i);
 

@@ -305,7 +305,7 @@ namespace Insound
         return *this;
     }
 
-    Channel &Channel::ch_positionSamples(float samples)
+    Channel &Channel::ch_positionSamples(unsigned int samples)
     {
         if (m_isGroup)
             throw std::runtime_error("Cannot call Channel::position when "

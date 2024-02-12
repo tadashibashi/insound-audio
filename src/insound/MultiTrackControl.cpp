@@ -153,7 +153,7 @@ namespace Insound
 
     void MultiTrackControl::setLoopPoint(double loopstart, double loopend)
     {
-        track->loopMilliseconds(loopstart, loopend);
+        track->loopSeconds(loopstart, loopend);
     }
 
     LoopInfo<double> MultiTrackControl::getLoopPoint() const
@@ -162,14 +162,14 @@ namespace Insound
         double samplerate = track->samplerate();
 
         return {
-            .start = loopInfo.start / samplerate * 1000.0,
-            .end = loopInfo.end / samplerate * 1000.0
+            .start = loopInfo.start / samplerate,
+            .end = loopInfo.end / samplerate
         };
     }
 
-    bool MultiTrackControl::addSyncPoint(const std::string &label, unsigned ms)
+    bool MultiTrackControl::addSyncPoint(const std::string &label, double seconds)
     {
-        return track->addSyncPointMS(label, ms);
+        return track->addSyncPoint(label, seconds);
     }
 
     bool MultiTrackControl::deleteSyncPoint(int i)
@@ -177,9 +177,9 @@ namespace Insound
         return track->deleteSyncPoint(i);
     }
 
-    bool MultiTrackControl::editSyncPoint(int i, const std::string &label, unsigned ms)
+    bool MultiTrackControl::editSyncPoint(int i, const std::string &label, double seconds)
     {
-        return track->editSyncPointMS(i, label, ms);
+        return track->editSyncPoint(i, label, seconds);
     }
 
     size_t MultiTrackControl::getSyncPointCount() const
@@ -191,7 +191,7 @@ namespace Insound
     {
         return {
             .name=track->getSyncPointLabel(index).data(),
-            .offset=track->getSyncPointOffsetMS(index)
+            .position=track->getSyncPointOffsetSeconds(index)
         };
     }
 
@@ -215,9 +215,9 @@ namespace Insound
             });
     }
 
-    void MultiTrackControl::doMarker(const std::string &name, double ms)
+    void MultiTrackControl::doMarker(const std::string &name, double seconds)
     {
-        this->lua->doSyncPoint(name, ms * .001);
+        this->lua->doSyncPoint(name, seconds);
     }
 
     float MultiTrackControl::samplerate() const

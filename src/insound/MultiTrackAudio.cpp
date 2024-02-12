@@ -728,11 +728,11 @@ namespace Insound
     }
 
 
-    bool MultiTrackAudio::addSyncPointMS(const std::string &name,
-        double offset)
+    bool MultiTrackAudio::addSyncPoint(const std::string &name,
+        double offsetSeconds)
     {
         try {
-            m->points.emplace(name.data(), offset * .001 * samplerate(),
+            m->points.emplace(name.data(), offsetSeconds * samplerate(),
                 FMOD_TIMEUNIT_PCM);
             return true;
         }
@@ -743,11 +743,11 @@ namespace Insound
     }
 
 
-    bool MultiTrackAudio::editSyncPointMS(size_t i, const std::string &name,
-        double offset)
+    bool MultiTrackAudio::editSyncPoint(size_t i, const std::string &name,
+        double offsetSeconds)
     {
         try {
-            m->points.replace(i, name, offset * .001 * samplerate(),
+            m->points.replace(i, name, offsetSeconds * samplerate(),
                 FMOD_TIMEUNIT_PCM);
             return true;
         }

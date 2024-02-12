@@ -7,6 +7,6 @@ namespace Insound
     struct SyncPointInfo
     {
         std::string name;
-        double offset;
+        double position;
     };
 }

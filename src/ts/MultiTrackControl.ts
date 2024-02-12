@@ -238,7 +238,7 @@ export class MultiTrackControl
 
                 if (transition)
                 {
-                    const targetPosition = transition.destination.position * .001;
+                    const targetPosition = transition.destination.position;
 
                     this.onseek.invoke(targetPosition);
                     this.m_track.transitionTo(
@@ -272,7 +272,7 @@ export class MultiTrackControl
             if (this.position < this.m_lastPosition)
             {
                 const loop = this.m_track.getLoopPoint();
-                this.position = (loop.end - .001) * .001;
+                this.position = loop.end - .001;
                 this.setPause(true, 0);
                 this.m_engine.suspend();
             }
@@ -548,7 +548,7 @@ export class MultiTrackControl
         if (!pause && this.m_engine.isSuspended())
         {
             this.m_engine.resume();
-            if (this.position > (this.m_track.getLoopPoint().end * .001) - .01)
+            if (this.position > this.m_track.getLoopPoint().end - .01)
                 this.position = 0;
         }
 

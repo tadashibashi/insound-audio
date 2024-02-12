@@ -14,8 +14,9 @@ namespace FMOD
 
 namespace Insound
 {
-
-
+    /**
+     * Used to get and set syncpoints in an FMOD::Sound object
+     */
     struct SyncPoint
     {
     public:

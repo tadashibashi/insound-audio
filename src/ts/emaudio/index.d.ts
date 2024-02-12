@@ -156,7 +156,7 @@ declare interface InsoundMultiTrackControl
     deleteSyncPoint(index: number): boolean;
     editSyncPoint(index: number, label: string, ms: number): boolean;
     getSyncPointCount(): number;
-    getSyncPoint(index: number): {name: string, offset: number}; //offset in ms
+    getSyncPoint(index: number): {name: string, position: number}; //offset in ms
     getSampleData(index: number): {ptr: number, byteLength: number};
 
     onSyncPoint(
