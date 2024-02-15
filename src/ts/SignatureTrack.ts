@@ -15,12 +15,6 @@ export enum Accidental
     DoubleFlat
 }
 
-export interface MusicLetter
-{
-    letter: Letter;
-    accidental?: Accidental;
-}
-
 /**
  * Quality of a musical key, includes scales and Messaien's modes of limited
  * transposition. This is based on well-tempered tuned scales with
@@ -42,26 +36,37 @@ export enum KeyQuality
     MessaienMode7,  // half-half-half-whole-half-half-half-half-whole-half
 }
 
+interface TimeSignature {
+    top: number;
+    bottom: number;
+}
+
+interface MusicKey {
+    /** Root */
+    letter: Letter,
+    accidental: Accidental,
+
+    /** Describes what kind of key or scale */
+    quality: KeyQuality,
+    /**
+     * Degree of the scale from which the mode starts
+     * e.g. Major, with mode 2 is dorian
+     * Also, a mode of 1 is redundant
+     */
+    mode?: number,
+}
+
+export interface MusicSignatureInfo {
+    time: TimeSignature;
+    key: MusicKey
+}
+
 export interface MusicSignature
 {
     /** Music measure (starts count at 1) */
     measure: number;
-    time?: {
-        top: number,
-        bottom: number,
-    }
-    key?: {
-        /** Root */
-        letter: MusicLetter,
-        /** Describes what kind of key or scale */
-        quality: KeyQuality,
-        /**
-         * Degree of the scale from which the mode starts
-         * e.g. Major, with mode 2 is dorian
-         * Also, a mode of 1 is redundant
-         */
-        mode?: number
-    }
+    time?: TimeSignature;
+    key?: MusicKey
 }
 
 
@@ -104,6 +109,49 @@ export class SignatureTrack
         }
 
         return null;
+    }
+
+    /**
+     * Get key and time signature at a particular measure; info carries over
+     * from previous measures as the last signature that was passed over.
+     * If there were none the defaults are, time signature 4/4, key C Major
+     */
+    signatureAt(measure: number): MusicSignatureInfo
+    {
+        if (measure <= 0)
+        {
+            throw Error("Invalid measure number");
+        }
+
+        const res: MusicSignatureInfo = {
+            key: {
+                letter: Letter.C,
+                accidental: Accidental.Natural,
+                quality: KeyQuality.Major,
+            },
+            time: {
+                top: 4,
+                bottom: 4,
+            },
+        };
+
+        const sigs = this.m_sigs;
+        const length = sigs.length;
+        for (let i = 0; i < length && sigs[i].measure <= measure; ++i)
+        {
+            const curSig = sigs[i];
+            if (curSig.key)
+            {
+                res.key = curSig.key;
+            }
+
+            if (curSig.time)
+            {
+                res.time = curSig.time;
+            }
+        }
+
+        return res;
     }
 
     pushArray(sigs: MusicSignature[])

@@ -191,7 +191,7 @@ namespace Insound
         // hack to only remove fadepoints when unpausing
         if (to != 0)
         {
-            checkResult( chan->removeFadePoints(targetClock-1, targetClock + 60  * samplerate));
+            checkResult( chan->removeFadePoints(0, targetClock + 60  * samplerate));
         }
 
         checkResult( chan->addFadePoint(targetClock, from) );
@@ -252,14 +252,15 @@ namespace Insound
                 checkResult( chan->setDelay(clock, 0, false) );
 
                 // fade-in from clock point to `seconds` afterward
-                fade(0.f, 1.f, seconds, clock);
+                fadeTo(1.f, seconds, clock);
             }
             else
             {
                 // unpause at the delayed time
                 auto targetClock = clock + samplerate * seconds;
                 checkResult( chan->setDelay(targetClock, 0, false) );
-                fade(0, 1.f, 0, targetClock);
+                fadeTo(0, 0, clock);
+                fadeTo(1.f, 0, targetClock);
             }
         }
 

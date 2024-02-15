@@ -19,6 +19,30 @@ interface MusicMarker {
 export class MusicCallbackMgr
 {
     markers: MusicMarker[];
+    tempos: TempoMarker[];
+    signatures: SignatureTrack | null;
+
+    constructor()
+    {
+        this.tempos = [];
+        this.signatures = null;
+    }
+
+    positionToBeat(position: number): {measure: number, beat: number}
+    {
+        if (this.tempos.length === 0 || !this.signatures)
+        {
+            throw Error("Please call calculateMarkers before calling positionToBeat");
+        }
+
+        for (let i = 0; i < this.markers.length; ++i)
+        {
+            if (this.markers[i].position <= position)
+            {
+                
+            }
+        }
+    }
 
     /**
      * Calculate / update marker positions based on tempo / time signature.
@@ -129,6 +153,8 @@ export class MusicCallbackMgr
         }
 
         this.markers = markers;
+        this.tempos = tempoMarkers;
+        this.signatures = signatures;
     }
 }
 

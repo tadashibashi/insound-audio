@@ -47,6 +47,11 @@ namespace Insound
     {
         lua->doUpdate(deltaTime, totalTime);
         totalTime += deltaTime;
+
+        if (!getPause() && track->fadeLevel() == 0)
+        {
+            track->fadeTo(1, 0);
+        }
     }
 
     bool MultiTrackControl::isLoaded() const
