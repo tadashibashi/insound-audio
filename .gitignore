@@ -20,3 +20,4 @@ lib/emsdk/
 node_modules/
 
 cmake-*/
+bin/

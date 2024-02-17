@@ -14,7 +14,6 @@
     "lib": ["DOM", "ESNext"],
   },
   "include": [
-    "src/bindings/web/ts/**/*.d.ts",
-    "src/bindings/web/ts/**/*.ts"
+    "ts/**/*.ts"
   ]
 }

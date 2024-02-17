@@ -6,7 +6,6 @@ export function getAudioModule(): Insound.AudioModule
 }
 
 
-
 /**
  * Check if module was already loaded.
  *

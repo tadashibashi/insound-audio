@@ -1,15 +1,21 @@
-# insound-audio
+# Insound Web Bindings
+
+Insound Audio Engine for the web
+
+Requirements:
+
+- Emscripten compiler (v.3.1+)
+- Bun runtime
 
 To install dependencies:
 
+1. Build the C++ bindings and library with the Emscripten toolchain
+2. Run `bun install` in this directory
+
+To run a development server:
+
 ```bash
-bun install
+bun run dev
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.0.18. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Then, access via a browser client at: http://localhost:5173
