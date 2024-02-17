@@ -4,6 +4,6 @@
 [submodule "lib/sol2"]
 	path = lib/sol2
 	url = https://github.com/ThePhD/sol2.git
-[submodule "src/test/lib/Catch2"]
-	path = src/test/cpp/lib/Catch2
-	url = https://github.com/catchorg/Catch2.git
+[submodule "lib/Catch2"]
+	path = lib/Catch2
+	url = https://github.com/catchorg/Catch2

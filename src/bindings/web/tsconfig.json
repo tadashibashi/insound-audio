@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    "lib": ["DOM", "ESNext"],
+  },
+  "include": [
+    "src/bindings/web/ts/**/*.d.ts",
+    "src/bindings/web/ts/**/*.ts"
+  ]
+}

@@ -9,7 +9,7 @@
 
 # Build
 build/
-src/insound/embed/
+src/insound/lua/embed/
 
 # Temporary
 .cache/
@@ -18,3 +18,5 @@ __pycache__/
 # Tools / Libraries
 lib/emsdk/
 node_modules/
+
+cmake-*/
