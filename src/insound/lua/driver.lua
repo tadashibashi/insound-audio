@@ -4,6 +4,8 @@
 ---Environment for the sandbox
 env = {}
 
+test_val = 12
+
 function table_length(t)
     local count = 0
     for _ in pairs(t) do count = count + 1 end
@@ -230,6 +232,17 @@ local function on_param(name, value)
         env.on_param(name, value)
     end
 end
+
+-- move later?
+local Event = {
+    Init=0,
+    Update=1,
+    SyncPoint=2,
+    Load=3,
+    Unload=4,
+    TrackEnd=5,
+    ParamSet=6
+}
 
 local EV_TABLE <const> = {
     [Event.Init] = on_init,

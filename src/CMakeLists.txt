@@ -1,6 +1,5 @@
 add_subdirectory(insound)
 add_subdirectory(bindings)
-add_subdirectory(tools)
 
 if (INSOUND_BUILD_TESTS)
     add_subdirectory(test/cpp)
@@ -15,5 +14,8 @@ function(make_includable INPUT_FILE OUTPUT_FILE)
     file(WRITE ${OUTPUT_FILE} "${CONTENT}")
 endfunction()
 
-make_includable(${CMAKE_SOURCE_DIR}/src/insound/lua/driver.lua
-    ${CMAKE_SOURCE_DIR}/src/insound/lua/embed/driver.lua.h)
+set (TOOL_DIR ${CMAKE_SOURCE_DIR}/tools/bin)
+set (LUAC ${TOOL_DIR}/luac)
+execute_process(COMMAND ${LUAC} ${CMAKE_SOURCE_DIR}/src/insound/lua/driver.lua
+        luaDriver
+        ${CMAKE_SOURCE_DIR}/src/insound/lua/embed/driver.lua.h)

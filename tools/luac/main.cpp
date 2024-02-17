@@ -3,6 +3,7 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 
 namespace fs = std::filesystem;
 
@@ -20,15 +21,15 @@ enum class ErrorCode : int
 int main(int argc, char *argv[])
 {
     // Check and collect args
-    if (argc < 2)
+    if (argc < 3)
     {
         std::cerr << "Error: there must be an argument indicating a file path\n";
         return (int)ErrorCode::ArgumentError;
     }
 
-    const auto program = argv[0];
     const auto filepath = fs::path(argv[1]);
-    std::string outputPath = argc < 3 ? "" : argv[2];
+    const std::string symbol = argv[2];
+    std::string outputPath = argc < 4 ? "" : argv[3];
 
     if (!fs::exists(filepath))
     {
@@ -73,14 +74,24 @@ int main(int argc, char *argv[])
 
 
     // Write bytecode to the path
-    std::ofstream outFile(outputPath, std::ios_base::binary | std::ios_base::out);
+    std::ofstream outFile(outputPath, std::ios_base::out);
     if (!outFile.is_open())
     {
         std::cerr << "Error: problem creating output file at path " << outputPath << "\n";
         return (int)ErrorCode::OutputPathError;
     }
+    auto byteString = bytecode.as_string_view();
 
-    outFile << bytecode.as_string_view();
+    outFile << std::hex << "#pragma once\n"
+               "#include <cstdint>\n"
+        "const uint8_t " << symbol << "[] = {";
+
+    const auto maxIndex = byteString.size() - 1;
+    for (int i = 0; i < maxIndex; ++i)
+    {
+        outFile << "0x" << (int)(uint8_t)byteString[i] << ",";
+    }
+    outFile << "0x" << (int)(uint8_t)byteString[maxIndex] << "};\n";
 
     if (!outFile)
     {
@@ -91,6 +102,6 @@ int main(int argc, char *argv[])
     outFile.close();
 
     // Done!
-    std::cout << "Success: wrote file \"" << outputPath << "\" (" << bytecode.as_string_view().size() << " bytes)\n";
+    std::cout << "Success: wrote file \"" << outputPath << "\"";
     return (int)ErrorCode::OK;
 }

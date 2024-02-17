@@ -3,7 +3,7 @@ if (NOT EMSCIPTEN)
     project(luac)
 
     add_executable(luac
-        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+            main.cpp
     )
 
     target_link_libraries(luac PRIVATE lua sol2::sol2)

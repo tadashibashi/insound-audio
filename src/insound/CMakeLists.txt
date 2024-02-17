@@ -25,14 +25,14 @@ if (EMSCRIPTEN)
             -sMODULARIZE -lembind -sNO_DYNAMIC_EXECUTION=1
             -sEXPORT_NAME=${INSOUND_MODULE_NAME}
             -sASSERTIONS=1 -O0
-            -fwasm-exceptions
             -sENVIRONMENT=${INSOUND_ENVIRONMENT}
             -sALLOW_MEMORY_GROWTH=1
             -sINITIAL_MEMORY=536870912
             -sFORCE_FILESYSTEM=1
+            -sSUPPORT_LONGJMP=emscripten
         )
         target_compile_options(${PROJECT_NAME} PUBLIC
-            -O0 -fwasm-exceptions
+            -O0
         )
         target_compile_definitions(${PROJECT_NAME} PUBLIC INS_DEBUG=1)
     else()
@@ -42,12 +42,13 @@ if (EMSCRIPTEN)
             -sASSERTIONS=1 -Os
             -flto
             -sENVIRONMENT=${INSOUND_ENVIRONMENT}
-            -sALLOW_MEMORY_GROWTH=1 -fwasm-exceptions
+            -sALLOW_MEMORY_GROWTH=1
             -sINITIAL_MEMORY=536870912
             -sFORCE_FILESYSTEM=1
+            -sSUPPORT_LONGJMP=emscripten
         )
         target_compile_options(${PROJECT_NAME} PUBLIC
-            -flto -Os -fwasm-exceptions
+            -flto -Os
         )
         target_compile_definitions(${PROJECT_NAME} PUBLIC INS_DEBUG=0)
     endif()
