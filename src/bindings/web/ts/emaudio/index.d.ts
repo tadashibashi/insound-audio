@@ -7,6 +7,10 @@ declare namespace Insound
             new (): Insound.System;
         }
 
+        ExampleClass: {
+            new (value?: number): Insound.ExampleClass;
+        }
+
         /** Web audio context, set after audio initializes */
         mContext?: AudioContext;
         /** Main web audio output node, set after audio initializes */
@@ -46,6 +50,11 @@ declare namespace Insound
          * Update audio engine state, should be called at least 20 times per second
          */
         update(): void;
+    }
+
+    interface ExampleClass {
+        value: number;
+        doubled(): number;
     }
 }
 
