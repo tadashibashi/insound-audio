@@ -3,11 +3,8 @@ project(insound-audio-lib)
 file(GLOB_RECURSE ${PROJECT_NAME}_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${${PROJECT_NAME}_SRC})
-target_link_libraries(${PROJECT_NAME} PRIVATE fmod PUBLIC sol2::sol2)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmod PUBLIC sol2::sol2 lua)
 target_include_directories(${PROJECT_NAME}
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/lib/lua
-
     PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )

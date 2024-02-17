@@ -1,5 +1,6 @@
 add_subdirectory(insound)
 add_subdirectory(bindings)
+add_subdirectory(tools)
 
 if (INSOUND_BUILD_TESTS)
     add_subdirectory(test/cpp)
